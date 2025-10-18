@@ -1,0 +1,75 @@
+# .clang-format
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+ContinuationIndentWidth: 8
+
+# Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: false
+  SplitEmptyFunction: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortCaseLabelsOnASingleLine: false
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInSquareBrackets: false
+SpacesInParentheses: false
+SpaceAfterCStyleCast: true
+SpaceAfterTemplateKeyword: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceAroundPointerQualifiers: Default
+
+# Pointers & References
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# Line breaks
+ColumnLimit: 125
+PenaltyBreakBeforeFirstCallParameter: 200
+PenaltyBreakComment: 300
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000
+
+# Includes
+IncludeBlocks: Regroup
+SortIncludes: true
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: '^<.*>'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+
+# Comments
+ReflowComments: true
+CommentPragmas: '^ IWYU pragma:'
+
+# Namespace formatting
+NamespaceIndentation: All
+CompactNamespaces: false
+
+# Alignments
+AlignConsecutiveMacros: Consecutive
+AlignTrailingComments: true
+
+# Misc
+SortUsingDeclarations: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+BreakConstructorInitializers: BeforeColon
+AllowAllArgumentsOnNextLine: false
+...
