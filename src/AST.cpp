@@ -1,10 +1,10 @@
 #include "AST.h"
 
-Node::Node(NodeKind kind) 
+Node::Node(const NodeKind kind) 
     : m_Kind(kind) 
 {}
 
-Type::Type(NodeKind kind) 
+Type::Type(const NodeKind kind) 
     : Node(kind) 
 {}
 
@@ -13,19 +13,19 @@ ValueType::ValueType(std::string &&typename_)
     , m_Typename(std::move(typename_)) 
 {}
 
-PointerType::PointerType(std::unique_ptr<Type> &&baseType, PointerKind kind) 
+PointerType::PointerType(std::unique_ptr<Type> &&baseType, const PointerKind kind) 
     : Type(NodeKind::PointerType)
     , m_BaseType(std::move(baseType))
     , m_PointerKind(kind) 
 {}
 
-ArrayType::ArrayType(std::unique_ptr<Type> &&elementType, std::optional<size_t> size)
+ArrayType::ArrayType(std::unique_ptr<Type> &&elementType, const std::optional<const size_t> size)
     : Type(NodeKind::ArrayType)
     , m_ElementType(std::move(elementType))
     , m_Size(size) 
 {}
 
-FunctionType::FunctionType(ParameterTypeList &&parameters, std::unique_ptr<Type> &&returnType) 
+FunctionType::FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType)
     : Type(NodeKind::FunctionType)
     , m_Parameters(std::move(parameters))
     , m_ReturnType(std::move(returnType)) 
@@ -52,6 +52,11 @@ DoubleLiteral::DoubleLiteral(double value)
 CharLiteral::CharLiteral(i32 value)
     : Expression(NodeKind::CharLiteral)
     , m_Value(value) 
+{}
+
+BoolLiteral::BoolLiteral(const bool value)
+    : Expression(NodeKind::BoolLiteral)
+    , m_Value(value)
 {}
 
 StringLiteral::StringLiteral(std::string &&value)
@@ -83,6 +88,19 @@ IfStatement::IfStatement(std::unique_ptr<Expression> &&condition, std::unique_pt
     , m_ThenBlock(std::move(thenBlock))
     , m_ElseBlock(std::move(elseBlock)) 
 {}
+
+WhileStatement::WhileStatement(std::unique_ptr<Expression> &&condition, std::unique_ptr<CodeBlock> &&body)
+    : Statement(NodeKind::WhileStatement)
+    , m_Condition(std::move(condition))
+    , m_Body(std::move(body))
+{}
+
+VariableDeclaration::VariableDeclaration(std::unique_ptr<Type> &&type, std::unique_ptr<Expression> &&value)
+    : Statement(NodeKind::VariableDeclaration)
+    , m_Type(std::move(type))
+    , m_Value(std::move(value))
+{}
+
 
 Parameter::Parameter(std::string &&name, std::unique_ptr<Type> &&type) 
     : m_Name(std::move(name))
