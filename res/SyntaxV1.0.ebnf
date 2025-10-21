@@ -12,15 +12,11 @@ BinaryOperator = "+" | "-" | "*" | "/" | "%" | "^" | "&" | "|" | "&&" | "||" | "
 
 Identifier = "_" | Letter, { "_" | Letter | Digit };
 
-PrimitiveType = "string" | "char" | "bool" | PrimitiveIntegerTypes | PrimitiveFloatingPointTypes;
+PrimitiveType = "string" | "char" | "bool" | "u32" | "i32" | "f32";
 
-PrimitiveIntegerTypes = "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64";
+Integer = ( "0x", HexDigit, { HexDigit } ) | ( "0b", BinaryDigit, { BinaryDigit } ) | Digit, { Digit };
 
-PrimitiveFloatingPointTypes = "f32" | "f64";
-
-Integer = ( "0x", HexDigit, { HexDigit } ) | ( "0b", BinaryDigit, { BinaryDigit } ) | Digit, { Digit }, [ PrimitiveIntegerTypes ];
-
-FloatingPoint = ( ".", Digit, { Digit } ) | ( Digit, { Digit }, ".", { Digit } ), [ PrimitiveFloatingPointTypes ];
+FloatingPoint = ( ".", Digit, { Digit } ) | ( Digit, { Digit }, ".", { Digit } );
 
 Number = Integer | FloatingPoint;
 
@@ -36,13 +32,11 @@ Type = ArrayType | PointerType | FunctionType | PrimitiveType | Identifier;
 
 ArrayType = "[", [ Integer ], "]", Type;
 
-PointerType = [ "raw" | "unique" | "weak" ], "*", Type;
-
-FunctionType = "(", [ Type, { ",", Type } ], ")", "->", Type | ( "(", [ Type ], ")" );
+PointerType = "*", Type;
 
 Statement = ( Expression | Declaration, ";" ) | CodeBlock | Loop | IfBlock;
 
-Declaration = Identifier, ":", Type, [ "=", Expression ];
+Declaration = Identifier, ":", Type, "=", Expression;
 
 CodeBlock = "{", { Statement }, "}";
 
@@ -62,8 +56,6 @@ Expression = PrimaryExpression | BinaryExpression | UnaryExpression | ( "(", Exp
 
 FunctionCall = Identifier, "(", [ Expression, { ",", Expression } ], ")";
 
-FunctionDeclaration = "func", Identifier, "(", [ Type, ":", Identifier, { ",", Type, ":", Identifier } ], ")", [ "->", Type | ( "(", [ Type ], ")" ) ], CodeBlock;
+FunctionDeclaration = "func", Identifier, "(", [ Identifier, ":", Type, { ",", Identifier, ":", Type } ], ")", [ "->", Type | ( "(", [ Type ], ")" ) ], CodeBlock;
 
-Import = "import", Identifier, { ".", Identifier }, ";";
-
-File = { Import }, { FunctionDeclaration };
+File = { FunctionDeclaration };
