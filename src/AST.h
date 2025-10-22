@@ -39,14 +39,6 @@ enum struct NodeKind
     FunctionDeclaration
 };
 
-enum struct PointerKind 
-{
-    SharedPointer,
-    RawPointer,
-    WeakPointer,
-    UniquePointer
-};
-
 enum struct UnaryOperatorKind
 {
     LogicalNot,
@@ -115,21 +107,20 @@ public:
 struct PointerType : public Type 
 {
 private:
-    const std::unique_ptr<Type> m_BaseType;
-    const PointerKind m_PointerKind;
+    const std::unique_ptr<const Type> m_BaseType;
 
 public:
-    PointerType(std::unique_ptr<Type> &&baseType, const PointerKind kind);
+    PointerType(std::unique_ptr<const Type> &&baseType);
 };
 
 struct ArrayType : public Type
 {
 private:
-    const std::unique_ptr<Type> m_ElementType;
-    const std::optional<size_t> m_Size;
+    const std::unique_ptr<const Type> m_ElementType;
+    const std::optional<const size_t> m_Size;
 
 public:
-    ArrayType(std::unique_ptr<Type> &&elementType, const std::optional<const size_t> size);
+    ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size);
 };
 
 using ParameterTypeList = std::vector<const std::unique_ptr<const Type>> ;
@@ -138,7 +129,7 @@ struct FunctionType : public Type
 {
 private:
     const ParameterTypeList m_Parameters;
-    std::unique_ptr<const Type> m_ReturnType;
+    const std::unique_ptr<const Type> m_ReturnType;
 
 public:
     FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType);
@@ -168,7 +159,7 @@ public:
 struct DoubleLiteral : public Expression 
 {
 private:
-    double m_Value;
+    const double m_Value;
 
 public:
     DoubleLiteral(const double value);
@@ -205,23 +196,23 @@ struct UnaryExpression : public Expression
 {
 private:
     const UnaryOperatorKind m_Operator;
-    const std::unique_ptr<Expression> m_Operand;
+    const std::unique_ptr<const Expression> m_Operand;
 
 public:
-    UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<Expression> &&operand);
+    UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
 };
 
 struct BinaryExpression : public Expression 
 {
 private:
     const BinaryOperatorKind m_Operator;
-    std::unique_ptr<const Expression> m_LeftOperand, m_RightOperand;
+    const std::unique_ptr<const Expression> m_LeftOperand, m_RightOperand;
 
 public:
-    BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<Expression> &&rightOperand);
+    BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand);
 };
 
-using StatementList = std::vector<std::unique_ptr<const Statement>>;
+using StatementList = std::vector<const std::unique_ptr<const Statement>>;
 
 struct CodeBlock : public Statement 
 {
@@ -235,18 +226,18 @@ public:
 struct IfStatement : public Statement 
 {
 private:
-    std::unique_ptr<const Expression> m_Condition;
-    std::unique_ptr<const CodeBlock> m_ThenBlock, m_ElseBlock;
+    const std::unique_ptr<const Expression> m_Condition;
+    const std::unique_ptr<const CodeBlock> m_ThenBlock, m_ElseBlock;
 
 public:
-    IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
+    IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
 };
 
 struct WhileStatement : public Statement 
 {
 private:
-    const std::unique_ptr<Expression> m_Condition;
-    const std::unique_ptr<CodeBlock> m_Body;
+    const std::unique_ptr<const Expression> m_Condition;
+    const std::unique_ptr<const CodeBlock> m_Body;
 
 public:
     WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body);
@@ -255,8 +246,8 @@ public:
 struct VariableDeclaration : public Statement
 {
 private:
-    std::unique_ptr<const Type> m_Type;
-    std::unique_ptr<const Expression> m_Value;
+    const std::unique_ptr<const Type> m_Type;
+    const std::unique_ptr<const Expression> m_Value;
 
 public:
     VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
@@ -266,20 +257,20 @@ struct Parameter
 {
 private:
     const std::string m_Name;
-    std::unique_ptr<const Type> m_Type;
+    const std::unique_ptr<const Type> m_Type;
 
 public:
     Parameter(std::string &&name, std::unique_ptr<const Type> &&type);
 };
 
-typedef std::vector<const Parameter> ParameterList;
+using ParameterList = std::vector<const Parameter>;
 
 struct FunctionDeclaration : public Node 
 {
 private:
     const std::string m_Name;
     const ParameterList m_Parameters;
-    std::unique_ptr<const CodeBlock> m_Body;
+    const std::unique_ptr<const CodeBlock> m_Body;
 public:
     FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const CodeBlock> &&body);
 };

@@ -13,10 +13,9 @@ ValueType::ValueType(std::string &&typename_)
     , m_Typename(std::move(typename_)) 
 {}
 
-PointerType::PointerType(std::unique_ptr<Type> &&baseType, const PointerKind kind) 
+PointerType::PointerType(std::unique_ptr<Type> &&baseType) 
     : Type(NodeKind::PointerType)
     , m_BaseType(std::move(baseType))
-    , m_PointerKind(kind) 
 {}
 
 ArrayType::ArrayType(std::unique_ptr<Type> &&elementType, const std::optional<const size_t> size)
