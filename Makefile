@@ -19,7 +19,7 @@ SRCS := $(shell find $(SRC_DIR) -name '*.cpp')
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Default rule
-all: $(TARGET)
+all: $(TARGET) run
 
 # Link object files into the final binary
 $(TARGET): $(OBJS)
