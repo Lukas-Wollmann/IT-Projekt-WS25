@@ -9,10 +9,6 @@
 /**
  * NOTE:
  * - A char literal is an i32, because the maximum size of a UTF-8 codepoint is 4 bytes.
- * - Right now a PointerType does distinguish between different pointer kinds (shared, raw, weak, unique), we won't
- *   need that in the near future, but it might be useful later on.
- * - I don't know if all names I used in this file are the best possible ones, feel free to suggest better ones.
- * - If you want to reformat this file, feel free to do so, but my formatter is trolling me too hard.
  * - I used strong encapsulation for all members (private, protected), not sure if it's the best choice here.
  *   We will need to write a lot of getter methods later on, but we also want to avoid public access to the shared_ptrs.
  * - I only added the "biggest" numeric types for now (i64 and double), we can add smaller types later if needed.
@@ -30,8 +26,11 @@ enum struct NodeKind
     CharLiteral,
     BoolLiteral,
     StringLiteral,
+    ArrayLiteral,
     UnaryExpression,
     BinaryExpression,
+    FunctionCall,
+    VariableUse,
     CodeBlock,
     IfStatement,
     WhileStatement,
@@ -87,6 +86,9 @@ private:
 
 protected:
     Node(const NodeKind kind);
+
+public:
+    virtual ~Node() = default;
 };
 
 struct Type : public Node 
@@ -192,6 +194,18 @@ public:
     StringLiteral(std::string &&value);
 };
 
+using ArgumentList = std::vector<const std::unique_ptr<const Expression>>;
+
+struct ArrayLiteral : public Expression 
+{
+private:
+    const std::unique_ptr<const ArrayType> m_Type;
+    const ArgumentList m_Values;
+
+public:
+    ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values);
+};
+
 struct UnaryExpression : public Expression 
 {
 private:
@@ -210,6 +224,25 @@ private:
 
 public:
     BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand);
+};
+
+struct VariableUse : public Expression
+{
+private:
+    const std::string m_Name;
+
+public:
+    VariableUse(std::string &&name);
+};
+
+struct FunctionCall : public Expression
+{
+private:
+    const std::string m_Name;
+    const ArgumentList m_Arguments;
+
+public:
+    FunctionCall(std::string &&name, ArgumentList &&arguments);
 };
 
 using StatementList = std::vector<std::unique_ptr<const Statement>>;

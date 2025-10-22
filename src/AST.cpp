@@ -63,6 +63,12 @@ StringLiteral::StringLiteral(std::string &&value)
     , m_Value(std::move(value))
 {}
 
+ArrayLiteral::ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values)
+    : Expression(NodeKind::ArrayLiteral)
+    , m_Type(std::move(type))
+    , m_Values(std::move(values))
+{}
+
 UnaryExpression::UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand) 
     : Expression(NodeKind::UnaryExpression)
     , m_Operator(operator_)
@@ -76,6 +82,18 @@ BinaryExpression::BinaryExpression(const BinaryOperatorKind operator_,
     , m_LeftOperand(std::move(leftOperand))
     , m_RightOperand(std::move(rightOperand))
 {}
+
+VariableUse::VariableUse(std::string &&name)
+    : Expression(NodeKind::VariableUse)
+    , m_Name(std::move(name))
+{}
+
+FunctionCall::FunctionCall(std::string &&name, ArgumentList &&arguments)
+    : Expression(NodeKind::FunctionCall)
+    , m_Name(std::move(name))
+    , m_Arguments(std::move(arguments))
+{}
+
 
 CodeBlock::CodeBlock(StatementList &&statements) 
     : Statement(NodeKind::CodeBlock)
