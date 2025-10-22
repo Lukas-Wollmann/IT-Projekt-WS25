@@ -13,16 +13,15 @@ ValueType::ValueType(std::string &&typename_)
     , m_Typename(std::move(typename_)) 
 {}
 
-PointerType::PointerType(std::unique_ptr<Type> &&baseType, const PointerKind kind) 
+PointerType::PointerType(std::unique_ptr<const Type> &&baseType) 
     : Type(NodeKind::PointerType)
     , m_BaseType(std::move(baseType))
-    , m_PointerKind(kind) 
 {}
 
-ArrayType::ArrayType(std::unique_ptr<Type> &&elementType, const std::optional<const size_t> size)
+ArrayType::ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size)
     : Type(NodeKind::ArrayType)
     , m_ElementType(std::move(elementType))
-    , m_Size(size) 
+    , m_Size(size)
 {}
 
 FunctionType::FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType)
@@ -31,25 +30,25 @@ FunctionType::FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const
     , m_ReturnType(std::move(returnType)) 
 {}
 
-Statement::Statement(NodeKind kind) 
+Statement::Statement(const NodeKind kind) 
     : Node(kind) 
 {}
 
-Expression::Expression(NodeKind kind) 
+Expression::Expression(const NodeKind kind) 
     : Statement(kind) 
 {}
 
-IntegerLiteral::IntegerLiteral(i64 value)
+IntegerLiteral::IntegerLiteral(const i64 value)
     : Expression(NodeKind::IntegerLiteral)
     , m_Value(value) 
 {}
 
-DoubleLiteral::DoubleLiteral(double value)
+DoubleLiteral::DoubleLiteral(const double value)
     : Expression(NodeKind::DoubleLiteral)
     , m_Value(value) 
 {}
 
-CharLiteral::CharLiteral(i32 value)
+CharLiteral::CharLiteral(const i32 value)
     : Expression(NodeKind::CharLiteral)
     , m_Value(value) 
 {}
@@ -64,13 +63,14 @@ StringLiteral::StringLiteral(std::string &&value)
     , m_Value(std::move(value))
 {}
 
-UnaryExpression::UnaryExpression(UnaryOperatorKind operator_, std::unique_ptr<Expression> &&operand) 
+UnaryExpression::UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand) 
     : Expression(NodeKind::UnaryExpression)
     , m_Operator(operator_)
     , m_Operand(std::move(operand))
 {}
 
-BinaryExpression::BinaryExpression(BinaryOperatorKind operator_, std::unique_ptr<Expression> &&leftOperand, std::unique_ptr<Expression> &&rightOperand) 
+BinaryExpression::BinaryExpression(const BinaryOperatorKind operator_, 
+    std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand) 
     : Expression(NodeKind::BinaryExpression)
     , m_Operator(operator_)
     , m_LeftOperand(std::move(leftOperand))
@@ -82,35 +82,35 @@ CodeBlock::CodeBlock(StatementList &&statements)
     , m_Statements(std::move(statements)) 
 {}
 
-IfStatement::IfStatement(std::unique_ptr<Expression> &&condition, std::unique_ptr<CodeBlock> &&thenBlock, std::unique_ptr<CodeBlock> &&elseBlock)
+IfStatement::IfStatement(std::unique_ptr<const Expression> &&condition, 
+    std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock)
     : Statement(NodeKind::IfStatement)
     , m_Condition(std::move(condition))
     , m_ThenBlock(std::move(thenBlock))
     , m_ElseBlock(std::move(elseBlock)) 
 {}
 
-WhileStatement::WhileStatement(std::unique_ptr<Expression> &&condition, std::unique_ptr<CodeBlock> &&body)
+WhileStatement::WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body)
     : Statement(NodeKind::WhileStatement)
     , m_Condition(std::move(condition))
     , m_Body(std::move(body))
 {}
 
-VariableDeclaration::VariableDeclaration(std::unique_ptr<Type> &&type, std::unique_ptr<Expression> &&value)
+VariableDeclaration::VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value)
     : Statement(NodeKind::VariableDeclaration)
     , m_Type(std::move(type))
     , m_Value(std::move(value))
 {}
 
 
-Parameter::Parameter(std::string &&name, std::unique_ptr<Type> &&type) 
+Parameter::Parameter(std::string &&name, std::unique_ptr<const Type> &&type) 
     : m_Name(std::move(name))
     , m_Type(std::move(type)) 
 {}
 
-FunctionDeclaration::FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<CodeBlock> &&body)
+FunctionDeclaration::FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const CodeBlock> &&body)
     : Node(NodeKind::FunctionDeclaration)
     , m_Name(std::move(name))
     , m_Parameters(std::move(parameters))
     , m_Body(std::move(body))
 {}
-
