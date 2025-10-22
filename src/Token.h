@@ -16,6 +16,3 @@ struct Token {
 
 	friend std::ostream &operator<<(std::ostream &os, const Token &t);
 };
-
-// Example:
-// Token t = { TokenType::STRING_LITERAL, "\"Hello World!\"", 1, 1, 0 };

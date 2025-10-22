@@ -1,5 +1,7 @@
 #include "AST.h"
 
+#include <format>
+
 Node::Node(const NodeKind kind) 
     : m_Kind(kind) 
 {}
@@ -94,7 +96,6 @@ FunctionCall::FunctionCall(std::string &&name, ArgumentList &&arguments)
     , m_Arguments(std::move(arguments))
 {}
 
-
 CodeBlock::CodeBlock(StatementList &&statements) 
     : Statement(NodeKind::CodeBlock)
     , m_Statements(std::move(statements)) 
@@ -132,3 +133,13 @@ FunctionDeclaration::FunctionDeclaration(std::string &&name, ParameterList &&par
     , m_Parameters(std::move(parameters))
     , m_Body(std::move(body))
 {}
+
+void IntegerLiteral::toString(std::ostream &os) const 
+{
+    os << std::format("IntegerLiteral({})", this->m_Value); 
+}
+
+void StringLiteral::toString(std::ostream &os) const 
+{
+    os << std::format("StringLiteral(\"{}\")", this->m_Value); 
+}

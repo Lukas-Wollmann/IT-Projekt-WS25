@@ -1,10 +1,10 @@
-#include "typedef.h"
+#pragma once
 
 #include <string>
-#include <iostream>
 #include <memory>
 #include <vector>
 #include <optional>
+#include "typedef.h"
 
 /**
  * NOTE:
@@ -89,6 +89,8 @@ protected:
 
 public:
     virtual ~Node() = default;
+
+    virtual void toString(std::ostream &os) const = 0;
 };
 
 struct Type : public Node 
@@ -110,10 +112,8 @@ struct PointerType : public Type
 {
 private:
     const std::unique_ptr<const Type> m_BaseType;
-    const std::unique_ptr<const Type> m_BaseType;
 
 public:
-    PointerType(std::unique_ptr<const Type> &&baseType);
     PointerType(std::unique_ptr<const Type> &&baseType);
 };
 
@@ -122,21 +122,17 @@ struct ArrayType : public Type
 private:
     const std::unique_ptr<const Type> m_ElementType;
     const std::optional<const size_t> m_Size;
-    const std::unique_ptr<const Type> m_ElementType;
-    const std::optional<const size_t> m_Size;
 
 public:
     ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size);
-    ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size);
 };
 
-using ParameterTypeList = std::vector<const std::unique_ptr<const Type>> ;
+using ParameterTypeList = std::vector<std::unique_ptr<const Type>> ;
 
 struct FunctionType : public Type 
 {
 private:
     const ParameterTypeList m_Parameters;
-    const std::unique_ptr<const Type> m_ReturnType;
     const std::unique_ptr<const Type> m_ReturnType;
 
 public:
@@ -162,6 +158,8 @@ private:
 
 public:
     IntegerLiteral(const i64 value);
+
+    virtual void toString(std::ostream &os) const override;
 };
 
 struct DoubleLiteral : public Expression 
@@ -198,9 +196,11 @@ private:
 
 public:
     StringLiteral(std::string &&value);
+
+    virtual void toString(std::ostream &os) const override;
 };
 
-using ArgumentList = std::vector<const std::unique_ptr<const Expression>>;
+using ArgumentList = std::vector<std::unique_ptr<const Expression>>;
 
 struct ArrayLiteral : public Expression 
 {
@@ -217,10 +217,8 @@ struct UnaryExpression : public Expression
 private:
     const UnaryOperatorKind m_Operator;
     const std::unique_ptr<const Expression> m_Operand;
-    const std::unique_ptr<const Expression> m_Operand;
 
 public:
-    UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
     UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
 };
 
@@ -253,7 +251,7 @@ public:
     FunctionCall(std::string &&name, ArgumentList &&arguments);
 };
 
-using StatementList = std::vector<const std::unique_ptr<const Statement>>;
+using StatementList = std::vector<std::unique_ptr<const Statement>>;
 
 struct CodeBlock : public Statement 
 {
@@ -269,19 +267,14 @@ struct IfStatement : public Statement
 private:
     const std::unique_ptr<const Expression> m_Condition;
     const std::unique_ptr<const CodeBlock> m_ThenBlock, m_ElseBlock;
-    const std::unique_ptr<const Expression> m_Condition;
-    const std::unique_ptr<const CodeBlock> m_ThenBlock, m_ElseBlock;
 
 public:
-    IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
     IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
 };
 
 struct WhileStatement : public Statement 
 {
 private:
-    const std::unique_ptr<const Expression> m_Condition;
-    const std::unique_ptr<const CodeBlock> m_Body;
     const std::unique_ptr<const Expression> m_Condition;
     const std::unique_ptr<const CodeBlock> m_Body;
 
@@ -294,8 +287,6 @@ struct VariableDeclaration : public Statement
 private:
     const std::unique_ptr<const Type> m_Type;
     const std::unique_ptr<const Expression> m_Value;
-    const std::unique_ptr<const Type> m_Type;
-    const std::unique_ptr<const Expression> m_Value;
 
 public:
     VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
@@ -306,14 +297,12 @@ struct Parameter
 private:
     const std::string m_Name;
     const std::unique_ptr<const Type> m_Type;
-    const std::unique_ptr<const Type> m_Type;
 
 public:
     Parameter(std::string &&name, std::unique_ptr<const Type> &&type);
 };
 
-using ParameterList = std::vector<const Parameter>;
-using ParameterList = std::vector<const Parameter>;
+using ParameterList = std::vector<Parameter>;
 
 struct FunctionDeclaration : public Node 
 {
