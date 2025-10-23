@@ -79,6 +79,8 @@ enum struct BinaryOperatorKind
     RightShiftAssignment
 };
 
+struct Visitor;
+
 struct Node 
 {
 private:
@@ -90,22 +92,25 @@ protected:
 public:
     virtual ~Node() = default;
 
-    virtual void toString(std::ostream &os) const = 0;
+    virtual void accept(Visitor &visitor) const = 0;
 };
 
 struct Type : public Node 
 {
 protected:
     Type(const NodeKind kind);
+    
+    virtual void accept(Visitor &visitor) const override = 0;
 };
 
 struct ValueType : public Type 
 {
-private:
+public:
     const std::string m_Typename;
 
-public:
     ValueType(std::string &&typename_);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct PointerType : public Type 
@@ -115,6 +120,8 @@ private:
 
 public:
     PointerType(std::unique_ptr<const Type> &&baseType);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct ArrayType : public Type
@@ -125,6 +132,8 @@ private:
 
 public:
     ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 using ParameterTypeList = std::vector<std::unique_ptr<const Type>> ;
@@ -137,18 +146,26 @@ private:
 
 public:
     FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct Statement : public Node 
 {
 protected:
     Statement(const NodeKind kind);
+
+public:
+    virtual void accept(Visitor &visitor) const override = 0;
 };
 
 struct Expression : public Statement
 {
 protected:
     Expression(const NodeKind kind);
+
+public:
+    virtual void accept(Visitor &visitor) const override = 0;
 };
 
 struct IntegerLiteral : public Expression 
@@ -159,7 +176,7 @@ private:
 public:
     IntegerLiteral(const i64 value);
 
-    virtual void toString(std::ostream &os) const override;
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct DoubleLiteral : public Expression 
@@ -169,6 +186,8 @@ private:
 
 public:
     DoubleLiteral(const double value);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct CharLiteral : public Expression 
@@ -187,6 +206,8 @@ private:
 
 public:
     BoolLiteral(const bool value);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct StringLiteral : public Expression 
@@ -197,7 +218,7 @@ private:
 public:
     StringLiteral(std::string &&value);
 
-    virtual void toString(std::ostream &os) const override;
+    virtual void accept(Visitor &visitor) const override;
 };
 
 using ArgumentList = std::vector<std::unique_ptr<const Expression>>;
@@ -210,6 +231,8 @@ private:
 
 public:
     ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct UnaryExpression : public Expression 
@@ -220,6 +243,8 @@ private:
 
 public:
     UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct BinaryExpression : public Expression 
@@ -230,6 +255,8 @@ private:
 
 public:
     BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct VariableUse : public Expression
@@ -239,6 +266,8 @@ private:
 
 public:
     VariableUse(std::string &&name);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct FunctionCall : public Expression
@@ -249,6 +278,8 @@ private:
 
 public:
     FunctionCall(std::string &&name, ArgumentList &&arguments);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 using StatementList = std::vector<std::unique_ptr<const Statement>>;
@@ -260,6 +291,8 @@ private:
 
 public:
     CodeBlock(StatementList &&statements);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct IfStatement : public Statement 
@@ -270,6 +303,8 @@ private:
 
 public:
     IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct WhileStatement : public Statement 
@@ -280,6 +315,8 @@ private:
 
 public:
     WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct VariableDeclaration : public Statement
@@ -290,6 +327,8 @@ private:
 
 public:
     VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
+    
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct Parameter 
@@ -313,4 +352,33 @@ private:
 
 public:
     FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const CodeBlock> &&body);
+    
+    virtual void accept(Visitor &visitor) const override;
+};
+
+struct Visitor 
+{
+public:
+    virtual ~Visitor() = default;
+
+    virtual void visit(const ValueType &node) = 0;
+    virtual void visit(const PointerType &node) = 0;
+    virtual void visit(const ArrayType &node) = 0;
+    virtual void visit(const FunctionType &node) = 0;
+    virtual void visit(const IntegerLiteral &node) = 0;
+    virtual void visit(const DoubleLiteral &node) = 0;
+    virtual void visit(const CharLiteral &node) = 0;
+    virtual void visit(const BoolLiteral &node) = 0;
+    virtual void visit(const StringLiteral &node) = 0;
+    virtual void visit(const ArrayLiteral &node) = 0;
+    virtual void visit(const UnaryExpression &node) = 0;
+    virtual void visit(const BinaryExpression &node) = 0;
+    virtual void visit(const FunctionCall &node) = 0;
+    virtual void visit(const VariableUse &node) = 0;
+    virtual void visit(const CodeBlock &node) = 0;
+    virtual void visit(const IfStatement &node) = 0;
+    virtual void visit(const WhileStatement &node) = 0;
+    virtual void visit(const VariableDeclaration &node) = 0;
+    virtual void visit(const Parameter &node) = 0;
+    virtual void visit(const FunctionDeclaration &node) = 0;
 };
