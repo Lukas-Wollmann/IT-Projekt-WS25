@@ -6,7 +6,7 @@ std::ostream &operator<<(std::ostream &os, TokenType type)
 	switch (type) 
     {
 	case TokenType::IDENTIFIER:
-		return os << "IDENTIFIER";
+        return os << "IDENTIFIER";
 	case TokenType::STRING_LITERAL:
 		return os << "STRING_LITERAL";
 	case TokenType::NUMERIC_LITERAL:
