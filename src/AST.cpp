@@ -1,5 +1,4 @@
 #include "AST.h"
-
 #include <format>
 
 Node::Node(const NodeKind kind) 
@@ -150,7 +149,7 @@ VariableUse::VariableUse(std::string &&name)
     , m_Name(std::move(name))
 {}
 
-void BinaryExpression::accept(Visitor &visitor) const
+void VariableUse::accept(Visitor &visitor) const
 {
     visitor.visit(*this);
 }
@@ -200,8 +199,9 @@ void WhileStatement::accept(Visitor &visitor) const
     visitor.visit(*this);
 }
 
-VariableDeclaration::VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value)
+VariableDeclaration::VariableDeclaration(std::string &&name, std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value)
     : Statement(NodeKind::VariableDeclaration)
+    , m_Name(std::move(name))
     , m_Type(std::move(type))
     , m_Value(std::move(value))
 {}
@@ -216,10 +216,11 @@ Parameter::Parameter(std::string &&name, std::unique_ptr<const Type> &&type)
     , m_Type(std::move(type)) 
 {}
 
-FunctionDeclaration::FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const CodeBlock> &&body)
+FunctionDeclaration::FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const Type> &&returnType, std::unique_ptr<const CodeBlock> &&body)
     : Node(NodeKind::FunctionDeclaration)
     , m_Name(std::move(name))
     , m_Parameters(std::move(parameters))
+    , m_ReturnType(std::move(returnType))
     , m_Body(std::move(body))
 {}
 

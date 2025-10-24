@@ -4,7 +4,7 @@
 
 # Compiler and flags
 CXX := clang++
-CXXFLAGS := -std=c++20 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0
+CXXFLAGS := -MJ  -std=c++20 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0
 
 # Directories
 SRC_DIR := src

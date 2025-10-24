@@ -2,9 +2,17 @@
 #include <iostream>
 #include "Token.h"
 #include "AST.h"
+#include "PrinterVisitor.h"
 
 
 int main() {
+	StatementList statements;
+	statements.push_back(std::make_unique<IntegerLiteral>(10));
+	statements.push_back(std::make_unique<StringLiteral>("TEST"));
+	statements.push_back(std::make_unique<DoubleLiteral>(10.0));
+	statements.push_back(std::make_unique<VariableUse>("var"));
+	auto block = std::make_shared<CodeBlock>(std::move(statements));
+
 	// You can create a Token like that:
 	const Token t = { TokenType::STRING_LITERAL, "\"Hello World!\"", 1, 1, 0 };
 	
@@ -42,8 +50,6 @@ int main() {
 	// never be done. Some IDEs will warn you - some won't:
 	
 	// strNode->toString(std::cout);		- DON'T DO THIS
-	strNodeMoved->toString(std::cout);	 // - This is okay
-
-	std::stringstream ss;
-	strNodeMoved->toString(std::cout);
+	
+	std::cout << strNodeMoved << std::endl;
 }

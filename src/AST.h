@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <memory>
 #include <vector>
@@ -100,6 +99,7 @@ struct Type : public Node
 protected:
     Type(const NodeKind kind);
     
+public:
     virtual void accept(Visitor &visitor) const override = 0;
 };
 
@@ -115,10 +115,9 @@ public:
 
 struct PointerType : public Type 
 {
-private:
+public:
     const std::unique_ptr<const Type> m_BaseType;
 
-public:
     PointerType(std::unique_ptr<const Type> &&baseType);
 
     virtual void accept(Visitor &visitor) const override;
@@ -126,11 +125,10 @@ public:
 
 struct ArrayType : public Type
 {
-private:
+public:
     const std::unique_ptr<const Type> m_ElementType;
     const std::optional<const size_t> m_Size;
 
-public:
     ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<const size_t> size);
 
     virtual void accept(Visitor &visitor) const override;
@@ -140,11 +138,10 @@ using ParameterTypeList = std::vector<std::unique_ptr<const Type>> ;
 
 struct FunctionType : public Type 
 {
-private:
+public:    
     const ParameterTypeList m_Parameters;
     const std::unique_ptr<const Type> m_ReturnType;
 
-public:
     FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType);
 
     virtual void accept(Visitor &visitor) const override;
@@ -170,10 +167,9 @@ public:
 
 struct IntegerLiteral : public Expression 
 {
-private:
+public:
     const i64 m_Value;
 
-public:
     IntegerLiteral(const i64 value);
 
     virtual void accept(Visitor &visitor) const override;
@@ -181,10 +177,9 @@ public:
 
 struct DoubleLiteral : public Expression 
 {
-private:
+public:
     const double m_Value;
 
-public:
     DoubleLiteral(const double value);
 
     virtual void accept(Visitor &visitor) const override;
@@ -192,19 +187,19 @@ public:
 
 struct CharLiteral : public Expression 
 {
-private:
+public:
     const i32 m_Value;
 
-public:
     CharLiteral(const i32 value);
+
+    virtual void accept(Visitor &visitor) const override;
 };
 
 struct BoolLiteral : public Expression
 {
-private:
+public:
     const bool m_Value;
 
-public:
     BoolLiteral(const bool value);
 
     virtual void accept(Visitor &visitor) const override;
@@ -212,10 +207,9 @@ public:
 
 struct StringLiteral : public Expression 
 {
-private:
+public:
     const std::string m_Value;
 
-public:
     StringLiteral(std::string &&value);
 
     virtual void accept(Visitor &visitor) const override;
@@ -225,11 +219,10 @@ using ArgumentList = std::vector<std::unique_ptr<const Expression>>;
 
 struct ArrayLiteral : public Expression 
 {
-private:
+public:
     const std::unique_ptr<const ArrayType> m_Type;
     const ArgumentList m_Values;
 
-public:
     ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values);
 
     virtual void accept(Visitor &visitor) const override;
@@ -237,11 +230,10 @@ public:
 
 struct UnaryExpression : public Expression 
 {
-private:
+public:
     const UnaryOperatorKind m_Operator;
     const std::unique_ptr<const Expression> m_Operand;
 
-public:
     UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
 
     virtual void accept(Visitor &visitor) const override;
@@ -249,11 +241,10 @@ public:
 
 struct BinaryExpression : public Expression 
 {
-private:
+public:
     const BinaryOperatorKind m_Operator;
     const std::unique_ptr<const Expression> m_LeftOperand, m_RightOperand;
 
-public:
     BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand);
     
     virtual void accept(Visitor &visitor) const override;
@@ -261,10 +252,9 @@ public:
 
 struct VariableUse : public Expression
 {
-private:
+public:
     const std::string m_Name;
 
-public:
     VariableUse(std::string &&name);
 
     virtual void accept(Visitor &visitor) const override;
@@ -272,11 +262,10 @@ public:
 
 struct FunctionCall : public Expression
 {
-private:
+public:
     const std::string m_Name;
     const ArgumentList m_Arguments;
 
-public:
     FunctionCall(std::string &&name, ArgumentList &&arguments);
     
     virtual void accept(Visitor &visitor) const override;
@@ -286,10 +275,9 @@ using StatementList = std::vector<std::unique_ptr<const Statement>>;
 
 struct CodeBlock : public Statement 
 {
-private:
+public:
     const StatementList m_Statements;
 
-public:
     CodeBlock(StatementList &&statements);
 
     virtual void accept(Visitor &visitor) const override;
@@ -297,11 +285,10 @@ public:
 
 struct IfStatement : public Statement 
 {
-private:
+public:
     const std::unique_ptr<const Expression> m_Condition;
     const std::unique_ptr<const CodeBlock> m_ThenBlock, m_ElseBlock;
 
-public:
     IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
     
     virtual void accept(Visitor &visitor) const override;
@@ -309,11 +296,10 @@ public:
 
 struct WhileStatement : public Statement 
 {
-private:
+public:
     const std::unique_ptr<const Expression> m_Condition;
     const std::unique_ptr<const CodeBlock> m_Body;
 
-public:
     WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body);
     
     virtual void accept(Visitor &visitor) const override;
@@ -321,23 +307,22 @@ public:
 
 struct VariableDeclaration : public Statement
 {
-private:
+public:
+    const std::string m_Name;
     const std::unique_ptr<const Type> m_Type;
     const std::unique_ptr<const Expression> m_Value;
 
-public:
-    VariableDeclaration(std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
+    VariableDeclaration(std::string &&name, std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
     
     virtual void accept(Visitor &visitor) const override;
 };
 
 struct Parameter 
 {
-private:
+public:
     const std::string m_Name;
     const std::unique_ptr<const Type> m_Type;
 
-public:
     Parameter(std::string &&name, std::unique_ptr<const Type> &&type);
 };
 
@@ -345,13 +330,13 @@ using ParameterList = std::vector<Parameter>;
 
 struct FunctionDeclaration : public Node 
 {
-private:
+public:
     const std::string m_Name;
     const ParameterList m_Parameters;
+    const std::unique_ptr<const Type> m_ReturnType;
     const std::unique_ptr<const CodeBlock> m_Body;
 
-public:
-    FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const CodeBlock> &&body);
+    FunctionDeclaration(std::string &&name, ParameterList &&parameters, std::unique_ptr<const Type> &&returnType, std::unique_ptr<const CodeBlock> &&body);
     
     virtual void accept(Visitor &visitor) const override;
 };
@@ -379,6 +364,5 @@ public:
     virtual void visit(const IfStatement &node) = 0;
     virtual void visit(const WhileStatement &node) = 0;
     virtual void visit(const VariableDeclaration &node) = 0;
-    virtual void visit(const Parameter &node) = 0;
     virtual void visit(const FunctionDeclaration &node) = 0;
 };
