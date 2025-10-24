@@ -5,13 +5,16 @@
 #include "PrinterVisitor.h"
 
 
-int main() {
+int main() 
+{
 	StatementList statements;
 	statements.push_back(std::make_unique<IntegerLiteral>(10));
 	statements.push_back(std::make_unique<StringLiteral>("TEST"));
 	statements.push_back(std::make_unique<DoubleLiteral>(10.0));
 	statements.push_back(std::make_unique<VariableUse>("var"));
-	auto block = std::make_shared<CodeBlock>(std::move(statements));
+	auto block = std::make_unique<CodeBlock>(std::move(statements));
+    
+    std::cout << *block << std::endl;
 
 	// You can create a Token like that:
 	const Token t = { TokenType::STRING_LITERAL, "\"Hello World!\"", 1, 1, 0 };
@@ -51,5 +54,5 @@ int main() {
 	
 	// strNode->toString(std::cout);		- DON'T DO THIS
 	
-	std::cout << strNodeMoved << std::endl;
+	std::cout << *strNodeMoved << std::endl;
 }

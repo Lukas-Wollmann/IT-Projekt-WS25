@@ -1,28 +1,30 @@
 #include "Token.h"
-
 #include <format>
 
-std::string tokenTypeToString(const TokenType type) {
-	switch (type) {
+std::ostream &operator<<(std::ostream &os, TokenType type)
+{
+	switch (type) 
+    {
 	case TokenType::IDENTIFIER:
-		return "IDENTIFIER";
+		return os << "IDENTIFIER";
 	case TokenType::STRING_LITERAL:
-		return "STRING_LITERAL";
+		return os << "STRING_LITERAL";
 	case TokenType::NUMERIC_LITERAL:
-		return "NUMERIC_LITERAL";
+		return os << "NUMERIC_LITERAL";
 	case TokenType::CHAR_LITERAL:
-		return "CHAR_LITERAL";
+		return os << "CHAR_LITERAL";
 	case TokenType::KEYWORD:
-		return "KEYWORD";
+		return os << "KEYWORD";
 	case TokenType::OPERATOR:
-		return "OPERATOR";
+		return os << "OPERATOR";
 	case TokenType::SEPERATOR:
-		return "SEPERATOR";
-	default:
-		return "NONE";
+		return os << "SEPERATOR";
 	}
+
+    return os << "<UnknownTokenType>";
 }
 
-std::ostream &operator<<(std::ostream &os, const Token &t) {
-	return os << std::format("Token({}, {}, {}, {}, {})", tokenTypeToString(t.type), t.lexeme, t.line, t.column, t.index);
+std::ostream &operator<<(std::ostream &os, const Token &t) 
+{
+    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.line << ", " << t.column << ", " << t.index << ")";
 }
