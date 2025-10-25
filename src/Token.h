@@ -11,6 +11,7 @@ std::ostream &operator<<(std::ostream &os, TokenType type);
 
 struct Token 
 {
+public: 
 	const TokenType type;
 	const std::string lexeme;
 	const size_t line, column, index;
