@@ -1,18 +1,15 @@
 #pragma once
 #include "AST.h"
 
-std::ostream &operator<<(std::ostream &os, const Node &node); 
-std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op);
-std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op);
-
-struct PrinterVisitor : public Visitor
+struct PrintVisitor : public Visitor
 {
     friend std::ostream &operator<<(std::ostream &os, const Node &node);
+    
 private:
     std::ostream &m_Stream;
 
 public:
-    PrinterVisitor(std::ostream &stream);
+    explicit PrintVisitor(std::ostream &stream);
 
     virtual void visit(const ValueType &node) override;
     virtual void visit(const PointerType &node) override;
@@ -34,3 +31,7 @@ public:
     virtual void visit(const VariableDeclaration &node) override;
     virtual void visit(const FunctionDeclaration &node) override;
 };
+
+std::ostream &operator<<(std::ostream &os, const Node &node); 
+std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op);
+std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op);

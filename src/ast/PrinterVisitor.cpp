@@ -3,40 +3,40 @@
 
 std::ostream &operator<<(std::ostream &os, const Node &node)
 {
-    PrinterVisitor printer(os);
+    PrintVisitor printer(os);
     node.accept(printer);
     return os;
 }
 
-PrinterVisitor::PrinterVisitor(std::ostream &stream)
+PrintVisitor::PrintVisitor(std::ostream &stream)
     : m_Stream(stream)
 {}
 
-void PrinterVisitor::visit(const ValueType &node)
+void PrintVisitor::visit(const ValueType &node)
 {
-    this->m_Stream << "ValueType(" << node.getTypename() << ")";
+    this->m_Stream << "ValueType(" << node.typeName << ")";
 }
 
-void PrinterVisitor::visit(const PointerType &node)
+void PrintVisitor::visit(const PointerType &node)
 {
-    this->m_Stream << "PointerType(" << node.getBaseType() << ")";
+    this->m_Stream << "PointerType(" << node.baseType << ")";
 }
 
-void PrinterVisitor::visit(const ArrayType &node)
+void PrintVisitor::visit(const ArrayType &node)
 {
-    this->m_Stream << "ArrayType(" << node.getElementType() << ")";
-    auto size = node.getSize();
-    if (size)
+    this->m_Stream << "ArrayType(" << node.elementType << ")";
+
+    if (node.size)
     {
-        this->m_Stream << ", " << *size;
+        this->m_Stream << ", " << node.size.value();
     }
 }
 
-void PrinterVisitor::visit(const FunctionType &node)
+void PrintVisitor::visit(const FunctionType &node)
 {
     this->m_Stream << "FunctionType({";
 
-    const ParameterTypeList &params = node.getParameters();
+    const ParameterTypeList &params = node.parameters;
 
     for (size_t i = 0; i < params.size(); ++i)
     {
@@ -48,69 +48,69 @@ void PrinterVisitor::visit(const FunctionType &node)
         this->m_Stream << *params[i];
     }
 
-    this->m_Stream << "}, " << node.getReturnType() << ")";
+    this->m_Stream << "}, " << node.returnType << ")";
 }
 
-void PrinterVisitor::visit(const IntegerLiteral &node)
+void PrintVisitor::visit(const IntegerLiteral &node)
 {
-    this->m_Stream << "IntegerLiteral(" << node.getValue() << ")";
+    this->m_Stream << "IntegerLiteral(" << node.value << ")";
 }
 
-void PrinterVisitor::visit(const DoubleLiteral &node)
+void PrintVisitor::visit(const DoubleLiteral &node)
 {
-    this->m_Stream << "DoubleLiteral(" << node.getValue() << ")";
+    this->m_Stream << "DoubleLiteral(" << node.value << ")";
 }
 
-void PrinterVisitor::visit(const CharLiteral &node)
+void PrintVisitor::visit(const CharLiteral &node)
 {
-    this->m_Stream << "CharLiteral('" << node.getValue() << "')";
+    this->m_Stream << "CharLiteral('" << node.value << "')";
 }
 
-void PrinterVisitor::visit(const BoolLiteral &node)
+void PrintVisitor::visit(const BoolLiteral &node)
 {
-    this->m_Stream << "BoolLiteral(" << node.getValue() << ")";
+    this->m_Stream << "BoolLiteral(" << node.value << ")";
 }
 
-void PrinterVisitor::visit(const StringLiteral &node)
+void PrintVisitor::visit(const StringLiteral &node)
 {
-    this->m_Stream << "StringLiteral(\"" << node.getValue() << "\")";
+    this->m_Stream << "StringLiteral(\"" << node.value << "\")";
 }
 
-void PrinterVisitor::visit(const ArrayLiteral &node)
+void PrintVisitor::visit(const ArrayLiteral &node)
 {
-    this->m_Stream << "ArrayLiteral(" << node.getType() << ", {";
+    this->m_Stream << "ArrayLiteral(" << node.type << ", {";
 
-    const ArgumentList &vals = node.getValues();
+    const ArgumentList &values = node.values;
 
-    for (size_t i = 0; i < vals.size(); ++i)
+    for (size_t i = 0; i < values.size(); ++i)
     {
         if (i > 0)
         {
             this->m_Stream << ", ";
         }
 
-        this->m_Stream << *vals[i];
+        this->m_Stream << *values[i];
     }
 
     this->m_Stream << "})";
 }
 
-void PrinterVisitor::visit(const UnaryExpression &node)
+void PrintVisitor::visit(const UnaryExpression &node)
 {
-    this->m_Stream << "UnaryExpression(" << node.getOperand() << ", " << node.getOperator() << ")";
+    this->m_Stream << "UnaryExpression(" << node.operand << ", " << node.operator_ << ")";
 }
 
-void PrinterVisitor::visit(const BinaryExpression &node)
+void PrintVisitor::visit(const BinaryExpression &node)
 {
-    this->m_Stream << "BinaryExpression(" << node.getLeftOperand() << ", ";
-    this->m_Stream << node.getRightOperand() << ", " << node.getOperator() << ")";
+    this->m_Stream << "BinaryExpression(" << node.leftOperand << ", ";
+    this->m_Stream << node.rightOperand << ", " << node.operator_ << ")";
 }
 
-void PrinterVisitor::visit(const FunctionCall &node)
+void PrintVisitor::visit(const FunctionCall &node)
 {
-    this->m_Stream << "FunctionCall(" << node.getName() << ", {";
+    this->m_Stream << "FunctionCall(" << node.name << ", {";
 
-    const ArgumentList &args = node.getArguments();
+    const ArgumentList &args = node.arguments;
 
     for (size_t i = 0; i < args.size(); ++i)
     {
@@ -125,64 +125,60 @@ void PrinterVisitor::visit(const FunctionCall &node)
     this->m_Stream << "})";
 }
 
-void PrinterVisitor::visit(const VariableUse &node)
+void PrintVisitor::visit(const VariableUse &node)
 {
-    this->m_Stream << "VariableUse(" << node.name() << ")";
+    this->m_Stream << "VariableUse(" << node.name << ")";
 }
 
-void PrinterVisitor::visit(const CodeBlock &node)
+void PrintVisitor::visit(const CodeBlock &node)
 {
     this->m_Stream << "CodeBlock({";
 
-    const StatementList &statements = node.getStatements();
-
-    for (size_t i = 0; i < statements.size(); ++i)
+    for (size_t i = 0; i < node.statements.size(); ++i)
     {
         if (i > 0)
         {
             this->m_Stream << ", ";
         }
 
-        this->m_Stream << *statements[i];
+        this->m_Stream << *node.statements[i];
     }
 
     this->m_Stream << "})";
 }
 
-void PrinterVisitor::visit(const IfStatement &node)
+void PrintVisitor::visit(const IfStatement &node)
 {
-    this->m_Stream << "IfStatement(" << node.getCondition() << ", " << node.getThenBlock() << ", ";
-    this->m_Stream << node.getElseBlock() << ")";
+    this->m_Stream << "IfStatement(" << node.condition << ", " << node.thenBlock << ", ";
+    this->m_Stream << node.elseBlock << ")";
 }
 
-void PrinterVisitor::visit(const WhileStatement &node)
+void PrintVisitor::visit(const WhileStatement &node)
 {
-    this->m_Stream << "WhileStatement(" << node.getCondition() << ", " << node.getBody() << ")";
+    this->m_Stream << "WhileStatement(" << node.condition << ", " << node.body << ")";
 }
 
-void PrinterVisitor::visit(const VariableDeclaration &node)
+void PrintVisitor::visit(const VariableDeclaration &node)
 {
-    this->m_Stream << "VariableDeclaration(" << node.getName() << ", " << node.getType() << ", " << node.getValue() << ")";
+    this->m_Stream << "VariableDeclaration(" << node.name << ", " << node.type << ", " << node.value << ")";
 }
 
-void PrinterVisitor::visit(const FunctionDeclaration &node)
+void PrintVisitor::visit(const FunctionDeclaration &node)
 {
-    this->m_Stream << "FunctionDeclaration(" << node.getName() << ", {";
+    this->m_Stream << "FunctionDeclaration(" << node.name << ", {";
 
-    const ParameterList &params = node.getParameters();
-    
-    for (size_t i = 0; i < params.size(); ++i)
+    for (size_t i = 0; i < node.parameters.size(); ++i)
     {
         if (i > 0)
         {
             this->m_Stream << ", ";
         }
 
-        const Parameter &param = params[i];
-        this->m_Stream << "Parameter(" << param.getName() << ", " << param.getType() << ")";
+        const Parameter &param = node.parameters[i];
+        this->m_Stream << "Parameter(" << param.name << ", " << param.type << ")";
     }
 
-    this->m_Stream << "}, " << node.getReturnType() << ", " << node.getBody() << ")";
+    this->m_Stream << "}, " << node.returnType << ", " << node.body << ")";
 }
 
 std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op)
