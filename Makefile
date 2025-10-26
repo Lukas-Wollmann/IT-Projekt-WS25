@@ -40,4 +40,4 @@ run: $(TARGET)
 	./$(TARGET)
 
 # Phony targets
-.PHONY: all clean run
+.PHONY: all clean run test

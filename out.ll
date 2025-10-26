@@ -1,0 +1,3 @@
+define i32 @main(i32 %a, i32 %b) {
+	ret i32 42
+}

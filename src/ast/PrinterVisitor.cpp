@@ -158,6 +158,11 @@ void PrintVisitor::visit(const WhileStatement &node)
     this->m_Stream << "WhileStatement(" << node.condition << ", " << node.body << ")";
 }
 
+void PrintVisitor::visit(const ReturnStatement &node)
+{
+    this->m_Stream << "ReturnStatement(" << node.expression << ")";
+}
+
 void PrintVisitor::visit(const VariableDeclaration &node)
 {
     this->m_Stream << "VariableDeclaration(" << node.name << ", " << node.type << ", " << node.value << ")";

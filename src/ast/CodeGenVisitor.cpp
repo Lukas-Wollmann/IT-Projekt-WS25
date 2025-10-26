@@ -15,7 +15,10 @@ void CodeGenVisitor::visit(const ArrayType &node) {}
 
 void CodeGenVisitor::visit(const FunctionType &node) {}
 
-void CodeGenVisitor::visit(const IntegerLiteral &node) {}
+void CodeGenVisitor::visit(const IntegerLiteral &node) 
+{
+    this->m_Stream << node.value;
+}
 
 void CodeGenVisitor::visit(const DoubleLiteral &node) {}
 
@@ -41,6 +44,13 @@ void CodeGenVisitor::visit(const IfStatement &node) {}
 
 void CodeGenVisitor::visit(const WhileStatement &node) {}
 
+void CodeGenVisitor::visit(const ReturnStatement &node) 
+{
+    this->m_Stream << "ret i32 ";
+
+    node.expression->accept(*this);  
+}
+
 void CodeGenVisitor::visit(const VariableDeclaration &node) {}
 
 void CodeGenVisitor::visit(const FunctionDeclaration &node)
@@ -65,5 +75,16 @@ void CodeGenVisitor::visit(const FunctionDeclaration &node)
         this->m_Stream << " %" << param.name;
     }
 
-    this->m_Stream << ") {\n}";
+    this->m_Stream << ") {\n";
+
+    for (const std::unique_ptr<const Statement> &statement : node.body->statements)
+    {
+        this->m_Stream << "\t";
+
+        statement->accept(*this);
+
+        this->m_Stream << "\n";
+    }
+
+    this->m_Stream << "}";
 }

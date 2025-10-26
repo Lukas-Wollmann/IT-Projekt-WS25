@@ -116,6 +116,11 @@ WhileStatement::WhileStatement(std::unique_ptr<const Expression> &&condition, st
     , body(std::move(body))
 {}
 
+ReturnStatement::ReturnStatement(std::unique_ptr<const Expression> &&expression)
+    : Statement(NodeKind::ReturnStatement)
+    , expression(std::move(expression))
+{}
+
 VariableDeclaration::VariableDeclaration(std::string name, std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value)
     : Statement(NodeKind::VariableDeclaration)
     , name(std::move(name))
@@ -217,6 +222,11 @@ void IfStatement::accept(Visitor &visitor) const
 }
 
 void WhileStatement::accept(Visitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+void ReturnStatement::accept(Visitor &visitor) const
 {
     visitor.visit(*this);
 }

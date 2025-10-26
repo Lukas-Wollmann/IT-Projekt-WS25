@@ -1,6 +1,6 @@
 ```cpp
 
-// You can create an AST Node like this. Look inside the IntegerLiteral 
+    // You can create an AST Node like this. Look inside the IntegerLiteral 
 	// constructor to see what you need to put into make_unique.
 	std::unique_ptr<const Node> intNode = std::make_unique<const IntegerLiteral>(100);	
 
@@ -53,3 +53,15 @@
 	
 	std::cout << *strNodeMoved << std::endl;       // This is fine
 ```
+
+
+Tasks:
+    - Readme schreiben für Projektsetup
+    - Testframework raussuchen (vllt. Doctest?) und miteinbinden: "make tests" testet dann
+    - AST mit externem tool visualisieren, wahrscheinlich gibts schon tools
+    - Lexer implementieren
+    - Tests für Lexer schreiben, auch edge cases, etc.
+    - parsing (Expression parsing / Statements parsing)
+    - type checking
+    - code gen implementieren
+    - UTF-8 Support für source code und strings

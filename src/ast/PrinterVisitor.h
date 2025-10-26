@@ -28,6 +28,7 @@ public:
     virtual void visit(const CodeBlock &node) override;
     virtual void visit(const IfStatement &node) override;
     virtual void visit(const WhileStatement &node) override;
+    virtual void visit(const ReturnStatement &node) override;
     virtual void visit(const VariableDeclaration &node) override;
     virtual void visit(const FunctionDeclaration &node) override;
 };

@@ -32,6 +32,7 @@ enum struct NodeKind
     CodeBlock,
     IfStatement,
     WhileStatement,
+    ReturnStatement,
     VariableDeclaration,
     FunctionDeclaration
 };
@@ -308,6 +309,16 @@ public:
     virtual void accept(Visitor &visitor) const override;
 };
 
+struct ReturnStatement : public Statement
+{
+public:
+    const std::unique_ptr<const Expression> expression;
+
+    explicit ReturnStatement(std::unique_ptr<const Expression> &&expression);
+
+    virtual void accept(Visitor &visitor) const override;
+};
+
 struct VariableDeclaration : public Statement
 {
 public:
@@ -366,6 +377,7 @@ public:
     virtual void visit(const CodeBlock &node) = 0;
     virtual void visit(const IfStatement &node) = 0;
     virtual void visit(const WhileStatement &node) = 0;
+    virtual void visit(const ReturnStatement &node) = 0;
     virtual void visit(const VariableDeclaration &node) = 0;
     virtual void visit(const FunctionDeclaration &node) = 0;
 };

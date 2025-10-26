@@ -1,10 +1,10 @@
 #include <sstream>
+#include <fstream>
 #include <iostream>
 #include "Token.h"
 #include "ast/AST.h"
 #include "ast/PrinterVisitor.h"
 #include "ast/CodeGenVisitor.h"
-
 
 int main() 
 {
@@ -16,17 +16,23 @@ int main()
     params.push_back(Parameter("a", std::make_unique<ValueType>("i32")));
     params.push_back(Parameter("b", std::make_unique<ValueType>("i32")));
 
+    std::unique_ptr<Expression> expression = std::make_unique<IntegerLiteral>(42);
+    std::unique_ptr<ReturnStatement> returnStatement = std::make_unique<ReturnStatement>(std::move(expression));
+
     StatementList statements;
+    statements.push_back(std::move(returnStatement));
 
     FunctionDeclaration func
     {
-        "add", 
+        "main", 
         std::move(params), 
         std::make_unique<ValueType>("i32"), 
         std::make_unique<CodeBlock>(std::move(statements))
     };
 
-    CodeGenVisitor generator(std::cout);
+    std::ofstream file("out.ll");
+
+    CodeGenVisitor generator(file);
 
     generator.visit(func);
 }
