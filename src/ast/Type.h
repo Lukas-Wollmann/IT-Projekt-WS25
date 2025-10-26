@@ -1,13 +1,18 @@
 #pragma once
 #include <memory>
 #include <optional>
+#include <vector>
 
 using TypePtr = std::unique_ptr<const struct Type>;
+using TypeList = std::vector<TypePtr>;
 
-
-struct Type
+struct Type 
 {
-    enum struct Kind { Primitive, Pointer, Array };
+    friend std::ostream &operator<<(std::ostream &os, const Type &type);
+    friend bool operator==(const Type &left, const Type &right);
+    friend bool operator!=(const Type &left, const Type &right);
+    
+    enum struct Kind { Primitive, Pointer, Array, Function };
 
 private:
     const Kind m_Kind;
@@ -19,19 +24,22 @@ public:
     virtual ~Type() = default;
 
     virtual void toString(std::ostream &os) const = 0;
+    virtual bool equals(const Type &other) const = 0;
+
+    Kind getKind() const { return m_Kind; }
 };
 
-enum class PrimitiveKind { Int, Double, Bool, Char, String };
 
-struct PrimitiveType : public Type
+struct ValueType : public Type
 {
 private:
-    const PrimitiveKind m_PrimitiveKind;
+    const std::string m_Typename;
 
 public:
-    explicit PrimitiveType(PrimitiveKind primitiveKind);
+    explicit ValueType(std::string typeName);
 
     virtual void toString(std::ostream &os) const override;
+    virtual bool equals(const Type &other) const override;
 };
 
 
@@ -44,6 +52,7 @@ public:
     explicit PointerType(TypePtr pointeeType);
 
     virtual void toString(std::ostream &os) const override;
+    virtual bool equals(const Type &other) const override;
 };
 
 
@@ -57,8 +66,19 @@ public:
     explicit ArrayType(TypePtr elementType, std::optional<size_t> arraySize = std::nullopt);
 
     virtual void toString(std::ostream &os) const override;
+    virtual bool equals(const Type &other) const override;
 };
 
 
-std::ostream &operator<<(std::ostream &os, PrimitiveKind primitiveKind);
-std::ostream &operator<<(std::ostream &os, const Type &type);
+struct FunctionType : public Type
+{
+private:
+    const TypeList m_ParameterTypes;
+    const TypePtr m_ReturnType;
+
+public:
+    explicit FunctionType(TypeList parameterTypes, TypePtr returnType);
+
+    virtual void toString(std::ostream &os) const override;
+    virtual bool equals(const Type &other) const override;
+};
