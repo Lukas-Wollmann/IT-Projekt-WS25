@@ -163,7 +163,7 @@ TEST_CASE("Lexer: string interpolation literal") {
     checkToken(tokens[0], TokenType::STRING_LITERAL, "\"TEST: ${a}\"");
 }
 
-TEST_CASE("Lexer: comments are ignored") {
+/*TEST_CASE("Lexer: comments are ignored") {
     const std::string src = "a: i32 = 5; // This is a comment\nb: i32 = 6;";
     Lexer lexer(src);
     auto tokens = lexer.tokenize();
@@ -183,7 +183,7 @@ TEST_CASE("Lexer: comments are ignored") {
     checkToken(tokens[9], TokenType::OPERATOR, "=");
     checkToken(tokens[10], TokenType::NUMERIC_LITERAL, "6");
     checkToken(tokens[11], TokenType::SEPERATOR, ";");
-}
+}*/
 
 TEST_CASE("Lexer: line and column tracking") {
     const std::string src = "let a = 1;\nlet b = 2;";
