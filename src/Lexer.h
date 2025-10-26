@@ -2,7 +2,6 @@
 #include <string>
 #include "Token.h"
 #include <vector>
-#include <unordered_set>
 #include <array>
 
 class Lexer {

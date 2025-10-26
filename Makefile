@@ -39,5 +39,7 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+test: 
+	$(CXX) $(CXXFLAGS) -o test1 test/Doctest.cpp ./src/Lexer.cpp ./src/Token.cpp && ./test1
 # Phony targets
-.PHONY: all clean run
+.PHONY: all clean run test
