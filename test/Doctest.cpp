@@ -7,6 +7,90 @@ static void checkToken(const Token &t, TokenType type, const std::string &lexeme
     CHECK(t.lexeme == lexeme);
 }
 
+TEST_CASE("Lexer: single number") {
+    Lexer lexer("42");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 1);
+    checkToken(tokens[0], TokenType::NUMERIC_LITERAL, "42");
+}
+
+TEST_CASE("Lexer: single identifier") {
+    Lexer lexer("hello");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 1);
+    checkToken(tokens[0], TokenType::IDENTIFIER, "hello");
+}
+
+TEST_CASE("Lexer: single keyword") {
+    Lexer lexer("if");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 1);
+    checkToken(tokens[0], TokenType::KEYWORD, "if");
+}
+
+TEST_CASE("Lexer: single operator") {
+    Lexer lexer("+");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 1);
+    checkToken(tokens[0], TokenType::OPERATOR, "+");
+}
+
+TEST_CASE("Lexer: single separator") {
+    Lexer lexer(";");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 1);
+    checkToken(tokens[0], TokenType::SEPERATOR, ";");
+}
+
+TEST_CASE("Lexer: two numbers with operator") {
+    Lexer lexer("1 + 2");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 3);
+    checkToken(tokens[0], TokenType::NUMERIC_LITERAL, "1");
+    checkToken(tokens[1], TokenType::OPERATOR, "+");
+    checkToken(tokens[2], TokenType::NUMERIC_LITERAL, "2");
+}
+
+TEST_CASE("Lexer: simple assignment") {
+    Lexer lexer("x = 5");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 3);
+    checkToken(tokens[0], TokenType::IDENTIFIER, "x");
+    checkToken(tokens[1], TokenType::OPERATOR, "=");
+    checkToken(tokens[2], TokenType::NUMERIC_LITERAL, "5");
+}
+
+TEST_CASE("Lexer: empty string") {
+    Lexer lexer("");
+    auto tokens = lexer.tokenize();
+    
+    CHECK(tokens.size() == 0);
+}
+
+TEST_CASE("Lexer: whitespace only") {
+    Lexer lexer("   \t\n  ");
+    auto tokens = lexer.tokenize();
+    
+    CHECK(tokens.size() == 0);
+}
+
+TEST_CASE("Lexer: multiple keywords") {
+    Lexer lexer("if else while");
+    auto tokens = lexer.tokenize();
+    
+    REQUIRE(tokens.size() == 3);
+    checkToken(tokens[0], TokenType::KEYWORD, "if");
+    checkToken(tokens[1], TokenType::KEYWORD, "else");
+    checkToken(tokens[2], TokenType::KEYWORD, "while");
+}
+
 TEST_CASE("Lexer: variable declaration with arithmetic") {
     const std::string src = "result: i32 = 20 + 20;";
     Lexer lexer(src);
