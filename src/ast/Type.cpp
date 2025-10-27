@@ -24,6 +24,11 @@ bool ValueType::equals(const Type &other) const
     return m_Typename == valueType.m_Typename;
 }
 
+TypePtr ValueType::copy() const
+{
+    return std::make_unique<ValueType>(m_Typename);
+}
+
 PointerType::PointerType(TypePtr pointeeType)
     : Type(Kind::Pointer)
     , m_PointeeType(std::move(pointeeType))
@@ -43,6 +48,11 @@ bool PointerType::equals(const Type &other) const
     auto &ptrType = static_cast<const PointerType&>(other);
 
     return m_PointeeType->equals(*ptrType.m_PointeeType);
+}
+
+TypePtr PointerType::copy() const
+{
+    return std::make_unique<PointerType>(m_PointeeType->copy());
 }
 
 ArrayType::ArrayType(TypePtr elementType, std::optional<size_t> arraySize)
@@ -68,6 +78,11 @@ bool ArrayType::equals(const Type &other) const
         return false;
 
     return m_ElementType->equals(*arrayType.m_ElementType);
+}
+
+TypePtr ArrayType::copy() const
+{
+    return std::make_unique<ArrayType>(m_ElementType->copy(), m_ArraySize);
 }
 
 FunctionType::FunctionType(TypeList parameterTypes, TypePtr returnType)
@@ -112,6 +127,17 @@ bool FunctionType::equals(const Type &other) const
     }
 
     return true;
+}
+
+TypePtr FunctionType::copy() const 
+{
+    TypeList copiedParameters;
+    copiedParameters.reserve(m_ParameterTypes.size());
+
+    for (const TypePtr &typePtr : m_ParameterTypes) 
+        copiedParameters.push_back(typePtr->copy()); 
+        
+    return std::make_unique<FunctionType>(std::move(copiedParameters), m_ReturnType->copy());
 }
 
 std::ostream &operator<<(std::ostream &os, const Type &type)

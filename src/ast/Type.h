@@ -6,6 +6,7 @@
 using TypePtr = std::unique_ptr<const struct Type>;
 using TypeList = std::vector<TypePtr>;
 
+
 struct Type 
 {
     friend std::ostream &operator<<(std::ostream &os, const Type &type);
@@ -25,6 +26,7 @@ public:
 
     virtual void toString(std::ostream &os) const = 0;
     virtual bool equals(const Type &other) const = 0;
+    virtual TypePtr copy() const = 0;
 
     Kind getKind() const { return m_Kind; }
 };
@@ -38,8 +40,11 @@ private:
 public:
     explicit ValueType(std::string typeName);
 
-    virtual void toString(std::ostream &os) const override;
-    virtual bool equals(const Type &other) const override;
+    void toString(std::ostream &os) const override;
+    bool equals(const Type &other) const override;
+    TypePtr copy() const override;
+
+    const std::string &getTypename() const { return m_Typename; }
 };
 
 
@@ -51,8 +56,11 @@ private:
 public:
     explicit PointerType(TypePtr pointeeType);
 
-    virtual void toString(std::ostream &os) const override;
-    virtual bool equals(const Type &other) const override;
+    void toString(std::ostream &os) const override;
+    bool equals(const Type &other) const override;
+    TypePtr copy() const override;
+
+    const Type &getPointeeType() const { return *m_PointeeType; }
 };
 
 
@@ -65,8 +73,12 @@ private:
 public:
     explicit ArrayType(TypePtr elementType, std::optional<size_t> arraySize = std::nullopt);
 
-    virtual void toString(std::ostream &os) const override;
-    virtual bool equals(const Type &other) const override;
+    void toString(std::ostream &os) const override;
+    bool equals(const Type &other) const override;
+    TypePtr copy() const override;
+
+    const Type &getElementType() const { return *m_ElementType; }
+    std::optional<size_t> getArraySize() const { return m_ArraySize; }
 };
 
 
@@ -79,6 +91,10 @@ private:
 public:
     explicit FunctionType(TypeList parameterTypes, TypePtr returnType);
 
-    virtual void toString(std::ostream &os) const override;
-    virtual bool equals(const Type &other) const override;
+    void toString(std::ostream &os) const override;
+    bool equals(const Type &other) const override;
+    TypePtr copy() const override;
+
+    const TypeList &getParameterTypes() const { return m_ParameterTypes; }
+    const Type &getReturnType() const { return *m_ReturnType; }
 };
