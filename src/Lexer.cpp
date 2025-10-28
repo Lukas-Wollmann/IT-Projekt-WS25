@@ -84,7 +84,7 @@ Token Lexer::lexChar(size_t ln, size_t col, size_t idx) {
 
 Token Lexer::lexOperator(size_t ln, size_t col, size_t idx) {
     char firstChar = advance();
-    char secondChar = peek();
+    char secondChar = current();
 
     std::string opLexeme(1, firstChar);
     std::string twoCharOp = opLexeme + secondChar;
