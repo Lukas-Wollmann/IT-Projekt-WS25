@@ -10,8 +10,28 @@ std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     while (!isAtEnd()) {
         skipWhitespace();
-        char current = advance();
-        // Tokenize based on the current character
+        char current = this->current();
+        size_t tokenLine = line;
+        size_t tokenColumn = column;
+        size_t tokenIndex = index;
+        if (isdigit(current)) {
+            tokens.push_back(lexNumber(tokenLine, tokenColumn, tokenIndex));
+        } else if (current == '"') {
+            tokens.push_back(lexString(tokenLine, tokenColumn, tokenIndex));
+        } else if (current == '\'') {
+            tokens.push_back(lexChar(tokenLine, tokenColumn, tokenIndex));
+        } else if (std::find(separators.begin(), separators.end(), current) != separators.end()) {
+            std::string sepLexeme(1, advance());
+            tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, tokenLine, tokenColumn, tokenIndex));
+        } else if (std::find(singleOps.begin(), singleOps.end(), std::string(1, current)) != singleOps.end() ||
+                   std::find(multiOps.begin(), multiOps.end(), std::string(1, current) + peek()) != multiOps.end()) {
+            tokens.push_back(lexOperator(tokenLine, tokenColumn, tokenIndex));
+        } else if (isalpha(current) || current == '_') {
+            tokens.push_back(lexIdentifierOrKeyword(tokenLine, tokenColumn, tokenIndex));
+        } else {
+            // Unknown character, skip it for now, implement UTF-8 support later
+            advance();
+        }
     }
     return tokens;
 }
@@ -98,5 +118,13 @@ Token Lexer::lexOperator(size_t ln, size_t col, size_t idx) {
 }
 
 Token Lexer::lexIdentifierOrKeyword(size_t ln, size_t col, size_t idx) {
-    // Lexing logic for identifiers and keywords
+    size_t start = index;
+    while (isalnum(current()) || current() == '_') {
+        advance();
+    }
+    std::string identLexeme = src.substr(start, index - start);
+    if (std::find(keywords.begin(), keywords.end(), identLexeme) != keywords.end()) {
+        return Token(TokenType::KEYWORD, identLexeme, ln, col, idx);
+    }
+    return Token(TokenType::IDENTIFIER, identLexeme, ln, col, idx);
 }
