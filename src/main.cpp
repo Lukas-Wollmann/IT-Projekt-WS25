@@ -4,7 +4,6 @@
 #include "Token.h"
 #include "ast/AST.h"
 #include "ast/PrinterVisitor.h"
-#include "ast/CodeGenVisitor.h"
 
 int main() 
 {
@@ -30,9 +29,5 @@ int main()
         std::make_unique<CodeBlock>(std::move(statements))
     };
 
-    std::ofstream file("out.ll");
-
-    CodeGenVisitor generator(file);
-
-    generator.visit(func);
+    std::cout << func;
 }
