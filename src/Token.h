@@ -11,7 +11,7 @@ enum class TokenType
 	CHAR_LITERAL,
 	KEYWORD,
 	OPERATOR,
-	SEPERATOR
+	SEPARATOR
 };
 
 struct SourceLoc {

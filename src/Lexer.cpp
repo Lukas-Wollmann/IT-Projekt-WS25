@@ -128,7 +128,7 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 Token Lexer::lexSeparator(SourceLoc startLoc) {
     char sepChar = m_CurentChar;
     advance();
-    return Token(TokenType::SEPERATOR, std::string(1, sepChar), startLoc);
+    return Token(TokenType::SEPARATOR, std::string(1, sepChar), startLoc);
 }
 
 Token Lexer::lexOperator(SourceLoc startLoc) {
