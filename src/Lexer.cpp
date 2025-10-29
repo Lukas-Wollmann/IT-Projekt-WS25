@@ -90,10 +90,6 @@ Token Lexer::lexString(SourceLoc tokenLoc) {
     advance(); // Skip opening quote
     size_t start = loc.index;
     while (current() != '"' && !isAtEnd()) {
-        if(peek() == '\n') {
-            loc.line++;
-            loc.column = 1;
-        }
         advance();
     }
     std::string stringLexeme = src.substr(start, loc.index - start);
