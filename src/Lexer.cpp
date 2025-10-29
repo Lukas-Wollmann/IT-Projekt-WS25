@@ -2,7 +2,7 @@
 #include <algorithm>
 
 Lexer::Lexer(const std::string &source)
-    : src(source), line(1), column(1), index(0) {
+    : src(source), loc{1, 1, 0} {
     // Initialize sets for keywords, operators, and separators
 }
 
@@ -10,24 +10,22 @@ std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     while (!isAtEnd()) {
         skipWhitespace();
-        char current = this->current();
-        size_t tokenLine = line;
-        size_t tokenColumn = column;
-        size_t tokenIndex = index;
-        if (isdigit(current)) {
-            tokens.push_back(lexNumber(tokenLine, tokenColumn, tokenIndex));
-        } else if (current == '"') {
-            tokens.push_back(lexString(tokenLine, tokenColumn, tokenIndex));
-        } else if (current == '\'') {
-            tokens.push_back(lexChar(tokenLine, tokenColumn, tokenIndex));
-        } else if (std::find(separators.begin(), separators.end(), current) != separators.end()) {
+        char currentChar = this->current();
+        SourceLoc tokenLoc = loc;
+        if (isdigit(currentChar)) {
+            tokens.push_back(lexNumber(tokenLoc));
+        } else if (currentChar == '"') {
+            tokens.push_back(lexString(tokenLoc));
+        } else if (currentChar == '\'') {
+            tokens.push_back(lexChar(tokenLoc));
+        } else if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
             std::string sepLexeme(1, advance());
-            tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, tokenLine, tokenColumn, tokenIndex));
-        } else if (std::find(singleOps.begin(), singleOps.end(), std::string(1, current)) != singleOps.end() ||
-                   std::find(multiOps.begin(), multiOps.end(), std::string(1, current) + peek()) != multiOps.end()) {
-            tokens.push_back(lexOperator(tokenLine, tokenColumn, tokenIndex));
-        } else if (isalpha(current) || current == '_') {
-            tokens.push_back(lexIdentifierOrKeyword(tokenLine, tokenColumn, tokenIndex));
+            tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index));
+        } else if (std::find(singleOps.begin(), singleOps.end(), std::string(1, currentChar)) != singleOps.end() ||
+                   std::find(multiOps.begin(), multiOps.end(), std::string(1, currentChar) + peek()) != multiOps.end()) {
+            tokens.push_back(lexOperator(tokenLoc));
+        } else if (isalpha(currentChar) || currentChar == '_') {
+            tokens.push_back(lexIdentifierOrKeyword(tokenLoc));
         } else {
             // Unknown character, skip it for now, implement UTF-8 support later
             advance();
@@ -37,72 +35,72 @@ std::vector<Token> Lexer::tokenize() {
 }
 
 bool Lexer::isAtEnd() const {
-    return index >= src.length();
+    return loc.index >= src.length();
 }
 
 char Lexer::advance() {
-    index++;
-    column++;
-    return src[index - 1];
+    loc.index++;
+    loc.column++;
+    return src[loc.index - 1];
 }
 
 char Lexer::current() const {
     if (isAtEnd()) return '\0';
-    return src[index];
+    return src[loc.index];
 }
 
 char Lexer::peek() const {
-    if (index + 1 >= src.length()) return '\0';
-    return src[index + 1];
+    if (loc.index + 1 >= src.length()) return '\0';
+    return src[loc.index + 1];
 }
 
 void Lexer::skipWhitespace() {
     while (!isAtEnd()) {
-        char current = this->current();
-        if (current == ' ' || current == '\t' || current == '\r') {
+        char currentChar = this->current();
+        if (currentChar == ' ' || currentChar == '\t' || currentChar == '\r') {
             advance();
-        } else if (current == '\n') {
-            line++;
-            column = 1;
+        } else if (currentChar == '\n') {
+            loc.line++;
+            loc.column = 1;
             advance();
         }
         return;
     }
 }
 
-Token Lexer::lexNumber(size_t ln, size_t col, size_t idx) {
-    size_t start = index;
+Token Lexer::lexNumber(SourceLoc tokenLoc) {
+    size_t start = loc.index;
     while(isdigit(current())) {
         advance();
     }
-    std::string numberLexeme = src.substr(start, index - start);
-    return Token(TokenType::NUMERIC_LITERAL, numberLexeme, ln, col, idx);
+    std::string numberLexeme = src.substr(start, loc.index - start);
+    return Token(TokenType::NUMERIC_LITERAL, numberLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
 }
 
-Token Lexer::lexString(size_t ln, size_t col, size_t idx) {
+Token Lexer::lexString(SourceLoc tokenLoc) {
     advance(); // Skip opening quote
-    size_t start = index;
+    size_t start = loc.index;
     while (current() != '"' && !isAtEnd()) {
         if(peek() == '\n') {
-            line++;
-            column = 1;
+            loc.line++;
+            loc.column = 1;
         }
         advance();
     }
-    std::string stringLexeme = src.substr(start, index - start);
+    std::string stringLexeme = src.substr(start, loc.index - start);
     advance(); // Skip closing quote
-    return Token(TokenType::STRING_LITERAL, stringLexeme, ln, col, idx);
+    return Token(TokenType::STRING_LITERAL, stringLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
 }
 
-Token Lexer::lexChar(size_t ln, size_t col, size_t idx) {
+Token Lexer::lexChar(SourceLoc tokenLoc) {
     advance(); // Skip opening quote
     char charValue = advance(); // Get character
     advance(); // Skip closing quote
     std::string charLexeme(1, charValue);
-    return Token(TokenType::CHAR_LITERAL, charLexeme, ln, col, idx);
+    return Token(TokenType::CHAR_LITERAL, charLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
 }
 
-Token Lexer::lexOperator(size_t ln, size_t col, size_t idx) {
+Token Lexer::lexOperator(SourceLoc tokenLoc) {
     char firstChar = advance();
     char secondChar = current();
 
@@ -111,20 +109,20 @@ Token Lexer::lexOperator(size_t ln, size_t col, size_t idx) {
 
     if (std::find(multiOps.begin(), multiOps.end(), twoCharOp) != multiOps.end()) {
         advance(); // Consume second character
-        return Token(TokenType::OPERATOR, twoCharOp, ln, col, idx);
+        return Token(TokenType::OPERATOR, twoCharOp, tokenLoc.line, tokenLoc.column, tokenLoc.index);
     }
-    return Token(TokenType::OPERATOR, opLexeme, ln, col, idx);
+    return Token(TokenType::OPERATOR, opLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
     
 }
 
-Token Lexer::lexIdentifierOrKeyword(size_t ln, size_t col, size_t idx) {
-    size_t start = index;
+Token Lexer::lexIdentifierOrKeyword(SourceLoc tokenLoc) {
+    size_t start = loc.index;
     while (isalnum(current()) || current() == '_') {
         advance();
     }
-    std::string identLexeme = src.substr(start, index - start);
+    std::string identLexeme = src.substr(start, loc.index - start);
     if (std::find(keywords.begin(), keywords.end(), identLexeme) != keywords.end()) {
-        return Token(TokenType::KEYWORD, identLexeme, ln, col, idx);
+        return Token(TokenType::KEYWORD, identLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
     }
-    return Token(TokenType::IDENTIFIER, identLexeme, ln, col, idx);
+    return Token(TokenType::IDENTIFIER, identLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index);
 }
