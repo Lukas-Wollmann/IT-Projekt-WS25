@@ -12,17 +12,17 @@ std::vector<Token> Lexer::tokenize() {
         skipWhitespace();
         char currentChar = this->current();
         SourceLoc tokenLoc = loc;
+
         if (isdigit(currentChar)) {
             tokens.push_back(lexNumber(tokenLoc));
         } else if (currentChar == '"') {
             tokens.push_back(lexString(tokenLoc));
         } else if (currentChar == '\'') {
             tokens.push_back(lexChar(tokenLoc));
-        } else if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
+        } else if (isSeparator(currentChar)) {
             std::string sepLexeme(1, advance());
             tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, tokenLoc.line, tokenLoc.column, tokenLoc.index));
-        } else if (std::find(singleOps.begin(), singleOps.end(), std::string(1, currentChar)) != singleOps.end() ||
-                   std::find(multiOps.begin(), multiOps.end(), std::string(1, currentChar) + peek()) != multiOps.end()) {
+        } else if (isOperator(currentChar)) {
             tokens.push_back(lexOperator(tokenLoc));
         } else if (isalpha(currentChar) || currentChar == '_') {
             tokens.push_back(lexIdentifierOrKeyword(tokenLoc));
@@ -32,6 +32,15 @@ std::vector<Token> Lexer::tokenize() {
         }
     }
     return tokens;
+}
+
+bool Lexer::isOperator(char c) const {
+    return (std::find(singleOps.begin(), singleOps.end(), std::string(1, c)) != singleOps.end() || 
+            std::find(multiOps.begin(), multiOps.end(), std::string(1, c) + peek()) != multiOps.end());
+}
+
+bool Lexer::isSeparator(char c) const {
+    return std::find(separators.begin(), separators.end(), c) != separators.end();
 }
 
 bool Lexer::isAtEnd() const {

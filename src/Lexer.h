@@ -24,6 +24,8 @@ private:
     static inline const std::array<std::string, 13> singleOps = {"+", "-", "*", "/", "=", "!", "<", ">", "&", "|", "^", "%", "~"};
     static constexpr std::array<std::string, 18> multiOps = {"&&", "||", "==", "<=", ">=", "!=", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<=", ">>="};
 
+    bool isOperator(char c) const;
+    bool isSeparator(char c) const;
     bool isAtEnd() const;
     char advance();
     char current() const;
