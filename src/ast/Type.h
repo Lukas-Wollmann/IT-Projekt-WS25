@@ -3,17 +3,22 @@
 #include <optional>
 #include <vector>
 
+
 using TypePtr = std::unique_ptr<const struct Type>;
 using TypeList = std::vector<TypePtr>;
+
+std::ostream &operator<<(std::ostream &os, const Type &type);
+std::ostream &operator<<(std::ostream &os, const TypeList &typeList);
+
+bool operator==(const Type &left, const Type &right);
+bool operator!=(const Type &left, const Type &right);
+bool operator==(const TypeList &left, const TypeList &right);
+bool operator!=(const TypeList &left, const TypeList &right);
 
 
 struct Type 
 {
-    friend std::ostream &operator<<(std::ostream &os, const Type &type);
-    friend bool operator==(const Type &left, const Type &right);
-    friend bool operator!=(const Type &left, const Type &right);
-    
-    enum struct Kind { Primitive, Pointer, Array, Function };
+    enum struct Kind { Value, Pointer, Array, Function };
 
 private:
     const Kind m_Kind;

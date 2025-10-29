@@ -1,17 +1,18 @@
 #include "Type.h"
 
+
 Type::Type(Kind kind)
     : m_Kind(kind)
 {}
 
 ValueType::ValueType(std::string typeName)
-    : Type(Kind::Primitive)
+    : Type(Kind::Value)
     , m_Typename(typeName)
 {}
 
 void ValueType::toString(std::ostream &os) const
 {
-    os << this->m_Typename;
+    os << m_Typename;
 }
 
 bool ValueType::equals(const Type &other) const
@@ -36,8 +37,7 @@ PointerType::PointerType(TypePtr pointeeType)
 
 void PointerType::toString(std::ostream &os) const
 {
-    os << "*";
-    this->m_PointeeType->toString(os);
+    os << "*" << *m_PointeeType;
 }
 
 bool PointerType::equals(const Type &other) const
@@ -47,7 +47,7 @@ bool PointerType::equals(const Type &other) const
 
     auto &ptrType = static_cast<const PointerType&>(other);
 
-    return m_PointeeType->equals(*ptrType.m_PointeeType);
+    return *m_PointeeType == *ptrType.m_PointeeType;
 }
 
 TypePtr PointerType::copy() const
@@ -63,8 +63,11 @@ ArrayType::ArrayType(TypePtr elementType, std::optional<size_t> arraySize)
 
 void ArrayType::toString(std::ostream &os) const
 {
-    os << "[]";
-    this->m_ElementType->toString(os);
+    os << "["; 
+
+    if (m_ArraySize) os << *m_ArraySize;
+
+    os << "]" << *m_ElementType;
 }
 
 bool ArrayType::equals(const Type &other) const
@@ -77,7 +80,7 @@ bool ArrayType::equals(const Type &other) const
     if (m_ArraySize != arrayType.m_ArraySize) 
         return false;
 
-    return m_ElementType->equals(*arrayType.m_ElementType);
+    return *m_ElementType == *arrayType.m_ElementType;
 }
 
 TypePtr ArrayType::copy() const
@@ -93,18 +96,7 @@ FunctionType::FunctionType(TypeList parameterTypes, TypePtr returnType)
 
 void FunctionType::toString(std::ostream &os) const
 {
-    os << "(";
-
-    for (size_t i = 0; i < m_ParameterTypes.size(); ++i)
-    {
-        if (i > 0) os << ",";
-        
-        m_ParameterTypes[i]->toString(os);
-    }
-
-    os << ")->(";
-    m_ReturnType->toString(os);    
-    os << ")";
+    os << "(" << m_ParameterTypes << ")->(" << *m_ReturnType << ")";
 }
 
 bool FunctionType::equals(const Type &other) const
@@ -117,16 +109,7 @@ bool FunctionType::equals(const Type &other) const
     if (!m_ReturnType->equals(*funcType.m_ReturnType))
         return false;
 
-    if (m_ParameterTypes.size() != funcType.m_ParameterTypes.size())
-        return false;
-
-    for (size_t i = 0; i < m_ParameterTypes.size(); ++i)
-    {
-        if (!m_ParameterTypes[i]->equals(*funcType.m_ParameterTypes[i]))
-            return false;
-    }
-
-    return true;
+    return m_ParameterTypes == funcType.m_ParameterTypes;
 }
 
 TypePtr FunctionType::copy() const 
@@ -147,6 +130,18 @@ std::ostream &operator<<(std::ostream &os, const Type &type)
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const TypeList &typeList)
+{
+    for (size_t i = 0; i < typeList.size(); ++i)
+    {
+        if (i > 0) os << ",";
+        
+        os << *typeList[i];
+    }
+
+    return os;
+}
+
 bool operator==(const Type &left, const Type &right)
 {
     return left.equals(right);
@@ -155,4 +150,23 @@ bool operator==(const Type &left, const Type &right)
 bool operator!=(const Type &left, const Type &right)
 {
     return !(left == right);  
+}
+
+bool operator==(const TypeList &left, const TypeList &right)
+{
+    if (left.size() != right.size())
+        return false;
+
+    for (size_t i = 0; i < left.size(); ++i)
+    {
+        if (!left[i]->equals(*right[i]))
+            return false;
+    }
+
+    return true;
+}
+
+bool operator!=(const TypeList &left, const TypeList &right)
+{
+    return !(left == right);
 }
