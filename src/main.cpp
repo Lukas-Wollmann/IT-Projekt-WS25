@@ -2,8 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include "Token.h"
-#include "ast/AST.h"
-#include "ast/PrinterVisitor.h"
+//#include "ast/AST.h"
+//#include "ast/PrinterVisitor.h"
 
 
 int main() 
@@ -12,6 +12,7 @@ int main()
 	const Token t = { TokenType::STRING_LITERAL, "\"Hello World!\"", 1, 1, 0 };	
 	std::cout << t << std::endl;
 
+#if 0
     ParameterList params;
     params.push_back(Parameter("a", std::make_unique<ValueType>("i32")));
     params.push_back(Parameter("b", std::make_unique<ValueType>("i32")));
@@ -31,4 +32,5 @@ int main()
     };
 
     std::cout << func;
+#endif
 }
