@@ -1,43 +1,44 @@
-# ===============================
-#   Generic C++ Makefile (Clang)
-# ===============================
-
-# Compiler and flags
 CXX := clang++
 CXXFLAGS := -std=c++20 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0
 
-# Directories
 SRC_DIR := src
+TEST_DIR := test
 OBJ_DIR := build
 BIN_DIR := bin
 
-# Target binary name
 TARGET := $(BIN_DIR)/app
+TEST_TARGET := $(BIN_DIR)/test_runner
 
-# Find all .cpp files recursively in src/
 SRCS := $(shell find $(SRC_DIR) -name '*.cpp')
-OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+TEST_SRCS := $(filter-out $(SRC_DIR)/main.cpp, $(SRCS) $(shell find $(TEST_DIR) -name '*.cpp'))
 
-# Default rule
+OBJS := $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
+TEST_OBJS := $(TEST_SRCS:%.cpp=$(OBJ_DIR)/%.o)
+
 all: $(TARGET) run
 
-# Link object files into the final binary
+# Build the app
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Compile source files into object files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+# Build the test_runner
+$(TEST_TARGET): $(TEST_OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+# Generic rule: compile any .cpp file
+$(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean build artifacts
-clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
-
-# Run the program
 run: $(TARGET)
 	./$(TARGET)
 
-# Phony targets
-.PHONY: all clean run
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+.PHONY: all run test clean
