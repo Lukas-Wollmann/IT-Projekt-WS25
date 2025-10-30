@@ -380,7 +380,6 @@ TEST_CASE("FunctionType: toString works")
     auto retType = std::make_unique<ValueType>("bool");
     auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 
-
     // Act
     std::stringstream ss;
     ss << *funcType;
