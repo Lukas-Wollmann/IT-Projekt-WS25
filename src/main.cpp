@@ -9,6 +9,7 @@ int main()
     std::string sourceCode = R"(
     func main() i32 {
         i32 x = 42;
+        x: i32 =="hallo";
         string y = "Hello, World!";
         return x;
     }

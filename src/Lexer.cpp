@@ -24,11 +24,11 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(lexString(startLoc));
         } else if (currentChar == '\'') {
             tokens.push_back(lexChar(startLoc));
-        } else if (isSeparator(currentChar)) {
+        } else if (isCurrentSeparator()) {
             advance();
             std::string sepLexeme(1, currentChar);
             tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, startLoc));
-        } else if (isOperator(currentChar)) {
+        } else if (isCurrentSingleOperator() || isCurrentMultiOperator()) {
             tokens.push_back(lexOperator(startLoc));
         } else if (isalpha(currentChar) || currentChar == '_') {
             tokens.push_back(lexIdentifierOrKeyword(startLoc));
@@ -53,13 +53,20 @@ void Lexer::advance() {
     m_CurentChar = (m_Iter != m_Src.end()) ? *m_Iter : '\0';
 }
 
-bool Lexer::isOperator(char c) const {
-    return (std::find(s_SingleOps.begin(), s_SingleOps.end(), std::string(1, c)) != s_SingleOps.end() || 
-            std::find(s_MultiOps.begin(), s_MultiOps.end(), std::string(1, c) + peek()) != s_MultiOps.end());
+bool Lexer::isCurrentSingleOperator() const {
+    return std::find(s_SingleOps.begin(), s_SingleOps.end(), std::string(1, m_CurentChar)) != s_SingleOps.end();
 }
 
-bool Lexer::isSeparator(char c) const {
-    return std::find(s_Separators.begin(), s_Separators.end(), c) != s_Separators.end();
+bool Lexer::isCurrentMultiOperator() const {
+    return std::find(s_MultiOps.begin(), s_MultiOps.end(), std::string(1, m_CurentChar) + peek()) != s_MultiOps.end();
+}
+
+bool Lexer::isCurrentSeparator() const {
+    return std::find(s_Separators.begin(), s_Separators.end(), m_CurentChar) != s_Separators.end();
+}
+
+bool Lexer::isKeyword(const std::string &lexeme) const {
+    return std::find(s_Keywords.begin(), s_Keywords.end(), lexeme) != s_Keywords.end();
 }
 
 bool Lexer::isAtEnd() const {
@@ -67,8 +74,13 @@ bool Lexer::isAtEnd() const {
 }
 
 char Lexer::peek() const {
-    if (m_Loc.index + 1 >= m_Src.length()) return '\0';
-    return m_Src[m_Loc.index + 1];
+    if (m_Iter == m_Src.end()) 
+        return '\0';
+
+    auto nextIt = m_Iter;
+    ++nextIt;
+
+    return nextIt != m_Src.end() ? *nextIt : '\0';
 }
 
 void Lexer::skipWhitespace() {
@@ -138,7 +150,7 @@ Token Lexer::lexIdentifierOrKeyword(SourceLoc startLoc) {
         advance();
     }
     std::string identLexeme = ss.str();
-    if (std::find(s_Keywords.begin(), s_Keywords.end(), identLexeme) != s_Keywords.end()) {
+    if (isKeyword(identLexeme)) {
         return Token(TokenType::KEYWORD, identLexeme, startLoc);
     }
     return Token(TokenType::IDENTIFIER, identLexeme, startLoc);

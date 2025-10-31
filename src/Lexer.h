@@ -22,8 +22,10 @@ private:
     SourceLoc m_Loc;
 
     void advance();
-    bool isOperator(char c) const;
-    bool isSeparator(char c) const;
+    bool isCurrentSingleOperator() const;
+    bool isCurrentMultiOperator() const;
+    bool isCurrentSeparator() const;
+    bool isKeyword(const std::string &lexeme) const;
     bool isAtEnd() const;
     char peek() const;
     void skipWhitespace();
