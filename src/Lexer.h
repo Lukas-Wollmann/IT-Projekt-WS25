@@ -22,7 +22,7 @@ private:
     static constexpr std::array<char, 9> separators = {';', ',', '(', ')', '{', '}', '[', ']', ':'};
     static inline const std::array<std::string, 11> keywords = {"if", "else", "while", "return", "func", "i32", "u32", "f32", "string", "char", "bool"};
     static inline const std::array<std::string, 13> singleOps = {"+", "-", "*", "/", "=", "!", "<", ">", "&", "|", "^", "%", "~"};
-    static constexpr std::array<std::string, 18> multiOps = {"&&", "||", "==", "<=", ">=", "!=", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<=", ">>="};
+    static inline const std::array<std::string, 18> multiOps = {"&&", "||", "==", "<=", ">=", "!=", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<=", ">>="};
 
     bool isOperator(char c) const;
     bool isSeparator(char c) const;
