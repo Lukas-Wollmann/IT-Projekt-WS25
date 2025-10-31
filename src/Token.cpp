@@ -26,5 +26,5 @@ std::ostream &operator<<(std::ostream &os, TokenType type)
 
 std::ostream &operator<<(std::ostream &os, const Token &t) 
 {
-    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.line << ", " << t.column << ", " << t.index << ")";
+    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", " << t.loc.column << ", " << t.loc.index << ")";
 }

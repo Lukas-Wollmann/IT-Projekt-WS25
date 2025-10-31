@@ -4,10 +4,6 @@
 #include <array>
 #include "Token.h"
 
-struct SourceLoc {
-    size_t line, column, index;
-};
-
 class Lexer {
 private:
     static constexpr std::array<char, 9> s_Separators = {';', ',', '(', ')', '{', '}', '[', ']', ':'};
@@ -20,20 +16,21 @@ public:
     std::vector<Token> tokenize();
 
 private:
-    std::string m_Src;
+    const std::string &m_Src;
+    std::string::const_iterator m_Iter;
+    char m_CurentChar;
     SourceLoc m_Loc;
 
+    void advance();
     bool isOperator(char c) const;
     bool isSeparator(char c) const;
     bool isAtEnd() const;
-    char advance();
-    char current() const;
     char peek() const;
     void skipWhitespace();
 
-    Token lexNumber(SourceLoc tokenLoc);
-    Token lexString(SourceLoc tokenLoc);
-    Token lexChar(SourceLoc tokenLoc);
-    Token lexOperator(SourceLoc tokenLoc);
-    Token lexIdentifierOrKeyword(SourceLoc tokenLoc);
+    Token lexNumber(SourceLoc startLoc);
+    Token lexString(SourceLoc startLoc);
+    Token lexChar(SourceLoc startLoc);
+    Token lexOperator(SourceLoc startLoc);
+    Token lexIdentifierOrKeyword(SourceLoc startLoc);
 };

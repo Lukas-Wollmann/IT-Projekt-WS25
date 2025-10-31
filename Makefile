@@ -40,6 +40,6 @@ run: $(TARGET)
 	./$(TARGET)
 
 test: 
-	$(CXX) $(CXXFLAGS) -o test1 test/Doctest.cpp ./src/Lexer.cpp ./src/Token.cpp && ./test1
+	$(CXX) $(CXXFLAGS) -o test1 ./src/main.cpp ./src/Lexer.cpp ./src/Token.cpp
 # Phony targets
 .PHONY: all clean run test

@@ -14,16 +14,21 @@ enum class TokenType
 	SEPERATOR
 };
 
+struct SourceLoc {
+    size_t line, column, index;
+};
+
 std::ostream &operator<<(std::ostream &os, TokenType type);
 
 struct Token {
   public:
 	const TokenType type;
 	const std::string lexeme;
-	const size_t line, column, index;
-
-	Token(TokenType type, std::string lexeme, size_t line, size_t column, size_t index)
-		: type(type), lexeme(std::move(lexeme)), line(line), column(column), index(index) {};
+	const SourceLoc loc;
+	
+	Token(TokenType type, std::string lexeme, SourceLoc loc)
+		: type(type), lexeme(std::move(lexeme)), loc(loc) 
+	{};
 };
 
 std::ostream &operator<<(std::ostream &os, const Token &t);
