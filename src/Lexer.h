@@ -33,6 +33,7 @@ private:
     Token lexNumber(SourceLoc startLoc);
     Token lexString(SourceLoc startLoc);
     Token lexChar(SourceLoc startLoc);
+    Token lexSeparator(SourceLoc startLoc);
     Token lexOperator(SourceLoc startLoc);
     Token lexIdentifierOrKeyword(SourceLoc startLoc);
 };

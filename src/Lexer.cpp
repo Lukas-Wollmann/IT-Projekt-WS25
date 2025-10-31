@@ -25,9 +25,7 @@ std::vector<Token> Lexer::tokenize() {
         } else if (currentChar == '\'') {
             tokens.push_back(lexChar(startLoc));
         } else if (isCurrentSeparator()) {
-            advance();
-            std::string sepLexeme(1, currentChar);
-            tokens.push_back(Token(TokenType::SEPERATOR, sepLexeme, startLoc));
+            tokens.push_back(lexSeparator(startLoc));
         } else if (isCurrentSingleOperator() || isCurrentMultiOperator()) {
             tokens.push_back(lexOperator(startLoc));
         } else if (isalpha(currentChar) || currentChar == '_') {
@@ -125,6 +123,12 @@ Token Lexer::lexChar(SourceLoc startLoc) {
     std::string charLexeme(1, m_CurentChar); // Get character
     advance(); // Skip closing quote
     return Token(TokenType::CHAR_LITERAL, charLexeme, startLoc);
+}
+
+Token Lexer::lexSeparator(SourceLoc startLoc) {
+    char sepChar = m_CurentChar;
+    advance();
+    return Token(TokenType::SEPERATOR, std::string(1, sepChar), startLoc);
 }
 
 Token Lexer::lexOperator(SourceLoc startLoc) {
