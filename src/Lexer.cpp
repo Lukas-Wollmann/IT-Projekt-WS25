@@ -41,6 +41,7 @@ std::vector<Token> Lexer::tokenize() {
 void Lexer::advance() {
     if (m_CurentChar == '\n') {
         m_Loc.line++;
+        m_Loc.index++;
         m_Loc.column = 1;
     }
     else {
@@ -116,13 +117,78 @@ Token Lexer::lexString(SourceLoc startLoc) {
     return Token(TokenType::STRING_LITERAL, stringLexeme, startLoc);
 }
 
-//TODO: Handle escape sequences -> TokenType::ILLEGAL
+//unclean have to fix later
 Token Lexer::lexChar(SourceLoc startLoc) {
     advance(); // Skip opening quote
-    advance();
-    std::string charLexeme(1, m_CurentChar); // Get character
-    advance(); // Skip closing quote
-    return Token(TokenType::CHAR_LITERAL, charLexeme, startLoc);
+    if (isAtEnd()) {
+        return Token(TokenType::ILLEGAL, "", startLoc);
+    }
+
+    // Helper to skip to closing quote for recovery
+    auto skipToClosing = [this]() {
+        while (!isAtEnd() && m_CurentChar != '\'') advance();
+        if (!isAtEnd() && m_CurentChar == '\'') advance();
+    };
+
+    std::string raw; // raw contents inside the quotes (for ILLEGAL tokens)
+    // Escaped character
+    if (m_CurentChar == '\\') {
+        raw += '\\';
+        advance();
+        if (isAtEnd()) {
+            return Token(TokenType::ILLEGAL, raw, startLoc);
+        }
+        char esc = m_CurentChar;
+        raw += esc;
+
+        char mapped = '\0';
+        bool validEscape = true;
+        switch (esc) {
+            case '\\': mapped = '\\'; break;
+            case '\'': mapped = '\''; break;
+            case 'n':  mapped = '\n'; break;
+            case 't':  mapped = '\t'; break;
+            case 'r':  mapped = '\r'; break;
+            case '0':  mapped = '\0'; break;
+            default:   validEscape = false; break;
+        }
+
+        advance(); // move past escape char
+        if (!validEscape) {
+            // unknown escape -> illegal, skip to closing for recovery
+            skipToClosing();
+            return Token(TokenType::ILLEGAL, raw, startLoc);
+        }
+
+        // expect closing quote
+        if (m_CurentChar != '\'') {
+            skipToClosing();
+            return Token(TokenType::ILLEGAL, raw, startLoc);
+        }
+        advance(); // consume closing quote
+        return Token(TokenType::CHAR_LITERAL, std::string(1, mapped), startLoc);
+    }
+
+    // Non-escaped character
+    char c = m_CurentChar;
+    raw += c;
+    advance(); // move past the character
+
+    // If the character we saw was a closing quote immediately -> empty char literal -> ILLEGAL
+    if (c == '\'') {
+        // we already consumed that closing quote above
+        return Token(TokenType::ILLEGAL, raw, startLoc);
+    }
+
+    // Expect closing quote now
+    if (m_CurentChar != '\'') {
+        // either multi-char char literal or missing closing quote -> ILLEGAL
+        skipToClosing();
+        return Token(TokenType::ILLEGAL, raw, startLoc);
+    }
+
+    advance(); // consume closing quote
+    return Token(TokenType::CHAR_LITERAL, std::string(1, c), startLoc);
 }
 
 Token Lexer::lexSeparator(SourceLoc startLoc) {
