@@ -3,27 +3,27 @@
 #include <sstream>
 
 
-TEST_CASE("ValueType: equal typenames means equal") 
+TEST_CASE("PrimitiveType: equal typenames means equal") 
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("i32");
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
 
     // Act
-    bool equal = *valueType1 == *valueType2;
+    bool equal = *primitiveType1 == *primitiveType2;
 
     // Assert
     CHECK(equal);
 }
 
-TEST_CASE("ValueType: different typenames means not equal") 
+TEST_CASE("PrimitiveType: different typenames means not equal") 
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("f32");
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::F32);
 
     // Act
-    bool equal = *valueType1 == *valueType2;
+    bool equal = *primitiveType1 == *primitiveType2;
 
     // Assert
     CHECK(!equal);
@@ -32,10 +32,10 @@ TEST_CASE("ValueType: different typenames means not equal")
 TEST_CASE("PointerType: equal underlying types means equal") 
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("i32");
-    auto ptrType1 = std::make_unique<PointerType>(std::move(valueType1));
-    auto ptrType2 = std::make_unique<PointerType>(std::move(valueType2));
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto ptrType1 = std::make_unique<PointerType>(std::move(primitiveType1));
+    auto ptrType2 = std::make_unique<PointerType>(std::move(primitiveType2));
 
     // Act
     bool equal = *ptrType1 == *ptrType2;
@@ -47,10 +47,10 @@ TEST_CASE("PointerType: equal underlying types means equal")
 TEST_CASE("PointerType: different underlying types means not equal") 
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("f32");
-    auto ptrType1 = std::make_unique<PointerType>(std::move(valueType1));
-    auto ptrType2 = std::make_unique<PointerType>(std::move(valueType2));
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::F32);
+    auto ptrType1 = std::make_unique<PointerType>(std::move(primitiveType1));
+    auto ptrType2 = std::make_unique<PointerType>(std::move(primitiveType2));
 
     // Act
     bool equal = *ptrType1 == *ptrType2;
@@ -62,10 +62,10 @@ TEST_CASE("PointerType: different underlying types means not equal")
 TEST_CASE("ArrayType: equal size and equal type means equal")
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("i32");
-    auto arrType1 = std::make_unique<ArrayType>(std::move(valueType1), 42);
-    auto arrType2 = std::make_unique<ArrayType>(std::move(valueType2), 42);
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType1 = std::make_unique<ArrayType>(std::move(primitiveType1), 42);
+    auto arrType2 = std::make_unique<ArrayType>(std::move(primitiveType2), 42);
 
     // Act
     bool equal = *arrType1 == *arrType2;
@@ -77,10 +77,10 @@ TEST_CASE("ArrayType: equal size and equal type means equal")
 TEST_CASE("ArrayType: different size and equal type means not equal")
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("i32");
-    auto arrType1 = std::make_unique<ArrayType>(std::move(valueType1), 42);
-    auto arrType2 = std::make_unique<ArrayType>(std::move(valueType2), 67);
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType1 = std::make_unique<ArrayType>(std::move(primitiveType1), 42);
+    auto arrType2 = std::make_unique<ArrayType>(std::move(primitiveType2), 67);
 
     // Act
     bool equal = *arrType1 == *arrType2;
@@ -92,10 +92,10 @@ TEST_CASE("ArrayType: different size and equal type means not equal")
 TEST_CASE("ArrayType: equal size and different type means not equal")
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("f32");
-    auto arrType1 = std::make_unique<ArrayType>(std::move(valueType1), 42);
-    auto arrType2 = std::make_unique<ArrayType>(std::move(valueType2), 42);
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::F32);
+    auto arrType1 = std::make_unique<ArrayType>(std::move(primitiveType1), 42);
+    auto arrType2 = std::make_unique<ArrayType>(std::move(primitiveType2), 42);
 
     // Act
     bool equal = *arrType1 == *arrType2;
@@ -107,10 +107,10 @@ TEST_CASE("ArrayType: equal size and different type means not equal")
 TEST_CASE("ArrayType: different size and different type means not equal")
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("f32");
-    auto arrType1 = std::make_unique<ArrayType>(std::move(valueType1), 42);
-    auto arrType2 = std::make_unique<ArrayType>(std::move(valueType2), 67);
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::F32);
+    auto arrType1 = std::make_unique<ArrayType>(std::move(primitiveType1), 42);
+    auto arrType2 = std::make_unique<ArrayType>(std::move(primitiveType2), 67);
 
     // Act
     bool equal = *arrType1 == *arrType2;
@@ -122,10 +122,10 @@ TEST_CASE("ArrayType: different size and different type means not equal")
 TEST_CASE("ArrayType: unsized and sized array means not equal")
 {
     // Arrange
-    auto valueType1 = std::make_unique<ValueType>("i32");
-    auto valueType2 = std::make_unique<ValueType>("i32");
-    auto arrType1 = std::make_unique<ArrayType>(std::move(valueType1), 42);
-    auto arrType2 = std::make_unique<ArrayType>(std::move(valueType2));
+    auto primitiveType1 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto primitiveType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType1 = std::make_unique<ArrayType>(std::move(primitiveType1), 42);
+    auto arrType2 = std::make_unique<ArrayType>(std::move(primitiveType2));
 
     // Act
     bool equal = *arrType1 == *arrType2;
@@ -138,20 +138,20 @@ TEST_CASE("FunctionType: equal parameters and equal return types means equal")
 {
     // Arrange
     TypeList params1;
-    params1.push_back(std::make_unique<ValueType>("i32"));
-    params1.push_back(std::make_unique<ValueType>("f32"));
-    params1.push_back(std::make_unique<ValueType>("char"));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType1 = std::make_unique<ValueType>("bool");
+    auto retType1 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
     TypeList params2;
-    params2.push_back(std::make_unique<ValueType>("i32"));
-    params2.push_back(std::make_unique<ValueType>("f32"));
-    params2.push_back(std::make_unique<ValueType>("char"));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType2 = std::make_unique<ValueType>("bool");
+    auto retType2 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType2 = std::make_unique<FunctionType>(std::move(params2), std::move(retType2));
 
     // Act
@@ -165,20 +165,20 @@ TEST_CASE("FunctionType: different parameters and equal return types means not e
 {
     // Arrange
     TypeList params1;
-    params1.push_back(std::make_unique<ValueType>("i32"));
-    params1.push_back(std::make_unique<ValueType>("f32"));
-    params1.push_back(std::make_unique<ValueType>("char"));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType1 = std::make_unique<ValueType>("bool");
+    auto retType1 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
     TypeList params2;
-    params2.push_back(std::make_unique<ValueType>("char"));
-    params2.push_back(std::make_unique<ValueType>("i32"));
-    params2.push_back(std::make_unique<ValueType>("f32"));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
 
-    auto retType2 = std::make_unique<ValueType>("bool");
+    auto retType2 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType2 = std::make_unique<FunctionType>(std::move(params2), std::move(retType2));
 
     // Act
@@ -192,20 +192,20 @@ TEST_CASE("FunctionType: equal parameters and different return types means not e
 {
     // Arrange
     TypeList params1;
-    params1.push_back(std::make_unique<ValueType>("i32"));
-    params1.push_back(std::make_unique<ValueType>("char"));
-    params1.push_back(std::make_unique<ValueType>("f32"));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
 
-    auto retType1 = std::make_unique<ValueType>("bool");
+    auto retType1 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
     TypeList params2;
-    params2.push_back(std::make_unique<ValueType>("i32"));
-    params2.push_back(std::make_unique<ValueType>("char"));
-    params2.push_back(std::make_unique<ValueType>("f32"));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
 
-    auto retType2 = std::make_unique<ValueType>("i32");
+    auto retType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
     auto funcType2 = std::make_unique<FunctionType>(std::move(params2), std::move(retType2));
 
     // Act
@@ -219,20 +219,20 @@ TEST_CASE("FunctionType: different parameters and different return types means n
 {
     // Arrange
     TypeList params1;
-    params1.push_back(std::make_unique<ValueType>("i32"));
-    params1.push_back(std::make_unique<ValueType>("char"));
-    params1.push_back(std::make_unique<ValueType>("f32"));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
+    params1.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
 
-    auto retType1 = std::make_unique<ValueType>("bool");
+    auto retType1 = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
     TypeList params2;
-    params2.push_back(std::make_unique<ValueType>("f32"));
-    params2.push_back(std::make_unique<ValueType>("i32"));
-    params2.push_back(std::make_unique<ValueType>("char"));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params2.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType2 = std::make_unique<ValueType>("i32");
+    auto retType2 = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
     auto funcType2 = std::make_unique<FunctionType>(std::move(params2), std::move(retType2));
 
     // Act
@@ -242,25 +242,25 @@ TEST_CASE("FunctionType: different parameters and different return types means n
     CHECK(!equal);
 }
 
-TEST_CASE("ValueType: deep copy works")
+TEST_CASE("PrimitiveType: deep copy works")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
 
     // Act
-    auto copy = valueType->copy();
+    auto copy = primitiveType->copy();
 
     // Assert
-    CHECK(copy.get() != valueType.get());
-    CHECK(copy->getKind() == Type::Kind::Value);
-    CHECK(static_cast<const ValueType&>(*copy).getTypename() == valueType->getTypename());
+    CHECK(copy.get() != primitiveType.get());
+    CHECK(copy->getKind() == Type::Kind::Primitive);
+    CHECK(static_cast<const PrimitiveType&>(*copy).getPrimitive() == primitiveType->getPrimitive());
 }
 
 TEST_CASE("PointerType: deep copy works")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
-    auto ptrType = std::make_unique<PointerType>(std::move(valueType));
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
 
     // Act
     auto copy = ptrType->copy();
@@ -274,8 +274,8 @@ TEST_CASE("PointerType: deep copy works")
 TEST_CASE("ArrayType: deep copy works")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
-    auto arrType = std::make_unique<ArrayType>(std::move(valueType), 42);
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
 
     // Act
     auto copy = arrType->copy();
@@ -290,11 +290,11 @@ TEST_CASE("ArrayType: deep copy works")
 TEST_CASE("FunctionType: deep copy works")
 {
     TypeList params;
-    params.push_back(std::make_unique<ValueType>("i32"));
-    params.push_back(std::make_unique<ValueType>("f32"));
-    params.push_back(std::make_unique<ValueType>("char"));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType = std::make_unique<ValueType>("bool");
+    auto retType = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 
     // Act
@@ -310,14 +310,14 @@ TEST_CASE("FunctionType: deep copy works")
     CHECK(copyFunc.getReturnType() == funcType->getReturnType());
 }
 
-TEST_CASE("ValueType: toString works")
+TEST_CASE("PrimitiveType: toString works")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
 
     // Act
     std::stringstream ss;
-    ss << *valueType;
+    ss << *primitiveType;
     std::string result = ss.str();
 
     // Assert
@@ -327,8 +327,8 @@ TEST_CASE("ValueType: toString works")
 TEST_CASE("PointerType: toString works")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
-    auto ptrType = std::make_unique<PointerType>(std::move(valueType));
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
 
     // Act
     std::stringstream ss;
@@ -342,8 +342,8 @@ TEST_CASE("PointerType: toString works")
 TEST_CASE("ArrayType: toString works for sized")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
-    auto arrType = std::make_unique<ArrayType>(std::move(valueType), 42);
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
 
     // Act
     std::stringstream ss;
@@ -357,8 +357,8 @@ TEST_CASE("ArrayType: toString works for sized")
 TEST_CASE("ArrayType: toString works for unsized")
 {
     // Arrange
-    auto valueType = std::make_unique<ValueType>("i32");
-    auto arrType = std::make_unique<ArrayType>(std::move(valueType));
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrType = std::make_unique<ArrayType>(std::move(primitiveType));
 
     // Act
     std::stringstream ss;
@@ -373,11 +373,11 @@ TEST_CASE("FunctionType: toString works")
 {
     // Arrange
     TypeList params;
-    params.push_back(std::make_unique<ValueType>("i32"));
-    params.push_back(std::make_unique<ValueType>("f32"));
-    params.push_back(std::make_unique<ValueType>("char"));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveKind::Char));
 
-    auto retType = std::make_unique<ValueType>("bool");
+    auto retType = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 
     // Act
