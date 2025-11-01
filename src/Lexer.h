@@ -26,6 +26,8 @@ private:
     bool isCurrentMultiOperator() const;
     bool isCurrentSeparator() const;
     bool isKeyword(const std::string &lexeme) const;
+    bool isCurrentComment() const;
+    bool isStartBlockComment() const;
     bool isAtEnd() const;
     char peek() const;
     void skipWhitespace();
@@ -36,4 +38,6 @@ private:
     Token lexSeparator(SourceLoc startLoc);
     Token lexOperator(SourceLoc startLoc);
     Token lexIdentifierOrKeyword(SourceLoc startLoc);
+    Token lexComment(SourceLoc startLoc);
+    Token lexBlockComment(SourceLoc startLoc);
 };

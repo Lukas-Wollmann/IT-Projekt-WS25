@@ -14,6 +14,10 @@ int main()
         j: char = '\n';
         k: char = '\x'; // illegal escape
         s: char = 'ab'; // illegal multi-char
+        /* This is a block comment
+           spanning multiple lines */
+        /* Unterminated block comment
+        /* Oneline block comment */
         t: char = ' ; // illegal missing closing
         string y = "Hello, World!";
         return x;

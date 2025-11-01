@@ -22,6 +22,10 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(lexNumber(startLoc));
         } else if (currentChar == '"') {
             tokens.push_back(lexString(startLoc));
+        } else if (isCurrentComment()) {
+            tokens.push_back(lexComment(startLoc));
+        } else if (isStartBlockComment()) {
+            tokens.push_back(lexBlockComment(startLoc));
         } else if (currentChar == '\'') {
             tokens.push_back(lexChar(startLoc));
         } else if (isCurrentSeparator()) {
@@ -66,6 +70,14 @@ bool Lexer::isCurrentSeparator() const {
 
 bool Lexer::isKeyword(const std::string &lexeme) const {
     return std::find(s_Keywords.begin(), s_Keywords.end(), lexeme) != s_Keywords.end();
+}
+
+bool Lexer::isCurrentComment() const {
+    return m_CurentChar == '/' && peek() == '/';
+}
+
+bool Lexer::isStartBlockComment() const {
+    return m_CurentChar == '/' && peek() == '*';
 }
 
 bool Lexer::isAtEnd() const {
@@ -224,4 +236,40 @@ Token Lexer::lexIdentifierOrKeyword(SourceLoc startLoc) {
         return Token(TokenType::KEYWORD, identLexeme, startLoc);
     }
     return Token(TokenType::IDENTIFIER, identLexeme, startLoc);
+}
+
+Token Lexer::lexComment(SourceLoc startLoc) {
+    // Assuming comments start with '//' and go to the end of the line
+    advance(); // Skip first '/'
+    advance(); // Skip second '/'
+
+    std::stringstream ss;
+    while (m_CurentChar != '\n' && !isAtEnd()) {
+        ss << m_CurentChar;
+        advance();
+    }
+    std::string commentLexeme = ss.str();
+    return Token(TokenType::COMMENT, commentLexeme, startLoc);
+}
+
+Token Lexer::lexBlockComment(SourceLoc startLoc) {
+    // Assuming block comments start with '/*' and end with '*/'
+    advance(); // Skip first '/'
+    advance(); // Skip '*'
+
+    std::stringstream ss;
+    while (true) {
+        if (isAtEnd() || (m_CurentChar == '\n' && peek() == '\0')) {
+            return Token(TokenType::ILLEGAL, ss.str(), startLoc);
+        }
+        if (m_CurentChar == '*' && peek() == '/') {
+            advance(); // Skip '*'
+            advance(); // Skip '/'
+            break;
+        }
+        ss << m_CurentChar;
+        advance();
+    }
+    std::string commentLexeme = ss.str();
+    return Token(TokenType::COMMENT, commentLexeme, startLoc);
 }
