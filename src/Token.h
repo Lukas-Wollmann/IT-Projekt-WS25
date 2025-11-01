@@ -12,6 +12,7 @@ enum class TokenType
 	KEYWORD,
 	OPERATOR,
 	SEPARATOR,
+	COMMENT,
 	ILLEGAL
 };
 

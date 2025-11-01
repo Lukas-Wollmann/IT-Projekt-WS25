@@ -18,7 +18,9 @@ std::ostream &operator<<(std::ostream &os, TokenType type)
 	case TokenType::OPERATOR:
 		return os << "OPERATOR";
 	case TokenType::SEPARATOR:
-		return os << "SEPERATOR";
+		return os << "SEPARATOR";
+	case TokenType::COMMENT:
+		return os << "COMMENT";
 	case TokenType::ILLEGAL:
 		return os << "ILLEGAL";
 	}
