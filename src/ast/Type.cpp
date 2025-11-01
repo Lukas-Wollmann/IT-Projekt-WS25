@@ -5,29 +5,29 @@ Type::Type(Kind kind)
     : m_Kind(kind)
 {}
 
-ValueType::ValueType(std::string typeName)
-    : Type(Kind::Value)
-    , m_Typename(typeName)
+PrimitiveType::PrimitiveType(PrimitiveKind primitive)
+    : Type(Kind::Primitive)
+    , m_Primitive(primitive)
 {}
 
-void ValueType::toString(std::ostream &os) const
+void PrimitiveType::toString(std::ostream &os) const
 {
-    os << m_Typename;
+    os << m_Primitive;
 }
 
-bool ValueType::equals(const Type &other) const
+bool PrimitiveType::equals(const Type &other) const
 {
     if (getKind() != other.getKind()) 
         return false;
 
-    auto &valueType = static_cast<const ValueType&>(other);
+    auto &valueType = static_cast<const PrimitiveType&>(other);
 
-    return m_Typename == valueType.m_Typename;
+    return m_Primitive == valueType.m_Primitive;
 }
 
-TypePtr ValueType::copy() const
+TypePtr PrimitiveType::copy() const
 {
-    return std::make_unique<ValueType>(m_Typename);
+    return std::make_unique<PrimitiveType>(m_Primitive);
 }
 
 PointerType::PointerType(TypePtr pointeeType)
@@ -140,6 +140,21 @@ std::ostream &operator<<(std::ostream &os, const TypeList &typeList)
     }
 
     return os;
+}
+
+std::ostream &operator<<(std::ostream &os, PrimitiveKind primitive)
+{
+    switch (primitive)
+    {
+        case PrimitiveKind::I32:    return os << "i32";
+        case PrimitiveKind::U32:    return os << "u32";
+        case PrimitiveKind::F32:    return os << "f32";
+        case PrimitiveKind::String: return os << "string";
+        case PrimitiveKind::Char:   return os << "char";
+        case PrimitiveKind::Bool:   return os << "bool";
+    }
+
+    return os << "<Illegal-Primitive-Kind>";
 }
 
 bool operator==(const Type &left, const Type &right)

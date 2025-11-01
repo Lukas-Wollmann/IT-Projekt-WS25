@@ -1,41 +1,47 @@
 #pragma once
-#include <string>
+#include <iostream>
 #include <memory>
 #include <vector>
 #include <optional>
+#include "Type.h"
 #include "../Typedef.h"
 
-/**
- * NOTE:
- * - A char literal is an i32, because the maximum size of a UTF-8 codepoint is 4 bytes.
- * - All members are private with inline getters (no raw pointers exposed).
- * - std::string parameters are taken by value (move into members in .cpp).
- * - Constructors are declared only (no implementations here).
- */
+struct Node;
+struct Expr;
+struct Stmt;
+struct CodeBlock;
+struct Param;
+
+
+using ExprPtr = std::unique_ptr<const Expr>;
+using ExprList = std::vector<ExprPtr>;
+using StmtPtr = std::unique_ptr<const Stmt>;
+using StmtList = std::vector<StmtPtr>;
+using ParamPtr = std::unique_ptr<const Param>;
+using ParamList = std::vector<ParamPtr>;
+using CodeBlockPtr = std::unique_ptr<const CodeBlock>;
+
 
 enum struct NodeKind 
 {
-    ValueType,
-    PointerType,
-    ArrayType,
-    FunctionType,
-    IntegerLiteral,
-    DoubleLiteral,
-    CharLiteral,
-    BoolLiteral,
-    StringLiteral,
-    ArrayLiteral,
-    UnaryExpression,
-    BinaryExpression,
-    FunctionCall,
-    VariableUse,
+    IntLit,
+    FloatLit,
+    CharLit,
+    BoolLit,
+    StringLit,
+    ArrayExpr,
+    UnaryExpr,
+    BinaryExpr,
+    FuncCall,
+    VarRef,
     CodeBlock,
-    IfStatement,
-    WhileStatement,
-    ReturnStatement,
-    VariableDeclaration,
-    FunctionDeclaration
+    IfStmt,
+    WhileStmt,
+    ReturnStmt,
+    VarDecl,
+    FuncDecl
 };
+
 
 enum struct UnaryOperatorKind
 {
@@ -44,6 +50,7 @@ enum struct UnaryOperatorKind
     Positive,
     Negative
 };
+
 
 enum struct BinaryOperatorKind
 {
@@ -78,7 +85,12 @@ enum struct BinaryOperatorKind
     RightShiftAssignment
 };
 
-struct Visitor;
+
+std::ostream &operator<<(std::ostream &os, const Node &node);
+std::ostream &operator<<(std::ostream &os, const Param &param);
+std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op);
+std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op);
+
 
 struct Node 
 {
@@ -91,293 +103,293 @@ protected:
 public:
     virtual ~Node()  = default;
 
-    NodeKind getNodeKind() const;
+    virtual void toString(std::ostream &os) const = 0;
 
-    virtual void accept(Visitor &visitor) const = 0;
+    NodeKind getNodeKind() const;
 };
 
-struct Type : public Node 
+
+struct Stmt : public Node 
 {
 protected:
-    explicit Type(const NodeKind kind);
+    explicit Stmt(const NodeKind kind);
+
+public:
+    void toString(std::ostream &os) const override = 0;
+};
+
+
+struct Expr : public Stmt
+{
+private:
+    mutable std::optional<TypePtr> m_Type;
+
+protected:
+    explicit Expr(const NodeKind kind, std::optional<TypePtr> type = std::nullopt);
+
+public:
+    void toString(std::ostream &os) const override = 0;
+
+    const std::optional<TypePtr> &getType() const { return m_Type; } 
+};
+
+
+struct IntLit : public Expr 
+{
+private:
+    const i32 m_Value;
+
+public:    
+    explicit IntLit(i32 value);
+
+    void toString(std::ostream &os) const override;
+
+    i32 getValue() const { return m_Value; }
+};
+
+
+struct FloatLit : public Expr 
+{
+private:
+    const f32 m_Value;
     
 public:
-    virtual void accept(Visitor &visitor) const override = 0;
+    explicit FloatLit(f32 value);
+
+    void toString(std::ostream &os) const override;
+
+    f32 getValue() const { return m_Value; }
 };
 
-struct ValueType : public Type 
+
+struct CharLit : public Expr 
 {
+private:
+    const char32_t m_Value;
+    
 public:
-    const std::string typeName;
+    explicit CharLit(char32_t value);
 
-    explicit ValueType(std::string typeName);
+    void toString(std::ostream &os) const override;
 
-    virtual void accept(Visitor &visitor) const override;
+    char32_t getValue() const { return m_Value; }
 };
 
-struct PointerType : public Type 
+
+struct BoolLit : public Expr
 {
+private:
+    const bool m_Value;
+    
 public:
-    const std::unique_ptr<const Type> baseType;
+    explicit BoolLit(bool value);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit PointerType(std::unique_ptr<const Type> &&baseType);
-
-    virtual void accept(Visitor &visitor) const override;
+    bool getValue() const { return m_Value; }
 };
 
-struct ArrayType : public Type
+
+struct StringLit : public Expr
 {
+private:
+    const std::string m_Value;
+    
 public:
-    const std::unique_ptr<const Type> elementType;
-    const std::optional<size_t> size;
+    explicit StringLit(std::string value);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<size_t> size);
-
-    virtual void accept(Visitor &visitor) const override;
+    const std::string getValue() const { return m_Value; }
 };
 
-using ParameterTypeList = std::vector<std::unique_ptr<const Type>>;
 
-struct FunctionType : public Type 
-{    
-public:
-    const ParameterTypeList parameters;
-    const std::unique_ptr<const Type> returnType;
-
-    explicit FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct Statement : public Node 
+struct ArrayExpr : public Expr 
 {
-protected:
-    explicit Statement(const NodeKind kind);
+private:
+    const TypePtr m_ElemType;
+    const ExprList m_Values;
 
 public:
-    virtual void accept(Visitor &visitor) const override = 0;
+    explicit ArrayExpr(TypePtr elemType, ExprList values);
+    
+    void toString(std::ostream &os) const override;
+
+    const TypePtr &getElementType() const { return m_ElemType; }
 };
 
-struct Expression : public Statement
+
+struct UnaryExpr : public Expr 
 {
-protected:
-    explicit Expression(const NodeKind kind);
+private:
+    const UnaryOperatorKind m_Op;
+    const ExprPtr m_Operand;
 
 public:
-    virtual void accept(Visitor &visitor) const override = 0;
+    explicit UnaryExpr(UnaryOperatorKind op, ExprPtr operand);
+    
+    void toString(std::ostream &os) const override;
+
+    UnaryOperatorKind getOp() const { return m_Op; }
+    const ExprPtr &getOperand() const { return m_Operand; }
 };
 
-struct IntegerLiteral : public Expression 
+
+struct BinaryExpr : public Expr 
 {
+private:
+    const BinaryOperatorKind m_Op;
+    const ExprPtr m_LeftOp, m_RightOp;
+
 public:
-    const i64 value;
+    explicit BinaryExpr(BinaryOperatorKind op, ExprPtr leftOp, ExprPtr rightOp);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit IntegerLiteral(const i64 value);
-
-    virtual void accept(Visitor &visitor) const override;
+    BinaryOperatorKind getOp() const { return m_Op; }
+    const ExprPtr &getLeftOp() const { return m_LeftOp; }
+    const ExprPtr &getRightOp() const { return m_RightOp; }
 };
 
-struct DoubleLiteral : public Expression 
+
+struct VarRef : public Expr
 {
+private:
+    const std::string m_Ident;
+    
 public:
-    const double value;
+    explicit VarRef(std::string ident);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit DoubleLiteral(const double value);
-
-    virtual void accept(Visitor &visitor) const override;
+    const std::string &getIdent() const { return m_Ident; }
 };
 
-struct CharLiteral : public Expression 
+
+struct FuncCall : public Expr
 {
+private:
+    const std::string m_Ident;
+    const ExprList m_Args;
+    
 public:
-    const i32 value;
+    explicit FuncCall(std::string ident, ExprList args);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit CharLiteral(const i32 value);
-
-    virtual void accept(Visitor &visitor) const override;
+    const std::string &getIdent() const { return m_Ident; }
+    const ExprList &getArgs() const { return m_Args; }
 };
 
-struct BoolLiteral : public Expression
+
+struct CodeBlock : public Stmt 
 {
+private:
+    const StmtList m_Stmts;
+    
 public:
-    const bool value;
+    explicit CodeBlock(StmtList stmts);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit BoolLiteral(const bool value) ;
-
-    virtual void accept(Visitor &visitor) const override;
+    const StmtList &getStmts() const { return m_Stmts; }
 };
 
-struct StringLiteral : public Expression 
+
+struct IfStmt : public Stmt 
 {
+private:
+    const ExprPtr m_Cond;
+    const CodeBlockPtr m_Then, m_Else;
+
 public:
-    const std::string value;
+    explicit IfStmt(ExprPtr cond, CodeBlockPtr then, CodeBlockPtr else_);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit StringLiteral(std::string value);
-
-    virtual void accept(Visitor &visitor) const override;
+    const ExprPtr &getCond() const { return m_Cond; }
+    const CodeBlockPtr &getThen() const { return m_Then; }
+    const CodeBlockPtr &getElse() const { return m_Else; }
 };
 
-using ArgumentList = std::vector<std::unique_ptr<const Expression>>;
 
-struct ArrayLiteral : public Expression 
+struct WhileStmt : public Stmt 
 {
+private:
+    const ExprPtr m_Cond;
+    const CodeBlockPtr m_Body;
+    
 public:
-    const std::unique_ptr<const ArrayType> type;
-    const ArgumentList values;
+    explicit WhileStmt(ExprPtr cond, CodeBlockPtr body);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values);
-
-    virtual void accept(Visitor &visitor) const override;
+    const ExprPtr &getCond() const { return m_Cond; }
+    const CodeBlockPtr &getBody() const { return m_Body; }
 };
 
-struct UnaryExpression : public Expression 
+
+struct ReturnStmt : public Stmt
 {
+private:
+    const ExprPtr m_Expr;
+
 public:
-    const UnaryOperatorKind operator_;
-    const std::unique_ptr<const Expression> operand;
+    explicit ReturnStmt(ExprPtr expr);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand);
-
-    virtual void accept(Visitor &visitor) const override;
+    const ExprPtr &getExpr() const { return m_Expr; }
 };
 
-struct BinaryExpression : public Expression 
+
+struct VarDecl : public Stmt
 {
+private:
+    const std::string m_Ident;
+    const TypePtr m_Type;
+    const ExprPtr m_Value;
+
 public:
-    const BinaryOperatorKind operator_;
-    const std::unique_ptr<const Expression> leftOperand;
-    const std::unique_ptr<const Expression> rightOperand;
+    explicit VarDecl(std::string name, TypePtr type, ExprPtr value);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand);
-
-    virtual void accept(Visitor &visitor) const override;
+    const std::string &getIdent() const { return m_Ident; }
+    const TypePtr &getType() const { return m_Type; }
+    const ExprPtr &getValue() const { return m_Value; }
 };
 
-struct VariableUse : public Expression
+
+struct Param
 {
+private:
+    std::string m_Ident;
+    const TypePtr m_Type;
+
 public:
-    const std::string name;
+    explicit Param(std::string name, TypePtr type);
 
-    explicit VariableUse(std::string name);
-
-    virtual void accept(Visitor &visitor) const override;
+    const std::string &getIdent() const { return m_Ident; }
+    const TypePtr &getType() const { return m_Type; }
 };
 
-struct FunctionCall : public Expression
+
+struct FuncDecl : public Node 
 {
+private:
+    const std::string m_Ident;
+    const ParamList m_Params;
+    const TypePtr m_ReturnType;
+    const CodeBlockPtr m_Body;
+
 public:
-    const std::string name;
-    const ArgumentList arguments;
+    explicit FuncDecl(std::string name, ParamList params, TypePtr returnType, CodeBlockPtr body);
+    
+    void toString(std::ostream &os) const override;
 
-    explicit FunctionCall(std::string name, ArgumentList &&arguments);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-using StatementList = std::vector<std::unique_ptr<const Statement>>;
-
-struct CodeBlock : public Statement 
-{
-public:
-    const StatementList statements;
-
-    explicit CodeBlock(StatementList &&statements);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct IfStatement : public Statement 
-{
-public:
-    const std::unique_ptr<const Expression> condition;
-    const std::unique_ptr<const CodeBlock> thenBlock;
-    const std::unique_ptr<const CodeBlock> elseBlock;
-
-    explicit IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct WhileStatement : public Statement 
-{
-public:
-    const std::unique_ptr<const Expression> condition;
-    const std::unique_ptr<const CodeBlock> body;
-
-    explicit WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct ReturnStatement : public Statement
-{
-public:
-    const std::unique_ptr<const Expression> expression;
-
-    explicit ReturnStatement(std::unique_ptr<const Expression> &&expression);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct VariableDeclaration : public Statement
-{
-public:
-    const std::string name;
-    const std::unique_ptr<const Type> type;
-    const std::unique_ptr<const Expression> value;
-
-    explicit VariableDeclaration(std::string name, std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct Parameter 
-{
-public:
-    std::string name;
-    std::unique_ptr<const Type> type;
-
-    explicit Parameter(std::string name, std::unique_ptr<const Type> &&type);
-};
-
-using ParameterList = std::vector<Parameter>;
-
-struct FunctionDeclaration : public Node 
-{
-public:
-    const std::string name;
-    const ParameterList parameters;
-    const std::unique_ptr<const Type> returnType;
-    const std::unique_ptr<const CodeBlock> body;
-
-    FunctionDeclaration(std::string name, ParameterList &&parameters, std::unique_ptr<const Type> &&returnType, std::unique_ptr<const CodeBlock> &&body);
-
-    virtual void accept(Visitor &visitor) const override;
-};
-
-struct Visitor 
-{
-public:
-    virtual ~Visitor() = default;
-
-    virtual void visit(const ValueType &node) = 0;
-    virtual void visit(const PointerType &node) = 0;
-    virtual void visit(const ArrayType &node) = 0;
-    virtual void visit(const FunctionType &node) = 0;
-    virtual void visit(const IntegerLiteral &node) = 0;
-    virtual void visit(const DoubleLiteral &node) = 0;
-    virtual void visit(const CharLiteral &node) = 0;
-    virtual void visit(const BoolLiteral &node) = 0;
-    virtual void visit(const StringLiteral &node) = 0;
-    virtual void visit(const ArrayLiteral &node) = 0;
-    virtual void visit(const UnaryExpression &node) = 0;
-    virtual void visit(const BinaryExpression &node) = 0;
-    virtual void visit(const FunctionCall &node) = 0;
-    virtual void visit(const VariableUse &node) = 0;
-    virtual void visit(const CodeBlock &node) = 0;
-    virtual void visit(const IfStatement &node) = 0;
-    virtual void visit(const WhileStatement &node) = 0;
-    virtual void visit(const ReturnStatement &node) = 0;
-    virtual void visit(const VariableDeclaration &node) = 0;
-    virtual void visit(const FunctionDeclaration &node) = 0;
+    const std::string &getIdent() const { return m_Ident; };
+    const ParamList &getParams() const { return m_Params; } 
+    const TypePtr &getReturnType() const { return m_ReturnType; }
+    const CodeBlockPtr &getBody() const { return m_Body; }
 };

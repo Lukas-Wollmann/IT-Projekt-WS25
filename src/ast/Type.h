@@ -2,13 +2,17 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include "../Typedef.h"
 
 
 using TypePtr = std::unique_ptr<const struct Type>;
 using TypeList = std::vector<TypePtr>;
 
+enum struct PrimitiveKind : u8 { I32, U32, F32, String, Char, Bool };
+
 std::ostream &operator<<(std::ostream &os, const Type &type);
 std::ostream &operator<<(std::ostream &os, const TypeList &typeList);
+std::ostream &operator<<(std::ostream &os, PrimitiveKind primitive);
 
 bool operator==(const Type &left, const Type &right);
 bool operator!=(const Type &left, const Type &right);
@@ -18,7 +22,7 @@ bool operator!=(const TypeList &left, const TypeList &right);
 
 struct Type 
 {
-    enum struct Kind { Value, Pointer, Array, Function };
+    enum struct Kind { Primitive, Pointer, Array, Function };
 
 private:
     const Kind m_Kind;
@@ -37,19 +41,19 @@ public:
 };
 
 
-struct ValueType : public Type
+struct PrimitiveType : public Type
 {
 private:
-    const std::string m_Typename;
+    const PrimitiveKind m_Primitive;
 
 public:
-    explicit ValueType(std::string typeName);
+    explicit PrimitiveType(PrimitiveKind primitive);
 
     void toString(std::ostream &os) const override;
     bool equals(const Type &other) const override;
     TypePtr copy() const override;
 
-    const std::string &getTypename() const { return m_Typename; }
+    PrimitiveKind getPrimitive() const { return m_Primitive; }
 };
 
 
