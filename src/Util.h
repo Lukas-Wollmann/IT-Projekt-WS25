@@ -28,6 +28,12 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec)
 
 std::ostream &operator<<(std::ostream &os, const char8_t *str) 
 {
-    
-    return os << reinterpret_cast<const char*>(str);
+    while(*str)
+    {
+        os.put(static_cast<char>(*str));
+        
+        ++str;
+    }
+
+    return os;
 }
