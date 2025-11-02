@@ -2,7 +2,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
-#include "../Typedef.h"
+#include "Typedef.h"
 
 
 using TypePtr = std::unique_ptr<const struct Type>;

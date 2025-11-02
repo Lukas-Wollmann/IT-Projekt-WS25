@@ -10,7 +10,7 @@ int main() {
         std::make_unique<BinaryExpr>(
             BinaryOperatorKind::Multiplication,
             std::make_unique<VarRef>("x"),
-            std::make_unique<IntLit>(2)
+            std::make_unique<CharLit>(U'\U0001F600')
         )
     ));
     auto whileLoop = std::make_unique<WhileStmt>(

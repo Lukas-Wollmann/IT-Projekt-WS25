@@ -1,7 +1,6 @@
-#include "Doctest.h"
-#include "../src/ast/Type.h"
+#include "../Doctest.h"
+#include "ast/Type.h"
 #include <sstream>
-
 
 TEST_CASE("PrimitiveType: equal typenames means equal") 
 {
@@ -314,10 +313,10 @@ TEST_CASE("PrimitiveType: toString works")
 {
     // Arrange
     auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    std::stringstream ss;
 
     // Act
-    std::stringstream ss;
-    ss << *primitiveType;
+    primitiveType->toString(ss);
     std::string result = ss.str();
 
     // Assert
@@ -329,10 +328,10 @@ TEST_CASE("PointerType: toString works")
     // Arrange
     auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
     auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
+    std::stringstream ss;
 
     // Act
-    std::stringstream ss;
-    ss << *ptrType;
+    ptrType->toString(ss);
     std::string result = ss.str();
 
     // Assert
@@ -344,10 +343,10 @@ TEST_CASE("ArrayType: toString works for sized")
     // Arrange
     auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
     auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
+    std::stringstream ss;
 
     // Act
-    std::stringstream ss;
-    ss << *arrType;
+    arrType->toString(ss);
     std::string result = ss.str();
 
     // Assert
@@ -359,10 +358,10 @@ TEST_CASE("ArrayType: toString works for unsized")
     // Arrange
     auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
     auto arrType = std::make_unique<ArrayType>(std::move(primitiveType));
+    std::stringstream ss;
 
     // Act
-    std::stringstream ss;
-    ss << *arrType;
+    arrType->toString(ss);
     std::string result = ss.str();
 
     // Assert
@@ -379,10 +378,10 @@ TEST_CASE("FunctionType: toString works")
 
     auto retType = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
     auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
+    std::stringstream ss;
 
     // Act
-    std::stringstream ss;
-    ss << *funcType;
+    funcType->toString(ss);
     std::string result = ss.str();
 
     // Assert

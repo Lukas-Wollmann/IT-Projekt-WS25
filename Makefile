@@ -6,6 +6,8 @@ TEST_DIR := test
 OBJ_DIR := build
 BIN_DIR := bin
 
+INCLUDES := -I$(SRC_DIR) -I$(TEST_DIR)
+
 TARGET := $(BIN_DIR)/app
 TEST_TARGET := $(BIN_DIR)/test_runner
 
@@ -20,17 +22,17 @@ all: $(TARGET) run
 # Build the app
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
 
 # Build the test_runner
 $(TEST_TARGET): $(TEST_OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
 
 # Generic rule: compile any .cpp file
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 run: $(TARGET)
 	./$(TARGET)

@@ -2,6 +2,7 @@
 #include <codecvt>
 #include <locale>
 
+
 Node::Node(const NodeKind kind)
     : m_Kind(kind)
 {}
@@ -159,7 +160,7 @@ void ArrayExpr::toString(std::ostream &os) const
         os << *m_Values[i];
     }
 
-    os << " })";
+    os << "})";
 }
 
 void UnaryExpr::toString(std::ostream &os) const
@@ -194,7 +195,7 @@ void FuncCall::toString(std::ostream &os) const
         os << *m_Args[i];
     }
 
-    os << " })";
+    os << "})";
 }
 
 void CodeBlock::toString(std::ostream &os) const
@@ -208,7 +209,7 @@ void CodeBlock::toString(std::ostream &os) const
         os << *m_Stmts[i];
     }
 
-    os << " })";
+    os << "})";
 }
 
 void IfStmt::toString(std::ostream &os) const
@@ -252,7 +253,7 @@ void FuncDecl::toString(std::ostream &os) const
         os << *m_Params[i];
     }
 
-    os << " }, ";
+    os << "}, ";
     os << *m_ReturnType << ", ";
     os << *m_Body << ")";
 }

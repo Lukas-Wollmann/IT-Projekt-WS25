@@ -1,17 +1,17 @@
 #pragma once
+#include "Type.h"
+#include "Typedef.h"
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <optional>
-#include "Type.h"
-#include "../Typedef.h"
+
 
 struct Node;
 struct Expr;
 struct Stmt;
 struct CodeBlock;
 struct Param;
-
 
 using ExprPtr = std::unique_ptr<const Expr>;
 using ExprList = std::vector<ExprPtr>;
@@ -130,7 +130,8 @@ protected:
 public:
     void toString(std::ostream &os) const override = 0;
 
-    const std::optional<TypePtr> &getType() const { return m_Type; } 
+    const std::optional<TypePtr> &getType() const { return m_Type; }
+    void setType(std::optional<TypePtr> type) const { m_Type = std::move(type); }
 };
 
 

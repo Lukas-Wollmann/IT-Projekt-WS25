@@ -12,7 +12,7 @@ concept Printable = requires(std::ostream &os, const T &t)
 };
 
 template<Printable T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) 
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) 
 {
     os << "{ ";
 
@@ -24,4 +24,10 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
     }
 
     return os << " }";    
+}
+
+std::ostream &operator<<(std::ostream &os, const char8_t *str) 
+{
+    
+    return os << reinterpret_cast<const char*>(str);
 }
