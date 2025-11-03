@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <format>
+#include "core/U8String.h"
 
 
 template<typename T>
@@ -33,6 +34,20 @@ std::ostream &operator<<(std::ostream &os, const char8_t *str)
         os.put(static_cast<char>(*str));
         
         ++str;
+    }
+
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, char32_t c) 
+{
+    auto bytes = U8String::encodeCodepoint(c);
+
+    for (size_t i = 0; i < 4; ++i)
+    {
+        if (!bytes[i]) return os;
+
+        os.put(bytes[i]);
     }
 
     return os;
