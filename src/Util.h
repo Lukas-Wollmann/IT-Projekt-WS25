@@ -3,7 +3,6 @@
 #include <sstream>
 #include <vector>
 #include <format>
-#include "core/U8String.h"
 
 
 template<typename T>
