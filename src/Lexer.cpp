@@ -153,6 +153,7 @@ Token Lexer::lexChar(SourceLoc startLoc) {
         char esc = m_CurentChar;
         raw += esc;
 
+        //mit Optional could be cleaner
         char mapped = '\0';
         bool validEscape = true;
         switch (esc) {
