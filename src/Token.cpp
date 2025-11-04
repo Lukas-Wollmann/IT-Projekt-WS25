@@ -17,8 +17,12 @@ std::ostream &operator<<(std::ostream &os, TokenType type)
 		return os << "KEYWORD";
 	case TokenType::OPERATOR:
 		return os << "OPERATOR";
-	case TokenType::SEPERATOR:
-		return os << "SEPERATOR";
+	case TokenType::SEPARATOR:
+		return os << "SEPARATOR";
+	case TokenType::COMMENT:
+		return os << "COMMENT";
+	case TokenType::ILLEGAL:
+		return os << "ILLEGAL";
 	}
 
     return os << "<UnknownTokenType>";
@@ -26,5 +30,5 @@ std::ostream &operator<<(std::ostream &os, TokenType type)
 
 std::ostream &operator<<(std::ostream &os, const Token &t) 
 {
-    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.line << ", " << t.column << ", " << t.index << ")";
+    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", " << t.loc.column << ", " << t.loc.index << ")";
 }
