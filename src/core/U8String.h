@@ -21,15 +21,17 @@ public:
     U8String(const char8_t *str);
     U8String(const std::u8string &str);
     U8String(std::u8string &&str);
-
+    
     U8String(const U8String &) = default;
     U8String(U8String &&) noexcept = default;
+    
+    // Note: const char * literals do not guarantee utf-8 encoding
+    // you should always use c++20 u8 string literals to do so.
+    explicit U8String(const char *str);
+    explicit U8String(const std::string &str);
 
-    // Normal string literals do not guarantee UTF8 encoding,
-    // therefore enforce the usage of u8 string literals.
-    U8String(const std::string &) = delete;
-    U8String(const char *) = delete;
-
+    const char8_t *ptr() const;
+    const std::u8string &data() const;
     size_t length() const;
     ConstIterator begin() const;
     ConstIterator end() const;

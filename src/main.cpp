@@ -1,8 +1,9 @@
 #include "core/U8String.h"
 #include <utf8cpp/utf8.h>
+#include <sstream>
 
-int main() {
-
+int main() 
+{
     try 
     {
         U8String test1 = u8"🥝123", test2 = u8"🥝test";

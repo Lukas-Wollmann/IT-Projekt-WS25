@@ -11,14 +11,16 @@ std::ostream &operator<<(std::ostream &os, char32_t c)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const char8_t *str)
+std::ostream &operator<<(std::ostream &os, const char8_t* str)
 {
-    while (*str != '\0')
-    {
-        os.put(static_cast<char>(*str));
-        ++str;
-    }
+    if (!str) return os;
 
+    const char8_t* p = str;
+    while (*p) ++p;
+
+    auto len = static_cast<size_t>(p - str);
+    os.write(reinterpret_cast<const char*>(str), static_cast<std::streamsize>(len));
+    
     return os;
 }
 
@@ -28,9 +30,12 @@ U8String::U8String(char32_t c)
 }
 
 U8String::U8String(const char8_t *str) 
-    : m_Data(str) 
 {
+    if (!str) throw std::invalid_argument("Can't construct U8String with nullptr.");
+
     validateUTF8();
+
+    m_Data = str;
 }
 
 U8String::U8String(const std::u8string &str) 
@@ -42,6 +47,31 @@ U8String::U8String(const std::u8string &str)
 U8String::U8String(std::u8string &&str) : m_Data(std::move(str)) 
 {
     validateUTF8();
+}
+
+U8String::U8String(const char *str)
+{
+    if (!str) throw std::invalid_argument("Can't construct U8String with nullptr.");
+
+    size_t len = std::strlen(str);
+
+    m_Data.resize(len);
+    std::memcpy(m_Data.data(), str, len);
+    validateUTF8();
+}
+
+U8String::U8String(const std::string &str)
+    : U8String(str.data()) 
+{}
+
+const char8_t *U8String::ptr() const
+{
+    return m_Data.data();
+}
+
+const std::u8string &U8String::data() const
+{
+    return m_Data;
 }
 
 size_t U8String::length() const

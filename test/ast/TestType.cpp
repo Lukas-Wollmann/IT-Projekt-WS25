@@ -1,6 +1,6 @@
-#include "../Doctest.h"
-#include "ast/Type.h"
+#include "Doctest.h"
 #include <sstream>
+#include "ast/Type.h"
 
 TEST_CASE("PrimitiveType: equal typenames means equal") 
 {
