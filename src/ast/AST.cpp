@@ -1,4 +1,7 @@
 #include "AST.h"
+#include <codecvt>
+#include <locale>
+
 
 Node::Node(const NodeKind kind)
     : m_Kind(kind)
@@ -6,227 +9,311 @@ Node::Node(const NodeKind kind)
 
 NodeKind Node::getNodeKind() const
 {
-    return this->m_Kind;
+    return m_Kind;
 }
 
-Type::Type(const NodeKind kind)
+Stmt::Stmt(const NodeKind kind)
     : Node(kind)
 {}
 
-ValueType::ValueType(std::string typename_)
-    : Type(NodeKind::ValueType)
-    , typeName(std::move(typename_))
+Expr::Expr(const NodeKind kind, std::optional<TypePtr> type)
+    : Stmt(kind)
+    , m_Type(std::move(type))
 {}
 
-PointerType::PointerType(std::unique_ptr<const Type> &&baseType)
-    : Type(NodeKind::PointerType)
-    , baseType(std::move(baseType))
+IntLit::IntLit(i32 value)
+    : Expr(NodeKind::IntLit)
+    , m_Value(value)
 {}
 
-ArrayType::ArrayType(std::unique_ptr<const Type> &&elementType, const std::optional<size_t> size)
-    : Type(NodeKind::ArrayType)
-    , elementType(std::move(elementType))
-    , size(size)
+FloatLit::FloatLit(f32 value)
+    : Expr(NodeKind::FloatLit)
+    , m_Value(value)
 {}
 
-FunctionType::FunctionType(ParameterTypeList &&parameters, std::unique_ptr<const Type> &&returnType)
-    : Type(NodeKind::FunctionType)
-    , parameters(std::move(parameters))
-    , returnType(std::move(returnType))
+CharLit::CharLit(char32_t value)
+    : Expr(NodeKind::CharLit)
+    , m_Value(value)
 {}
 
-Statement::Statement(const NodeKind kind)
-    : Node(kind)
+BoolLit::BoolLit(bool value)
+    : Expr(NodeKind::BoolLit)
+    , m_Value(value)
 {}
 
-Expression::Expression(const NodeKind kind)
-    : Statement(kind)
+StringLit::StringLit(std::string value)
+    : Expr(NodeKind::StringLit)
+    , m_Value(std::move(value))
 {}
 
-IntegerLiteral::IntegerLiteral(const i64 value)
-    : Expression(NodeKind::IntegerLiteral)
-    , value(value)
+ArrayExpr::ArrayExpr(TypePtr elemType, ExprList values)
+    : Expr(NodeKind::ArrayExpr)
+    , m_ElemType(std::move(elemType))
+    , m_Values(std::move(values))
 {}
 
-DoubleLiteral::DoubleLiteral(const double value)
-    : Expression(NodeKind::DoubleLiteral)
-    , value(value)
+UnaryExpr::UnaryExpr(UnaryOperatorKind op, ExprPtr operand)
+    : Expr(NodeKind::UnaryExpr)
+    , m_Op(op)
+    , m_Operand(std::move(operand))
 {}
 
-CharLiteral::CharLiteral(const i32 value)
-    : Expression(NodeKind::CharLiteral)
-    , value(value)
+BinaryExpr::BinaryExpr(BinaryOperatorKind op, ExprPtr leftOp, ExprPtr rightOp)
+    : Expr(NodeKind::BinaryExpr)
+    , m_Op(op)
+    , m_LeftOp(std::move(leftOp))
+    , m_RightOp(std::move(rightOp))
 {}
 
-BoolLiteral::BoolLiteral(const bool value)
-    : Expression(NodeKind::BoolLiteral)
-    , value(value)
+VarRef::VarRef(std::string ident)
+    : Expr(NodeKind::VarRef)
+    , m_Ident(std::move(ident))
 {}
 
-StringLiteral::StringLiteral(std::string value)
-    : Expression(NodeKind::StringLiteral)
-    , value(std::move(value))
+FuncCall::FuncCall(std::string ident, ExprList args)
+    : Expr(NodeKind::FuncCall)
+    , m_Ident(std::move(ident))
+    , m_Args(std::move(args))
 {}
 
-ArrayLiteral::ArrayLiteral(std::unique_ptr<const ArrayType> &&type, ArgumentList &&values)
-    : Expression(NodeKind::ArrayLiteral)
-    , type(std::move(type))
-    , values(std::move(values))
+CodeBlock::CodeBlock(StmtList stmts)
+    : Stmt(NodeKind::CodeBlock)
+    , m_Stmts(std::move(stmts))
 {}
 
-UnaryExpression::UnaryExpression(const UnaryOperatorKind operator_, std::unique_ptr<const Expression> &&operand)
-    : Expression(NodeKind::UnaryExpression)
-    , operator_(operator_)
-    , operand(std::move(operand))
+IfStmt::IfStmt(ExprPtr cond, CodeBlockPtr thenBlock, CodeBlockPtr elseBlock)
+    : Stmt(NodeKind::IfStmt)
+    , m_Cond(std::move(cond))
+    , m_Then(std::move(thenBlock))
+    , m_Else(std::move(elseBlock))
 {}
 
-BinaryExpression::BinaryExpression(const BinaryOperatorKind operator_, std::unique_ptr<const Expression> &&leftOperand, std::unique_ptr<const Expression> &&rightOperand)
-    : Expression(NodeKind::BinaryExpression)
-    , operator_(operator_)
-    , leftOperand(std::move(leftOperand))
-    , rightOperand(std::move(rightOperand))
+WhileStmt::WhileStmt(ExprPtr cond, CodeBlockPtr body)
+    : Stmt(NodeKind::WhileStmt)
+    , m_Cond(std::move(cond))
+    , m_Body(std::move(body))
 {}
 
-VariableUse::VariableUse(std::string name)
-    : Expression(NodeKind::VariableUse)
-    , name(std::move(name))
+ReturnStmt::ReturnStmt(ExprPtr expr)
+    : Stmt(NodeKind::ReturnStmt)
+    , m_Expr(std::move(expr))
 {}
 
-FunctionCall::FunctionCall(std::string name, ArgumentList &&arguments)
-    : Expression(NodeKind::FunctionCall)
-    , name(std::move(name))
-    , arguments(std::move(arguments))
+VarDecl::VarDecl(std::string ident, TypePtr type, ExprPtr value)
+    : Stmt(NodeKind::VarDecl)
+    , m_Ident(std::move(ident))
+    , m_Type(std::move(type))
+    , m_Value(std::move(value))
 {}
 
-CodeBlock::CodeBlock(StatementList &&statements)
-    : Statement(NodeKind::CodeBlock)
-    , statements(std::move(statements))
+Param::Param(std::string ident, TypePtr type)
+    : m_Ident(std::move(ident))
+    , m_Type(std::move(type))
 {}
 
-IfStatement::IfStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&thenBlock, std::unique_ptr<const CodeBlock> &&elseBlock)
-    : Statement(NodeKind::IfStatement)
-    , condition(std::move(condition))
-    , thenBlock(std::move(thenBlock))
-    , elseBlock(std::move(elseBlock))
+FuncDecl::FuncDecl(std::string ident, ParamList params, TypePtr returnType, CodeBlockPtr body)
+    : Node(NodeKind::FuncDecl)
+    , m_Ident(std::move(ident))
+    , m_Params(std::move(params))
+    , m_ReturnType(std::move(returnType))
+    , m_Body(std::move(body))
 {}
 
-WhileStatement::WhileStatement(std::unique_ptr<const Expression> &&condition, std::unique_ptr<const CodeBlock> &&body)
-    : Statement(NodeKind::WhileStatement)
-    , condition(std::move(condition))
-    , body(std::move(body))
-{}
-
-VariableDeclaration::VariableDeclaration(std::string name, std::unique_ptr<const Type> &&type, std::unique_ptr<const Expression> &&value)
-    : Statement(NodeKind::VariableDeclaration)
-    , name(std::move(name))
-    , type(std::move(type))
-    , value(std::move(value))
-{}
-
-Parameter::Parameter(std::string name, std::unique_ptr<const Type> &&type)
-    : name(std::move(name))
-    , type(std::move(type))
-{}
-
-FunctionDeclaration::FunctionDeclaration(std::string name, ParameterList &&parameters, std::unique_ptr<const Type> &&returnType, std::unique_ptr<const CodeBlock> &&body)
-    : Node(NodeKind::FunctionDeclaration)
-    , name(std::move(name))
-    , parameters(std::move(parameters))
-    , returnType(std::move(returnType))
-    , body(std::move(body))
-{}
-
-void ValueType::accept(Visitor &visitor) const
+void IntLit::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "IntLit(" << m_Value << ")";
 }
 
-void PointerType::accept(Visitor &visitor) const
+void FloatLit::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "FloatLit(" << m_Value << ")";
 }
 
-void ArrayType::accept(Visitor &visitor) const
+void CharLit::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    std::u32string u32str(1, m_Value);
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
+    std::string utf8 = conv.to_bytes(u32str);
+
+    os << "CharLit('" << utf8 << "')";
 }
 
-void FunctionType::accept(Visitor &visitor) const
+void BoolLit::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "BoolLit(" << m_Value << ")";
 }
 
-void IntegerLiteral::accept(Visitor &visitor) const
+void StringLit::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "StringLit(\"" << m_Value << "\")";
 }
 
-void DoubleLiteral::accept(Visitor &visitor) const
+void ArrayExpr::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "ArrayExpr(";
+    os << *m_ElemType << ", {";
+
+    for (size_t i = 0; i < m_Values.size(); ++i)
+    {
+        if (i > 0) os << ", ";
+        
+        os << *m_Values[i];
+    }
+
+    os << "})";
 }
 
-void CharLiteral::accept(Visitor &visitor) const
+void UnaryExpr::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "UnaryExpr(";
+    os << *m_Operand << ", ";
+    os << m_Op << ")";
 }
 
-void BoolLiteral::accept(Visitor &visitor) const
+void BinaryExpr::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "BinaryExpr(";
+    os << *m_LeftOp << ", ";
+    os << *m_RightOp << ", ";
+    os << m_Op << ")";
 }
 
-void StringLiteral::accept(Visitor &visitor) const
+void VarRef::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "VarRef(" << m_Ident << ")";
 }
 
-void ArrayLiteral::accept(Visitor &visitor) const
+void FuncCall::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "FuncCall(";
+    os << m_Ident << ", {";
+
+    for (size_t i = 0; i < m_Args.size(); ++i)
+    {
+        if (i > 0) os << ", ";
+        
+        os << *m_Args[i];
+    }
+
+    os << "})";
 }
 
-void UnaryExpression::accept(Visitor &visitor) const
+void CodeBlock::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "CodeBlock({";
+    
+    for (size_t i = 0; i < m_Stmts.size(); ++i)
+    {
+        if (i > 0) os << ", ";
+        
+        os << *m_Stmts[i];
+    }
+
+    os << "})";
 }
 
-void BinaryExpression::accept(Visitor &visitor) const
+void IfStmt::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "IfStmt(";
+    os << *m_Cond << ", ";
+    os << *m_Then << ", ";
+    os << *m_Else << ")";
 }
 
-void VariableUse::accept(Visitor &visitor) const
+void WhileStmt::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "WhileStmt(";
+    os << *m_Cond << ", ";
+    os << *m_Body << ")";
 }
 
-void FunctionCall::accept(Visitor &visitor) const
+void ReturnStmt::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "ReturnStmt(";
+    os << *m_Expr << ")";
 }
 
-void CodeBlock::accept(Visitor &visitor) const
+void VarDecl::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "VarDecl(";
+    os << m_Ident << ", ";
+    os << *m_Type << ", ";
+    os << *m_Value << ")";
 }
 
-void IfStatement::accept(Visitor &visitor) const
+void FuncDecl::toString(std::ostream &os) const
 {
-    visitor.visit(*this);
+    os << "FuncDecl(";
+    os << m_Ident << ", {";
+
+    for (size_t i = 0; i < m_Params.size(); ++i)
+    {
+        if (i > 0) os << ", ";
+        
+        os << *m_Params[i];
+    }
+
+    os << "}, ";
+    os << *m_ReturnType << ", ";
+    os << *m_Body << ")";
 }
 
-void WhileStatement::accept(Visitor &visitor) const
+std::ostream &operator<<(std::ostream &os, const Node &node)
 {
-    visitor.visit(*this);
+    node.toString(os);
+    return os;
 }
 
-void VariableDeclaration::accept(Visitor &visitor) const
+std::ostream &operator<<(std::ostream &os, const Param &param)
 {
-    visitor.visit(*this);
+    return os << "Param(" << param.getIdent() << ", " << *param.getType() << ")";
 }
 
-void FunctionDeclaration::accept(Visitor &visitor) const
+std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op)
 {
-    visitor.visit(*this);
+    switch (op)
+    {
+        case UnaryOperatorKind::LogicalNot: return os << "LogicalNot";
+        case UnaryOperatorKind::BitwiseNot: return os << "BitwiseNot";
+        case UnaryOperatorKind::Positive:   return os << "Positive";
+        case UnaryOperatorKind::Negative:   return os << "Negative";
+    }
+    return os << "<Unknown-Unary-Operator>";
+}
+
+std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op)
+{
+    switch (op)
+    {
+        case BinaryOperatorKind::Addition:                 return os << "Addition";
+        case BinaryOperatorKind::Subtraction:              return os << "Subtraction";
+        case BinaryOperatorKind::Multiplication:           return os << "Multiplication";
+        case BinaryOperatorKind::Division:                 return os << "Division";
+        case BinaryOperatorKind::Modulo:                   return os << "Modulo";
+        case BinaryOperatorKind::Equality:                 return os << "Equality";
+        case BinaryOperatorKind::Inequality:               return os << "Inequality";
+        case BinaryOperatorKind::LessThan:                 return os << "LessThan";
+        case BinaryOperatorKind::GreaterThan:              return os << "GreaterThan";
+        case BinaryOperatorKind::LessThanOrEqual:          return os << "LessThanOrEqual";
+        case BinaryOperatorKind::GreaterThanOrEqual:       return os << "GreaterThanOrEqual";
+        case BinaryOperatorKind::LogicalAnd:               return os << "LogicalAnd";
+        case BinaryOperatorKind::LogicalOr:                return os << "LogicalOr";
+        case BinaryOperatorKind::BitwiseAnd:               return os << "BitwiseAnd";
+        case BinaryOperatorKind::BitwiseOr:                return os << "BitwiseOr";
+        case BinaryOperatorKind::BitwiseXor:               return os << "BitwiseXor";
+        case BinaryOperatorKind::LeftShift:                return os << "LeftShift";
+        case BinaryOperatorKind::RightShift:               return os << "RightShift";
+        case BinaryOperatorKind::Assignment:               return os << "Assignment";
+        case BinaryOperatorKind::AdditionAssignment:       return os << "AdditionAssignment";
+        case BinaryOperatorKind::SubtractionAssignment:    return os << "SubtractionAssignment";
+        case BinaryOperatorKind::MultiplicationAssignment: return os << "MultiplicationAssignment";
+        case BinaryOperatorKind::DivisionAssignment:       return os << "DivisionAssignment";
+        case BinaryOperatorKind::ModuloAssignment:         return os << "ModuloAssignment";
+        case BinaryOperatorKind::BitwiseAndAssignment:     return os << "BitwiseAndAssignment";
+        case BinaryOperatorKind::BitwiseOrAssignment:      return os << "BitwiseOrAssignment";
+        case BinaryOperatorKind::BitwiseXorAssignment:     return os << "BitwiseXorAssignment";
+        case BinaryOperatorKind::LeftShiftAssignment:      return os << "LeftShiftAssignment";
+        case BinaryOperatorKind::RightShiftAssignment:     return os << "RightShiftAssignment";
+    }
+    return os << "<Unknown-Binary-Operator>";
 }

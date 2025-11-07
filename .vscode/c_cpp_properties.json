@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/lib",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/test",
+                "/usr/lib/**"
+            ],
+            "defines": [],
+            "cStandard": "c17",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
