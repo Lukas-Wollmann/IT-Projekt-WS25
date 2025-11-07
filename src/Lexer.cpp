@@ -138,7 +138,9 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 
     // Helper to skip to closing quote for recovery
     auto skipToClosing = [this]() {
-        while (!isAtEnd() && m_CurentChar != U'\'') advance();
+        while (!isAtEnd() && m_CurentChar != U'\'' && m_CurentChar != U'\n') {
+            advance();
+        }
         if (!isAtEnd() && m_CurentChar == U'\'') advance();
     };
 
