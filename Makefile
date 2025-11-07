@@ -2,16 +2,18 @@ CXX := clang++
 CXXFLAGS := -std=c++23 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0
 
 SRC_DIR := src
+LIB_DIR := lib
 TEST_DIR := test
+
 OBJ_DIR := build
 BIN_DIR := bin
 
-INCLUDES := -I$(SRC_DIR) -I$(TEST_DIR)
+INCLUDES := -I$(SRC_DIR) -I$(TEST_DIR) -I$(LIB_DIR)
 
 TARGET := $(BIN_DIR)/app
 TEST_TARGET := $(BIN_DIR)/test_runner
 
-SRCS := $(shell find $(SRC_DIR) -name '*.cpp')
+SRCS := $(shell find $(SRC_DIR) -name '*.cpp') $(shell find $(LIB_DIR) -name '*.cpp')
 TEST_SRCS := $(filter-out $(SRC_DIR)/main.cpp, $(SRCS) $(shell find $(TEST_DIR) -name '*.cpp'))
 
 OBJS := $(SRCS:%.cpp=$(OBJ_DIR)/%.o)

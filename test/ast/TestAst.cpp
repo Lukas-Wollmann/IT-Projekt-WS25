@@ -1,6 +1,6 @@
 #include "Doctest.h"
-#include "ast/AST.h"
 #include <sstream>
+#include "ast/AST.h"
 
 TEST_CASE("IntLit: toString works")
 {
