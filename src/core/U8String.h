@@ -25,7 +25,7 @@ public:
     U8String(const U8String &) = default;
     U8String(U8String &&) noexcept = default;
     
-    // Note: const char * literals do not guarantee utf-8 encoding
+    // const char * literals do not guarantee utf-8 encoding
     // you should always use c++20 u8 string literals to do so.
     explicit U8String(const char *str);
     explicit U8String(const std::string &str);
@@ -36,6 +36,8 @@ public:
     ConstIterator begin() const;
     ConstIterator end() const;
 
+    // Unlike indexing into a normal ascii string, indexing
+    // into an utf-8 string is not O(1), its O(n).
     char32_t operator[](size_t idx) const;
     U8String &operator+=(const U8String &str);
 

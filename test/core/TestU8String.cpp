@@ -198,3 +198,52 @@ TEST_CASE("U8String: begin and end both return a correct ConstIterator")
     // Assert
     CHECK(len == 18);
 }
+
+TEST_CASE("U8String: operator[] returns the correct codepoint")
+{
+    // Arrange
+    U8String str = u8"∑ ≔ 🔥✨🦊";
+
+    // Act
+    char32_t c = str[5];
+
+    // Assert
+    CHECK(c == U'✨');
+}
+
+TEST_CASE("U8String: operator[] throws if index out of range")
+{
+    // Arrange
+    U8String str = u8"🐸🌱🐸";
+
+    // Act & Assert
+    CHECK_THROWS_AS(str[20], std::out_of_range);
+}
+
+TEST_CASE("U8String: operator+= concatenates to the string")
+{
+    // Arrange
+    U8String str = u8"🦈 likes 🎨, ⭐️";
+    U8String concat = u8" and 🎧.";
+
+    // Act
+    str += concat;
+
+    // Assert
+    CHECK(str.data() == u8"🦈 likes 🎨, ⭐️ and 🎧.");
+}
+
+TEST_CASE("U8String: operator+ concatenates into a new U8String object")
+{
+    // Arrange
+    U8String str = u8"🐸 <";
+    U8String concat = u8"3 🐸";
+
+    // Act
+    U8String result = str + concat;
+
+    // Assert
+    CHECK(str.data() == u8"🐸 <"); 
+    CHECK(concat.data() == u8"3 🐸");
+    CHECK(result.data() == u8"🐸 <3 🐸");
+}

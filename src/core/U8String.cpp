@@ -97,13 +97,6 @@ U8String operator+(const U8String &left, const U8String &right)
     return result;
 }
 
-U8String &U8String::operator+=(const U8String &str)
-{
-    m_Data.append(str.m_Data);
-
-    return *this;
-}
-
 char32_t U8String::operator[](size_t idx) const
 {
     auto it = m_Data.begin();
@@ -120,6 +113,13 @@ char32_t U8String::operator[](size_t idx) const
     }
 
     throw std::out_of_range("Index out of range");
+}
+
+U8String &U8String::operator+=(const U8String &str)
+{
+    m_Data.append(str.m_Data);
+
+    return *this;
 }
 
 std::ostream &operator<<(std::ostream &os, const U8String &str)
