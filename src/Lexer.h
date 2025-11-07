@@ -41,4 +41,5 @@ private:
     Token lexIdentifierOrKeyword(SourceLoc startLoc);
     Token lexComment(SourceLoc startLoc);
     Token lexBlockComment(SourceLoc startLoc);
+    Token lexIllegal(SourceLoc startLoc);
 };

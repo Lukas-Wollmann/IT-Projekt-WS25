@@ -8,12 +8,13 @@
 
 int main() 
 {
-    std::string sourceCode = R"(
+    U8String sourceCode = u8R"(
     func main() i32 {
         i32 x = 42;
         x: i32 =="hallo";
         h: char = 'a';
-        j: char = '\n';
+        n: char = '🥸';
+        🥸🥸🥸🥸🥸🥸🥸🥸v: char = '\n';
         k: char = '\x'; // illegal escape
         s: char = 'ab'; // illegal multi-char
         /* This is a block comment

@@ -36,7 +36,7 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(lexIdentifierOrKeyword(startLoc));
         } else {
             // Unknown character, skip it for now, implement UTF-8 support later
-            advance();
+            tokens.push_back(lexIllegal(startLoc));
         }
     }
     return tokens;
@@ -275,4 +275,12 @@ Token Lexer::lexBlockComment(SourceLoc startLoc) {
     }
     U8String commentLexeme(ss.str());
     return Token(TokenType::COMMENT, commentLexeme, startLoc);
+}
+
+Token Lexer::lexIllegal(SourceLoc startLoc) {
+    std::stringstream ss;
+    ss << m_CurentChar;
+    advance();
+    U8String illegalLexeme(ss.str());
+    return Token(TokenType::ILLEGAL, illegalLexeme, startLoc);
 }
