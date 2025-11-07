@@ -89,6 +89,21 @@ U8String::ConstIterator U8String::end() const
     return U8String::ConstIterator(m_Data.end(), m_Data.begin(), m_Data.end());
 }
 
+bool U8String::empty() const
+{
+    return m_Data.empty();
+}
+
+bool operator==(const U8String left, const U8String &right)
+{
+    return left.m_Data == right.m_Data;
+}
+
+bool operator!=(const U8String &left, const U8String &right)
+{
+    return !(left == right);
+}
+
 U8String operator+(const U8String &left, const U8String &right)
 {
     U8String result;

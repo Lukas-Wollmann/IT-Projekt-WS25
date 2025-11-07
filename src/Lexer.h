@@ -3,33 +3,34 @@
 #include <vector>
 #include <array>
 #include "Token.h"
+#include "core/U8String.h"
 
 class Lexer {
 private:
-    static constexpr std::array<char, 9> s_Separators = {';', ',', '(', ')', '{', '}', '[', ']', ':'};
-    static inline const std::array<std::string, 11> s_Keywords = {"if", "else", "while", "return", "func", "i32", "u32", "f32", "string", "char", "bool"};
-    static inline const std::array<std::string, 13> s_SingleOps = {"+", "-", "*", "/", "=", "!", "<", ">", "&", "|", "^", "%", "~"};
-    static inline const std::array<std::string, 18> s_MultiOps = {"&&", "||", "==", "<=", ">=", "!=", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<=", ">>="};
+    static constexpr std::array<char32_t, 9> s_Separators = {U';', U',', U'(', U')', U'{', U'}', U'[', U']', U':'};
+    static inline const std::array<U8String, 11> s_Keywords = {u8"if", u8"else", u8"while", u8"return", u8"func", u8"i32", u8"u32", u8"f32", u8"string", u8"char", u8"bool"};
+    static inline const std::array<U8String, 13> s_SingleOps = {u8"+", u8"-", u8"*", u8"/", u8"=", u8"!", u8"<", u8">", u8"&", u8"|", u8"^", u8"%", u8"~"};
+    static inline const std::array<U8String, 18> s_MultiOps = {u8"&&", u8"||", u8"==", u8"<=", u8">=", u8"!=", u8"<<", u8">>", u8"+=", u8"-=", u8"*=", u8"/=", u8"%=", u8"^=", u8"&=", u8"|=", u8"<<=", u8">>="};
 
 public:
-    explicit Lexer(const std::string &source);
+    explicit Lexer(const U8String &source);
     std::vector<Token> tokenize();
 
 private:
-    const std::string &m_Src;
-    std::string::const_iterator m_Iter;
-    char m_CurentChar;
+    const U8String &m_Src;
+    U8String::ConstIterator m_Iter;
+    char32_t m_CurentChar;
     SourceLoc m_Loc;
 
     void advance();
     bool isCurrentSingleOperator() const;
     bool isCurrentMultiOperator() const;
     bool isCurrentSeparator() const;
-    bool isKeyword(const std::string &lexeme) const;
+    bool isKeyword(const U8String &lexeme) const;
     bool isCurrentComment() const;
     bool isStartBlockComment() const;
     bool isAtEnd() const;
-    char peek() const;
+    char32_t peek() const;
     void skipWhitespace();
 
     Token lexNumber(SourceLoc startLoc);

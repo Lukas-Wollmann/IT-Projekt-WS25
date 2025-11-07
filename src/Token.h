@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include "core/U8String.h"
 
 enum class TokenType
 {
@@ -25,10 +26,10 @@ std::ostream &operator<<(std::ostream &os, TokenType type);
 struct Token {
   public:
 	const TokenType type;
-	const std::string lexeme;
+	const U8String lexeme;
 	const SourceLoc loc;
 	
-	Token(TokenType type, std::string lexeme, SourceLoc loc)
+	Token(TokenType type, U8String lexeme, SourceLoc loc)
 		: type(type), lexeme(std::move(lexeme)), loc(loc) 
 	{};
 };
