@@ -136,12 +136,17 @@ Token Lexer::lexString(SourceLoc startLoc) {
     advance(); // Skip opening quote
 
     std::stringstream ss;
+    char32_t prevChar = U'\0';
+    char32_t prevprevChar = U'\0';
 
-    while (m_CurentChar != U'"') {
+    while ((m_CurentChar != U'"') || (m_CurentChar == U'"' && prevChar == U'\\' && prevprevChar != U'\\')) {
         if (isAtEnd()) {
             // Unterminated string literal
             return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc);
         }
+
+        prevprevChar = prevChar;
+        prevChar = m_CurentChar;
         ss << m_CurentChar;
         advance();
     }
