@@ -164,10 +164,14 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 
     // Helper to skip to closing quote for recovery
     auto skipToClosing = [this]() {
+        std::stringstream illegalSs;
         while (!isAtEnd() && m_CurentChar != U'\'' && m_CurentChar != U'\n') {
+
+            illegalSs << m_CurentChar;
             advance();
         }
         if (!isAtEnd() && m_CurentChar == U'\'') advance();
+        return U8String(illegalSs.str());
     };
 
     std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
@@ -197,14 +201,14 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 
         advance(); // move past escape char
         if (!validEscape) {
-            skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
+            U8String illegalChars = skipToClosing();
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
         }
 
         // expect closing quote
         if (m_CurentChar != U'\'') {
-            skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
+            U8String illegalChars = skipToClosing();
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
         }
         advance(); // consume closing quote
 
@@ -226,8 +230,8 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 
     // Expect closing quote now
     if (m_CurentChar != U'\'') {
-        skipToClosing();
-        return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
+        U8String illegalChars = skipToClosing();
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
     }
 
     advance(); // consume closing quote
