@@ -137,7 +137,11 @@ Token Lexer::lexString(SourceLoc startLoc) {
 
     std::stringstream ss;
 
-    while (m_CurentChar != U'"' && !isAtEnd()) {
+    while (m_CurentChar != U'"') {
+        if (isAtEnd()) {
+            // Unterminated string literal
+            return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc);
+        }
         ss << m_CurentChar;
         advance();
     }
