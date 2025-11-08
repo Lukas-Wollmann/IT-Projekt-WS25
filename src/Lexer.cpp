@@ -30,7 +30,7 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(lexChar(startLoc));
         } else if (isCurrentSeparator()) {
             tokens.push_back(lexSeparator(startLoc));
-        } else if (isCurrentSingleOperator() || isCurrentMultiOperator()) {
+        } else if (isCurrentSingleOperator() || isCurrentDoubleOperator() || isCurrentTripleOperator()) {
             tokens.push_back(lexOperator(startLoc));
         } else if (isalpha(currentChar) || currentChar == U'_') {
             tokens.push_back(lexIdentifierOrKeyword(startLoc));
@@ -60,8 +60,12 @@ bool Lexer::isCurrentSingleOperator() const {
     return std::find(s_SingleOps.begin(), s_SingleOps.end(), U8String(m_CurentChar)) != s_SingleOps.end();
 }
 
-bool Lexer::isCurrentMultiOperator() const {
-    return std::find(s_MultiOps.begin(), s_MultiOps.end(), U8String(m_CurentChar) + peek()) != s_MultiOps.end();
+bool Lexer::isCurrentDoubleOperator() const {
+    return std::find(s_DoubleOps.begin(), s_DoubleOps.end(), U8String(m_CurentChar) + peek()) != s_DoubleOps.end();
+}
+
+bool Lexer::isCurrentTripleOperator() const {
+    return std::find(s_TripleOps.begin(), s_TripleOps.end(), U8String(m_CurentChar) + peek() + peek2()) != s_TripleOps.end();
 }
 
 bool Lexer::isCurrentSeparator() const {
@@ -91,6 +95,19 @@ char32_t Lexer::peek() const {
     auto nextIt = m_Iter;
     ++nextIt;
 
+    return nextIt != m_Src.end() ? *nextIt : U'\0';
+}
+
+char32_t Lexer::peek2() const {
+    if (m_Iter == m_Src.end()) 
+        return U'\0';
+
+    auto nextIt = m_Iter;
+    ++nextIt;
+    if (nextIt == m_Src.end())
+        return U'\0';
+
+    ++nextIt;
     return nextIt != m_Src.end() ? *nextIt : U'\0';
 }
 
@@ -217,12 +234,18 @@ Token Lexer::lexSeparator(SourceLoc startLoc) {
 Token Lexer::lexOperator(SourceLoc startLoc) {
     char32_t firstChar = m_CurentChar;
     char32_t secondChar = peek();
+    char32_t thirdChar = peek2();
     advance();
 
     U8String opLexeme(firstChar);
     U8String twoCharOp = opLexeme + secondChar;
+    U8String threeCharOp = twoCharOp + thirdChar;
 
-    if (std::find(s_MultiOps.begin(), s_MultiOps.end(), twoCharOp) != s_MultiOps.end()) {
+    if (std::find(s_TripleOps.begin(), s_TripleOps.end(), threeCharOp) != s_TripleOps.end()) {
+        advance(); // Consume second character
+        advance(); // Consume third character
+        return Token(TokenType::OPERATOR, threeCharOp, startLoc);
+    } else if (std::find(s_DoubleOps.begin(), s_DoubleOps.end(), twoCharOp) != s_DoubleOps.end()) {
         advance(); // Consume second character
         return Token(TokenType::OPERATOR, twoCharOp, startLoc);
     }
