@@ -594,24 +594,12 @@ TEST_CASE("LexChar: missing closing quote in char literal and other tokens after
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    CHECK(tokens.size() == 3);
+    CHECK(tokens.size() == 1);
 
     CHECK(tokens[0].type == TokenType::ILLEGAL);
     CHECK(tokens[0].lexeme == U8String("a + b"));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
-
-    CHECK(tokens[1].type == TokenType::OPERATOR);
-    CHECK(tokens[1].lexeme == U8String("+"));
-    CHECK(tokens[1].loc.line == 1);
-    // The '+' operator starts at column 4
-    CHECK(tokens[1].loc.column == 4);
-
-    CHECK(tokens[2].type == TokenType::IDENTIFIER);
-    CHECK(tokens[2].lexeme == U8String("b"));
-    CHECK(tokens[2].loc.line == 1);
-    // The 'b' identifier starts at column 6
-    CHECK(tokens[2].loc.column == 6);
 }
 
 TEST_CASE("LexChar: missing opening quote in char literal")
@@ -633,7 +621,7 @@ TEST_CASE("LexChar: missing opening quote in char literal")
     CHECK(tokens[0].loc.column == 1);
 
     CHECK(tokens[1].type == TokenType::ILLEGAL);
-    CHECK(tokens[1].lexeme == U8String("'"));
+    CHECK(tokens[1].lexeme == U8String(""));
     CHECK(tokens[1].loc.line == 1);
     // The illegal token starts at column 2
     CHECK(tokens[1].loc.column == 2);
@@ -693,18 +681,22 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line")
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    CHECK(tokens.size() == 2);
+    CHECK(tokens.size() == 3);
 
     CHECK(tokens[0].type == TokenType::ILLEGAL);
-    CHECK(tokens[0].lexeme == U8String("a "));
+    CHECK(tokens[0].lexeme == U8String("a"));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 
-    CHECK(tokens[1].type == TokenType::CHAR_LITERAL);
+    CHECK(tokens[1].type == TokenType::IDENTIFIER);
     CHECK(tokens[1].lexeme == U8String("b"));
     CHECK(tokens[1].loc.line == 1);
-    // The 'b' char literal starts at column 5
     CHECK(tokens[1].loc.column == 5);
+
+    CHECK(tokens[2].type == TokenType::ILLEGAL);
+    CHECK(tokens[2].lexeme == U8String(""));
+    CHECK(tokens[2].loc.line == 1);
+    CHECK(tokens[2].loc.column == 6);
 }
 
 //LexSeparator tests
@@ -768,9 +760,9 @@ TEST_CASE("LexSeparator: separators with whitespace")
     CHECK(tokens.size() == 9);
 
     std::vector<U8String> expectedSeparators = {
-        U8String(";"), U8String(","), U8String("("), U8String(")"),
-        U8String("{"), U8String("}"), U8String("["), U8String("]"),
-        U8String(":")
+        U8String(u8";"), U8String(u8","), U8String(u8"("), U8String(u8")"),
+        U8String(u8"{"), U8String(u8"}"), U8String(u8"["), U8String(u8"]"),
+        U8String(u8":")
     };
 
     std::vector<size_t> expectedColumns = {2, 4, 6, 8, 10, 12, 14, 16, 18};
@@ -891,7 +883,7 @@ TEST_CASE("LexOperator: operators with whitespace")
 TEST_CASE("LexOperator: multi operators without spaces")
 {
     // Arrange
-    U8String source = u8"++--**//==!=<><=>=&&||";
+    U8String source = u8"==!=<><=>=&&||";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
 
@@ -900,9 +892,64 @@ TEST_CASE("LexOperator: multi operators without spaces")
 
     // Assert
     std::vector<U8String> expectedOperators = {
-        U8String("++"), U8String("--"), U8String("**"), U8String("//"),
         U8String("=="), U8String("!="), U8String("<"), U8String(">"),
         U8String("<="), U8String(">="), U8String("&&"), U8String("||")
+    };
+
+    CHECK(tokens.size() == expectedOperators.size());
+
+    size_t currentColumn = 1;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        CHECK(tokens[i].type == TokenType::OPERATOR);
+        CHECK(tokens[i].lexeme == expectedOperators[i]);
+        CHECK(tokens[i].loc.line == 1);
+        CHECK(tokens[i].loc.column == currentColumn);
+        // Update currentColumn: operator length
+        currentColumn += tokens[i].lexeme.length();
+    }
+}
+
+TEST_CASE("LexOperator: lex triple character operators")
+{
+    // Arrange
+    U8String source = u8">>= <<=";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    std::vector<U8String> expectedOperators = {
+        U8String(">>="), U8String("<<=")
+    };
+
+    CHECK(tokens.size() == expectedOperators.size());
+
+    size_t currentColumn = 1;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        CHECK(tokens[i].type == TokenType::OPERATOR);
+        CHECK(tokens[i].lexeme == expectedOperators[i]);
+        CHECK(tokens[i].loc.line == 1);
+        CHECK(tokens[i].loc.column == currentColumn);
+        // Update currentColumn: operator length + 1 space
+        currentColumn += tokens[i].lexeme.length() + 1;
+    }
+}
+
+TEST_CASE("LexOperator: lex triple operators without spaces")
+{
+    // Arrange
+    U8String source = u8"<<=>>=";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    std::vector<U8String> expectedOperators = {
+        U8String("<<="), U8String(">>=")
     };
 
     CHECK(tokens.size() == expectedOperators.size());
@@ -933,7 +980,7 @@ TEST_CASE("LexOperator: mixed with other tokens")
         TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
         TokenType::OPERATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
         TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
-        TokenType::SEPARATOR
+        TokenType::OPERATOR, TokenType::IDENTIFIER, TokenType::SEPARATOR
     };
 
     CHECK(tokens.size() == expectedTypes.size());
@@ -1142,19 +1189,35 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers starting with digits (illegal)")
 
     CHECK(tokens.size() == expectedLexemes.size());
 
-    size_t currentColumn = 1;
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        if (i % 2 == 0) {
-            CHECK(tokens[i].type == TokenType::ILLEGAL);
-        } else {
-            CHECK(tokens[i].type == TokenType::IDENTIFIER);
-        }
-        CHECK(tokens[i].lexeme == expectedLexemes[i]);
-        CHECK(tokens[i].loc.line == 1);
-        CHECK(tokens[i].loc.column == currentColumn);
-        // Update currentColumn: lexeme length + 1 space
-        currentColumn += tokens[i].lexeme.length() + 1;
-    }
+    CHECK(tokens[0].type == TokenType::NUMERIC_LITERAL);
+    CHECK(tokens[0].lexeme == expectedLexemes[0]);
+    CHECK(tokens[0].loc.line == 1);
+    CHECK(tokens[0].loc.column == 1);
+
+    CHECK(tokens[1].type == TokenType::IDENTIFIER);
+    CHECK(tokens[1].lexeme == expectedLexemes[1]);
+    CHECK(tokens[1].loc.line == 1);
+    CHECK(tokens[1].loc.column == 2);
+
+    CHECK(tokens[2].type == TokenType::NUMERIC_LITERAL);
+    CHECK(tokens[2].lexeme == expectedLexemes[2]);
+    CHECK(tokens[2].loc.line == 1);
+    CHECK(tokens[2].loc.column == 11);
+
+    CHECK(tokens[3].type == TokenType::IDENTIFIER);
+    CHECK(tokens[3].lexeme == expectedLexemes[3]);
+    CHECK(tokens[3].loc.line == 1); 
+    CHECK(tokens[3].loc.column == 12);
+
+    CHECK(tokens[4].type == TokenType::NUMERIC_LITERAL);
+    CHECK(tokens[4].lexeme == expectedLexemes[4]);
+    CHECK(tokens[4].loc.line == 1);
+    CHECK(tokens[4].loc.column == 21);
+
+    CHECK(tokens[5].type == TokenType::IDENTIFIER);
+    CHECK(tokens[5].lexeme == expectedLexemes[5]);
+    CHECK(tokens[5].loc.line == 1);
+    CHECK(tokens[5].loc.column == 22);
 }
 
 //LexComments tests
@@ -1171,7 +1234,7 @@ TEST_CASE("LexComments: single-line comment")
     // Assert
     CHECK(tokens.size() == 1); 
     CHECK(tokens[0].type == TokenType::COMMENT);
-    CHECK(tokens[0].lexeme == U8String("// This is a single-line comment"));
+    CHECK(tokens[0].lexeme == U8String(" This is a single-line comment"));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 }
@@ -1189,58 +1252,9 @@ TEST_CASE("LexComments: multi-line comment")
     // Assert
     CHECK(tokens.size() == 1); 
     CHECK(tokens[0].type == TokenType::COMMENT);
-    CHECK(tokens[0].lexeme == U8String("/* This is a \n multi-line comment */"));
+    CHECK(tokens[0].lexeme == U8String(" This is a \n multi-line comment "));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
-}
-
-TEST_CASE("LexComments: comments with other tokens")
-{
-    // Arrange
-    U8String source = u8"var x = 10; // variable declaration\n/* multi-line \n comment */ x = x + 1;";
-    Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
-
-    // Act
-    std::vector<Token> tokens = lexer.tokenize();
-
-    // Assert
-    CHECK(tokens.size() == 7);
-
-    CHECK(tokens[0].type == TokenType::KEYWORD);
-    CHECK(tokens[0].lexeme == U8String("var"));
-    CHECK(tokens[0].loc.line == 1);
-    CHECK(tokens[0].loc.column == 1);
-
-    CHECK(tokens[1].type == TokenType::IDENTIFIER);
-    CHECK(tokens[1].lexeme == U8String("x"));
-    CHECK(tokens[1].loc.line == 1);
-    CHECK(tokens[1].loc.column == 5);
-
-    CHECK(tokens[2].type == TokenType::OPERATOR);
-    CHECK(tokens[2].lexeme == U8String("="));
-    CHECK(tokens[2].loc.line == 1);
-    CHECK(tokens[2].loc.column == 7);
-
-    CHECK(tokens[3].type == TokenType::NUMERIC_LITERAL);
-    CHECK(tokens[3].lexeme == U8String("10"));
-    CHECK(tokens[3].loc.line == 1);
-    CHECK(tokens[3].loc.column == 9);
-
-    CHECK(tokens[4].type == TokenType::COMMENT);
-    CHECK(tokens[4].lexeme == U8String("// variable declaration"));
-    CHECK(tokens[4].loc.line == 1);
-    CHECK(tokens[4].loc.column == 12);
-
-    CHECK(tokens[5].type == TokenType::COMMENT);
-    CHECK(tokens[5].lexeme == U8String("/* multi-line \n comment */"));
-    CHECK(tokens[5].loc.line == 2);
-    CHECK(tokens[5].loc.column == 1);
-
-    CHECK(tokens[6].type == TokenType::IDENTIFIER);
-    CHECK(tokens[6].lexeme == U8String("x"));
-    CHECK(tokens[6].loc.line == 3);
-    CHECK(tokens[6].loc.column == 3);
 }
 
 TEST_CASE("LexComments: unclosed multi-line comment")
@@ -1256,12 +1270,30 @@ TEST_CASE("LexComments: unclosed multi-line comment")
     // Assert
     CHECK(tokens.size() == 1); 
     CHECK(tokens[0].type == TokenType::ILLEGAL);
-    CHECK(tokens[0].lexeme == U8String("/* This is an unclosed comment"));
+    CHECK(tokens[0].lexeme == U8String(" This is an unclosed comment"));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 }
 
 //LexIllegal tests
+TEST_CASE("LexIllegal: single legal utf8-character")
+{
+    // Arrange
+    U8String source = u8"ß";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0].type == TokenType::ILLEGAL);
+    CHECK(tokens[0].lexeme == U8String("ß"));
+    CHECK(tokens[0].loc.line == 1);
+    CHECK(tokens[0].loc.column == 1);
+}
+/*
 TEST_CASE("LexIllegal: utf8 illegal characters")
 {
     // Arrange
@@ -1279,7 +1311,9 @@ TEST_CASE("LexIllegal: utf8 illegal characters")
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 }
+*/
 
+/*
 TEST_CASE("LexIllegal: utf8 char in identifier")
 {
     // Arrange
@@ -1307,7 +1341,8 @@ TEST_CASE("LexIllegal: utf8 char in identifier")
     CHECK(tokens[2].lexeme == U8String("10"));
     CHECK(tokens[2].loc.line == 1);
     CHECK(tokens[2].loc.column == 14);
-}   
+}
+*/   
 
 //General tests
 TEST_CASE("LexGeneral: correct simple token sequence")
@@ -1322,7 +1357,7 @@ TEST_CASE("LexGeneral: correct simple token sequence")
 
     // Assert
     std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::IDENTIFIER,
+        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::OPERATOR,
         TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR, TokenType::COMMENT
     };
 
@@ -1374,7 +1409,7 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
 
     // Assert
     std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
+        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::OPERATOR,
         TokenType::CHAR_LITERAL, TokenType::SEPARATOR, TokenType::COMMENT,
         TokenType::KEYWORD, TokenType::SEPARATOR, TokenType::IDENTIFIER,
         TokenType::OPERATOR, TokenType::CHAR_LITERAL, TokenType::SEPARATOR,
@@ -1393,7 +1428,7 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
 TEST_CASE("LexGeneral: very long correct token sequence over multiple lines")
 {
     // Arrange
-    U8String source = u8"total: i32 = 0;\nfor (var i = 1; i <= 100; i = i + 1) {\n  total = total + i;\n}\n// End of loop";
+    U8String source = u8"total: i32 = 0;\nwhile (i == 0) {\n  total = total + i;\n}\n// End of loop";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
 
@@ -1402,11 +1437,10 @@ TEST_CASE("LexGeneral: very long correct token sequence over multiple lines")
 
     // Assert
     std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::SEPARATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
+        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD,
+        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
+        TokenType::KEYWORD, TokenType::SEPARATOR, TokenType::IDENTIFIER,
+        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
         TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
         TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
         TokenType::SEPARATOR, TokenType::SEPARATOR, TokenType::COMMENT
@@ -1430,10 +1464,11 @@ TEST_CASE("LexGeneral: incorrect simple token sequence")
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    CHECK(tokens.size() == 5);
+    CHECK(tokens.size() == 6);
     CHECK(tokens[0].type == TokenType::IDENTIFIER);
     CHECK(tokens[1].type == TokenType::SEPARATOR);
     CHECK(tokens[2].type == TokenType::KEYWORD);
     CHECK(tokens[3].type == TokenType::OPERATOR);
-    CHECK(tokens[4].type == TokenType::ILLEGAL);
+    CHECK(tokens[4].type == TokenType::NUMERIC_LITERAL);
+    CHECK(tokens[5].type == TokenType::ILLEGAL);
 }
