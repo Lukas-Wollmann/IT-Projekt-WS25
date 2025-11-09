@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <functional>
 
 
 struct Node;
@@ -130,8 +131,8 @@ protected:
 public:
     void toString(std::ostream &os) const override = 0;
 
-    const std::optional<TypePtr> &getType() const { return m_Type; }
-    void setType(std::optional<TypePtr> type) const { m_Type = std::move(type); }
+    std::optional<Ref<const Type>> getType() const;
+    void setType(TypePtr type) const { m_Type = std::move(type); }
 };
 
 
@@ -232,7 +233,7 @@ public:
     void toString(std::ostream &os) const override;
 
     UnaryOperatorKind getOp() const { return m_Op; }
-    const ExprPtr &getOperand() const { return m_Operand; }
+    const Expr &getOperand() const { return *m_Operand; }
 };
 
 
@@ -248,8 +249,8 @@ public:
     void toString(std::ostream &os) const override;
 
     BinaryOperatorKind getOp() const { return m_Op; }
-    const ExprPtr &getLeftOp() const { return m_LeftOp; }
-    const ExprPtr &getRightOp() const { return m_RightOp; }
+    const Expr &getLeftOp() const { return *m_LeftOp; }
+    const Expr &getRightOp() const { return *m_RightOp; }
 };
 
 
@@ -357,8 +358,8 @@ public:
     void toString(std::ostream &os) const override;
 
     const std::string &getIdent() const { return m_Ident; }
-    const TypePtr &getType() const { return m_Type; }
-    const ExprPtr &getValue() const { return m_Value; }
+    const Type &getType() const { return *m_Type; }
+    const Expr &getValue() const { return *m_Value; }
 };
 
 

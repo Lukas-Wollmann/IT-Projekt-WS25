@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "../src/Lexer.h"
+#include "Lexer.h"
 
 // FIXME: Overload operator== for Token? This should not be here?
 static void checkToken(const Token &t, TokenType type, const std::string &lexeme) {

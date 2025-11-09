@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include <functional>
 
 typedef int8_t   i8;
 typedef int16_t  i16;
@@ -14,3 +15,7 @@ typedef uint64_t u64;
 
 typedef float    f32;
 typedef double   f64;
+
+template<typename T>
+using Ref = std::reference_wrapper<T>;
+

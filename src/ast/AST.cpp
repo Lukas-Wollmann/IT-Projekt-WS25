@@ -21,6 +21,14 @@ Expr::Expr(const NodeKind kind, std::optional<TypePtr> type)
     , m_Type(std::move(type))
 {}
 
+std::optional<std::reference_wrapper<const Type>> Expr::getType() const
+{
+    if (m_Type && *m_Type) 
+        return std::cref(**m_Type);
+    
+    return std::nullopt;
+}
+
 IntLit::IntLit(i32 value)
     : Expr(NodeKind::IntLit)
     , m_Value(value)

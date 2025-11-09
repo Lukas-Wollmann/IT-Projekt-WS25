@@ -123,6 +123,25 @@ TypePtr FunctionType::copy() const
     return std::make_unique<FunctionType>(std::move(copiedParameters), m_ReturnType->copy());
 }
 
+ErrorType::ErrorType() 
+    : Type(Kind::Error) 
+{}
+
+void ErrorType::toString(std::ostream &os) const
+{
+    os << "<error-type>";
+}
+
+bool ErrorType::equals(const Type &other) const
+{
+    return getKind() == other.getKind();
+}
+
+TypePtr ErrorType::copy() const 
+{       
+    return std::make_unique<ErrorType>();
+}
+
 std::ostream &operator<<(std::ostream &os, const Type &type)
 {
     type.toString(os);

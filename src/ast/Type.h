@@ -22,7 +22,7 @@ bool operator!=(const TypeList &left, const TypeList &right);
 
 struct Type 
 {
-    enum struct Kind { Primitive, Pointer, Array, Function };
+    enum struct Kind { Primitive, Pointer, Array, Function, Error };
 
 private:
     const Kind m_Kind;
@@ -107,3 +107,19 @@ public:
     const TypeList &getParameterTypes() const { return m_ParameterTypes; }
     const Type &getReturnType() const { return *m_ReturnType; }
 };
+
+struct ErrorType : public Type
+{
+public:
+    explicit ErrorType();
+
+    void toString(std::ostream &os) const override;
+    bool equals(const Type &other) const override;
+    TypePtr copy() const override; 
+};
+
+using PrimitiveTypePtr = std::unique_ptr<const PrimitiveType>;
+using PointerTypePtr = std::unique_ptr<const PointerType>;
+using ArrayTypePtr = std::unique_ptr<const ArrayType>;
+using FunctionTypePtr = std::unique_ptr<const FunctionType>;
+using ErrorTypePtr = std::unique_ptr<const ErrorType>;
