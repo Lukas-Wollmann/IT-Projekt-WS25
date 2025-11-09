@@ -219,14 +219,16 @@ Token Lexer::lexChar(SourceLoc startLoc) {
 
     // Non-escaped character
     char32_t c = m_CurentChar;
-    rawSs << c;
-    valueSs << c;
-    advance(); // move past the character
 
     // If the character we saw was a closing quote immediately -> empty char literal -> ILLEGAL
     if (c == U'\'') {
-        return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
+        advance();
+        return Token(TokenType::ILLEGAL, U8String(""), startLoc);
     }
+
+    rawSs << c;
+    valueSs << c;
+    advance(); // move past the character
 
     // Expect closing quote now
     if (m_CurentChar != U'\'') {
