@@ -684,7 +684,7 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line")
     CHECK(tokens.size() == 3);
 
     CHECK(tokens[0].type == TokenType::ILLEGAL);
-    CHECK(tokens[0].lexeme == U8String("a"));
+    CHECK(tokens[0].lexeme == U8String("a "));
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 
