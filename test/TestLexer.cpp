@@ -699,6 +699,42 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line")
     CHECK(tokens[2].loc.column == 6);
 }
 
+TEST_CASE("LexChar: illegal utf8 character in char literal")
+{
+    // Arrange
+    U8String source = u8"'\xFF'";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0].type == TokenType::ILLEGAL);
+    CHECK(tokens[0].lexeme == U8String("\xFF"));
+    CHECK(tokens[0].loc.line == 1);
+    CHECK(tokens[0].loc.column == 1);
+}
+
+TEST_CASE("LexChar: char literal with japanese character")
+{
+    // Arrange
+    U8String source = u8"'あ'";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0].type == TokenType::CHAR_LITERAL);
+    CHECK(tokens[0].lexeme == U8String("あ"));
+    CHECK(tokens[0].loc.line == 1);
+    CHECK(tokens[0].loc.column == 1);
+}
+
 //LexSeparator tests
 TEST_CASE("LexSeparator: single separator")
 {
@@ -1293,7 +1329,7 @@ TEST_CASE("LexIllegal: single legal utf8-character")
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 }
-/*
+
 TEST_CASE("LexIllegal: utf8 illegal characters")
 {
     // Arrange
@@ -1311,9 +1347,7 @@ TEST_CASE("LexIllegal: utf8 illegal characters")
     CHECK(tokens[0].loc.line == 1);
     CHECK(tokens[0].loc.column == 1);
 }
-*/
 
-/*
 TEST_CASE("LexIllegal: utf8 char in identifier")
 {
     // Arrange
@@ -1342,7 +1376,6 @@ TEST_CASE("LexIllegal: utf8 char in identifier")
     CHECK(tokens[2].loc.line == 1);
     CHECK(tokens[2].loc.column == 14);
 }
-*/   
 
 //General tests
 TEST_CASE("LexGeneral: correct simple token sequence")
