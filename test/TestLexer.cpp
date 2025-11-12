@@ -1252,19 +1252,19 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
         Token(TokenType::CHAR_LITERAL, U8String("a"), {1, 12, 11}),
         Token(TokenType::SEPARATOR, U8String(";"), {1, 15, 14}),
         Token(TokenType::COMMENT, U8String(" char literal"), {1, 17, 16}),
-        Token(TokenType::KEYWORD, U8String("if"), {2, 1, 34}),
-        Token(TokenType::SEPARATOR, U8String("("), {2, 4, 37}),
-        Token(TokenType::IDENTIFIER, U8String("ch"), {2, 5, 38}),
-        Token(TokenType::OPERATOR, U8String("=="), {2, 8, 41}),
-        Token(TokenType::CHAR_LITERAL, U8String("\n"), {2, 11, 44}),
-        Token(TokenType::SEPARATOR, U8String(")"), {2, 15, 48}),
-        Token(TokenType::SEPARATOR, U8String("{"), {2, 17, 50}),
-        Token(TokenType::COMMENT, U8String(" multi-line \n comment "), {3, 3, 54}),
-        Token(TokenType::IDENTIFIER, U8String("ch"), {5, 3, 85}),
-        Token(TokenType::OPERATOR, U8String("="), {5, 6, 88}),
-        Token(TokenType::CHAR_LITERAL, U8String("b"), {5, 8, 90}),
-        Token(TokenType::SEPARATOR, U8String(";"), {5, 11, 93}),
-        Token(TokenType::SEPARATOR, U8String("}"), {6, 1, 95})
+        Token(TokenType::KEYWORD, U8String("if"), {2, 1, 32}),
+        Token(TokenType::SEPARATOR, U8String("("), {2, 4, 35}),
+        Token(TokenType::IDENTIFIER, U8String("ch"), {2, 5, 36}),
+        Token(TokenType::OPERATOR, U8String("=="), {2, 8, 39}),
+        Token(TokenType::CHAR_LITERAL, U8String("\n"), {2, 11, 42}),
+        Token(TokenType::SEPARATOR, U8String(")"), {2, 15, 46}),
+        Token(TokenType::SEPARATOR, U8String("{"), {2, 17, 48}),
+        Token(TokenType::COMMENT, U8String(" multi-line \n comment "), {3, 3, 52}),
+        Token(TokenType::IDENTIFIER, U8String("ch"), {5, 3, 81}),
+        Token(TokenType::OPERATOR, U8String("="), {5, 6, 84}),
+        Token(TokenType::CHAR_LITERAL, U8String("b"), {5, 8, 86}),
+        Token(TokenType::SEPARATOR, U8String(";"), {5, 11, 89}),
+        Token(TokenType::SEPARATOR, U8String("}"), {6, 1, 91})
     };
 
     // Act
