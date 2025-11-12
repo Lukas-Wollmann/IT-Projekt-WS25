@@ -850,23 +850,30 @@ TEST_CASE("LexOperator: mixed with other tokens")
     // Arrange
     U8String source = u8"result = a + b * c - d / e;";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::IDENTIFIER, TokenType::SEPARATOR
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("result"), {1, 1, 0}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
+        Token(TokenType::IDENTIFIER, U8String("a"), {1, 10, 9}),
+        Token(TokenType::OPERATOR, U8String("+"), {1, 12, 11}),
+        Token(TokenType::IDENTIFIER, U8String("b"), {1, 14, 13}),
+        Token(TokenType::OPERATOR, U8String("*"), {1, 16, 15}),
+        Token(TokenType::IDENTIFIER, U8String("c"), {1, 18, 17}),
+        Token(TokenType::OPERATOR, U8String("-"), {1, 20, 19}),
+        Token(TokenType::IDENTIFIER, U8String("d"), {1, 22, 21}),
+        Token(TokenType::OPERATOR, U8String("/"), {1, 24, 23}),
+        Token(TokenType::IDENTIFIER, U8String("e"), {1, 26, 25}),
+        Token(TokenType::SEPARATOR, U8String(";"), {1, 27, 26})
     };
 
-    CHECK(tokens.size() == expectedTypes.size());
+    CHECK(tokens.size() == expectedTokens.size());
 
     for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -931,26 +938,37 @@ TEST_CASE("LexSeparator: mixed with other tokens")
     // Arrange
     U8String source = u8"x: i32 = 10;\nif (x > 5) {\n  x = x + 1;\n}";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::OPERATOR,
-        TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR, TokenType::KEYWORD,
-        TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR, TokenType::SEPARATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
-        TokenType::SEPARATOR
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("x"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
+        Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 10, 9}),
+        Token(TokenType::SEPARATOR, U8String(";"), {1, 12, 11}),
+        Token(TokenType::KEYWORD, U8String("if"), {2, 1, 13}),
+        Token(TokenType::SEPARATOR, U8String("("), {2, 4, 16}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {2, 5, 17}),
+        Token(TokenType::OPERATOR, U8String(">"), {2, 7, 19}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("5"), {2, 9, 21}),
+        Token(TokenType::SEPARATOR, U8String(")"), {2, 10, 22}),
+        Token(TokenType::SEPARATOR, U8String("{"), {2, 12, 24}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {3, 3, 28}),
+        Token(TokenType::OPERATOR, U8String("="), {3, 5, 30}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {3, 7, 32}),
+        Token(TokenType::OPERATOR, U8String("+"), {3, 9, 34}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("1"), {3, 11, 36}),
+        Token(TokenType::SEPARATOR, U8String(";"), {3, 12, 37}),
+        Token(TokenType::SEPARATOR, U8String("}"), {4, 1, 39})
     };
 
-    CHECK(tokens.size() == expectedTypes.size());
-
+    CHECK(tokens.size() == expectedTokens.size());
     for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -1155,21 +1173,25 @@ TEST_CASE("LexGeneral: correct simple token sequence")
     // Arrange
     U8String source = u8"x: i32 = 42; // variable declaration";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::OPERATOR,
-        TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR, TokenType::COMMENT
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("x"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
+        Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("42"), {1, 10, 9}),
+        Token(TokenType::SEPARATOR, U8String(";"), {1, 12, 11}),
+        Token(TokenType::COMMENT, U8String(" variable declaration"), {1, 14, 13})
     };
 
-    CHECK(tokens.size() == expectedTypes.size());
+    CHECK(tokens.size() == expectedTokens.size());
 
     for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -1178,27 +1200,41 @@ TEST_CASE("LexGeneral: correct complex token sequence")
     // Arrange
     U8String source = u8"if (x >= 10) {\n  x = x + 1;\n} else {\n  x = x - 1;\n}";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::KEYWORD, TokenType::SEPARATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
-        TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::NUMERIC_LITERAL,
-        TokenType::SEPARATOR, TokenType::SEPARATOR, TokenType::KEYWORD,
-        TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::NUMERIC_LITERAL,
-        TokenType::SEPARATOR, TokenType::SEPARATOR
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::KEYWORD, U8String("if"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String("("), {1, 4, 3}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {1, 5, 4}),
+        Token(TokenType::OPERATOR, U8String(">="), {1, 7, 6}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 10, 9}),
+        Token(TokenType::SEPARATOR, U8String(")"), {1, 12, 11}),
+        Token(TokenType::SEPARATOR, U8String("{"), {1, 14, 13}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {2, 3, 17}),
+        Token(TokenType::OPERATOR, U8String("="), {2, 5, 19}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {2, 7, 21}),
+        Token(TokenType::OPERATOR, U8String("+"), {2, 9, 23}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("1"), {2, 11, 25}),
+        Token(TokenType::SEPARATOR, U8String(";"), {2, 12, 26}),
+        Token(TokenType::SEPARATOR, U8String("}"), {3, 1, 28}),
+        Token(TokenType::KEYWORD, U8String("else"), {3, 3, 30}),
+        Token(TokenType::SEPARATOR, U8String("{"), {3, 8, 35}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {4, 3, 39}),
+        Token(TokenType::OPERATOR, U8String("="), {4, 5, 41}),
+        Token(TokenType::IDENTIFIER, U8String("x"), {4, 7, 43}),
+        Token(TokenType::OPERATOR, U8String("-"), {4, 9, 45}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("1"), {4, 11, 47}),
+        Token(TokenType::SEPARATOR, U8String(";"), {4, 12, 48}),
+        Token(TokenType::SEPARATOR, U8String("}"), {5, 1, 50})
     };
 
-    CHECK(tokens.size() == expectedTypes.size());
+    CHECK(tokens.size() == expectedTokens.size());
 
     for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -1207,26 +1243,39 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
     // Arrange
     U8String source = u8"ch: char = 'a'; // char literal\nif (ch == '\\n') {\n  /* multi-line \n comment */\n  ch = 'b';\n}";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
+    
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("ch"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String(":"), {1, 3, 2}),
+        Token(TokenType::KEYWORD, U8String("char"), {1, 5, 4}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 10, 9}),
+        Token(TokenType::CHAR_LITERAL, U8String("a"), {1, 12, 11}),
+        Token(TokenType::SEPARATOR, U8String(";"), {1, 15, 14}),
+        Token(TokenType::COMMENT, U8String(" char literal"), {1, 17, 16}),
+        Token(TokenType::KEYWORD, U8String("if"), {2, 1, 34}),
+        Token(TokenType::SEPARATOR, U8String("("), {2, 4, 37}),
+        Token(TokenType::IDENTIFIER, U8String("ch"), {2, 5, 38}),
+        Token(TokenType::OPERATOR, U8String("=="), {2, 8, 41}),
+        Token(TokenType::CHAR_LITERAL, U8String("\n"), {2, 11, 44}),
+        Token(TokenType::SEPARATOR, U8String(")"), {2, 15, 48}),
+        Token(TokenType::SEPARATOR, U8String("{"), {2, 17, 50}),
+        Token(TokenType::COMMENT, U8String(" multi-line \n comment "), {3, 3, 54}),
+        Token(TokenType::IDENTIFIER, U8String("ch"), {5, 3, 85}),
+        Token(TokenType::OPERATOR, U8String("="), {5, 6, 88}),
+        Token(TokenType::CHAR_LITERAL, U8String("b"), {5, 8, 90}),
+        Token(TokenType::SEPARATOR, U8String(";"), {5, 11, 93}),
+        Token(TokenType::SEPARATOR, U8String("}"), {6, 1, 95})
+    };
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD, TokenType::OPERATOR,
-        TokenType::CHAR_LITERAL, TokenType::SEPARATOR, TokenType::COMMENT,
-        TokenType::KEYWORD, TokenType::SEPARATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::CHAR_LITERAL, TokenType::SEPARATOR,
-        TokenType::SEPARATOR, TokenType::COMMENT, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::CHAR_LITERAL, TokenType::SEPARATOR,
-        TokenType::SEPARATOR
-    };
+    CHECK(tokens.size() == expectedTokens.size());
 
-    CHECK(tokens.size() == expectedTypes.size());
-
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+    for (size_t i = 0; i < expectedTokens.size(); ++i) {
+        // This check now compares the full Token (type, lexeme, and loc)
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -1235,26 +1284,40 @@ TEST_CASE("LexGeneral: very long correct token sequence over multiple lines")
     // Arrange
     U8String source = u8"total: i32 = 0;\nwhile (i == 0) {\n  total = total + i;\n}\n// End of loop";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
+    
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("total"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String(":"), {1, 6, 5}),
+        Token(TokenType::KEYWORD, U8String("i32"), {1, 8, 7}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 12, 11}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("0"), {1, 14, 13}),
+        Token(TokenType::SEPARATOR, U8String(";"), {1, 15, 14}),
+        Token(TokenType::KEYWORD, U8String("while"), {2, 1, 16}),
+        Token(TokenType::SEPARATOR, U8String("("), {2, 7, 22}),
+        Token(TokenType::IDENTIFIER, U8String("i"), {2, 8, 23}),
+        Token(TokenType::OPERATOR, U8String("=="), {2, 10, 25}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("0"), {2, 13, 28}),
+        Token(TokenType::SEPARATOR, U8String(")"), {2, 14, 29}),
+        Token(TokenType::SEPARATOR, U8String("{"), {2, 16, 31}),
+        Token(TokenType::IDENTIFIER, U8String("total"), {3, 3, 35}),
+        Token(TokenType::OPERATOR, U8String("="), {3, 9, 41}),
+        Token(TokenType::IDENTIFIER, U8String("total"), {3, 11, 43}),
+        Token(TokenType::OPERATOR, U8String("+"), {3, 17, 49}),
+        Token(TokenType::IDENTIFIER, U8String("i"), {3, 19, 51}),
+        Token(TokenType::SEPARATOR, U8String(";"), {3, 20, 52}),
+        Token(TokenType::SEPARATOR, U8String("}"), {4, 1, 54}),
+        Token(TokenType::COMMENT, U8String(" End of loop"), {5, 1, 56})
+    };
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    std::vector<TokenType> expectedTypes = {
-        TokenType::IDENTIFIER, TokenType::SEPARATOR, TokenType::KEYWORD,
-        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
-        TokenType::KEYWORD, TokenType::SEPARATOR, TokenType::IDENTIFIER,
-        TokenType::OPERATOR, TokenType::NUMERIC_LITERAL, TokenType::SEPARATOR,
-        TokenType::SEPARATOR, TokenType::IDENTIFIER, TokenType::OPERATOR,
-        TokenType::IDENTIFIER, TokenType::OPERATOR, TokenType::IDENTIFIER,
-        TokenType::SEPARATOR, TokenType::SEPARATOR, TokenType::COMMENT
-    };
+    CHECK(tokens.size() == expectedTokens.size());
 
-    CHECK(tokens.size() == expectedTypes.size());
-
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        CHECK(tokens[i].type == expectedTypes[i]);
+    for (size_t i = 0; i < expectedTokens.size(); ++i) {
+        // This check now compares the full Token (type, lexeme, and loc)
+        CHECK(tokens[i] == expectedTokens[i]);
     }
 }
 
@@ -1263,17 +1326,24 @@ TEST_CASE("LexGeneral: incorrect simple token sequence")
     // Arrange
     U8String source = u8"a: i32 = 10 'a";
     Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
+    
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::IDENTIFIER, U8String("a"), {1, 1, 0}),
+        Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
+        Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
+        Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 10, 9}),
+        Token(TokenType::ILLEGAL, U8String("a"), {1, 13, 12}) // Unterminated char literal
+    };
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
 
     // Assert
-    CHECK(tokens.size() == 6);
-    CHECK(tokens[0].type == TokenType::IDENTIFIER);
-    CHECK(tokens[1].type == TokenType::SEPARATOR);
-    CHECK(tokens[2].type == TokenType::KEYWORD);
-    CHECK(tokens[3].type == TokenType::OPERATOR);
-    CHECK(tokens[4].type == TokenType::NUMERIC_LITERAL);
-    CHECK(tokens[5].type == TokenType::ILLEGAL);
+    CHECK(tokens.size() == expectedTokens.size());
+
+    for (size_t i = 0; i < expectedTokens.size(); ++i) {
+        // This check now compares the full Token (type, lexeme, and loc)
+        CHECK(tokens[i] == expectedTokens[i]);
+    }
 }
