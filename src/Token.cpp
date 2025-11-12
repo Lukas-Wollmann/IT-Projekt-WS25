@@ -32,3 +32,18 @@ std::ostream &operator<<(std::ostream &os, const Token &t)
 {
     return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", " << t.loc.column << ", " << t.loc.index << ")";
 }
+
+bool operator==(const Token& lhs, const Token& rhs)
+{
+    // Compare type, lexeme, and all fields inside loc
+    return lhs.type == rhs.type &&
+           lhs.lexeme == rhs.lexeme &&
+           lhs.loc.line == rhs.loc.line &&
+           lhs.loc.column == rhs.loc.column &&
+           lhs.loc.index == rhs.loc.index;
+}
+
+bool operator!=(const Token& lhs, const Token& rhs)
+{
+	return !(lhs == rhs);
+}
