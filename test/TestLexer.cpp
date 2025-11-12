@@ -759,25 +759,10 @@ TEST_CASE("LexOperator: operators with whitespace")
         Token(TokenType::OPERATOR, U8String("+"), {1, 3, 2}),
         Token(TokenType::OPERATOR, U8String("-"), {1, 7, 6}),
         Token(TokenType::OPERATOR, U8String("*"), {1, 10, 9}),
-        Token(TokenType::OPERATOR, U8String("/"), {2, 2, 13}), // Note: original test had col 3, but \n resets col, so ' /' -> col 2
-        Token(TokenType::OPERATOR, U8String("%"), {2, 4, 15}) // Note: original test had col 5, but ' / %' -> col 4
+        Token(TokenType::OPERATOR, U8String("/"), {2, 2, 13}),
+        Token(TokenType::OPERATOR, U8String("%"), {2, 4, 15}) 
     };
-    // Re-calculating based on source:
-    // "  +"       -> {1, 3, 2}
-    // "   -"      -> {1, 7, 6}
-    // " \t *"     -> {1, 10, 9}
-    // " \n"
-    // " /"        -> {2, 2, 13}
-    // " %"        -> {2, 4, 15}
-    // The original test's columns seemed slightly off for the items after \n.
-    // Let's re-verify the original:
-    // "  +"       -> {1, 3, 2}
-    // "   -"      -> {1, 7, 6}
-    // " \t *"     -> {1, 10, 9}
-    // " \n"
-    // " /"        -> Col 2. Index is 13.
-    // " % "       -> Col 4. Index is 15.
-    // The original test had {2, 3, ?} and {2, 5, ?}. I will trust my re-calculation.
+
     std::vector<Token> expectedTokens_recalc = {
         Token(TokenType::OPERATOR, U8String("+"), {1, 3, 2}),
         Token(TokenType::OPERATOR, U8String("-"), {1, 7, 6}),
@@ -1125,6 +1110,43 @@ TEST_CASE("LexIllegal: single legal utf8-character")
     // Assert
     CHECK(tokens.size() == 1);
     CHECK(tokens[0] == expectedToken);
+}
+
+TEST_CASE("LexIllegal: utf8 illegal characters")
+{
+    // Arrange
+    U8String source = u8"\xFF\xFE\xFA";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+    Token expectedToken(TokenType::ILLEGAL, U8String("\xFF\xFE\xFA"), startLoc);
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0] == expectedToken);
+}
+
+TEST_CASE("LexIllegal: utf8 char in identifier")
+{
+    // Arrange
+    U8String source = u8"varna\xFFme = 10;";
+    Lexer lexer(source);
+    std::vector<Token> expectedTokens = {
+        Token(TokenType::ILLEGAL, U8String("varna\xFFme"), {1, 1, 0}),
+        Token(TokenType::OPERATOR, U8String("="), {1, 10, 9}), // Original col 12 was wrong for u8
+        Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 12, 11}) // Original col 14 was wrong for u8
+    };
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 3);
+    CHECK(tokens[0] == expectedTokens[0]);
+    CHECK(tokens[1] == expectedTokens[1]);
+    CHECK(tokens[2] == expectedTokens[2]);
 }
 
 //General tests
