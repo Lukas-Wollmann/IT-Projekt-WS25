@@ -13,12 +13,9 @@ Lexer::Lexer(const U8String &source)
 
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
-    while (!isAtEnd()) {
+    while (true) {
         skipWhitespace();
-        if (isAtEnd())
-        {
-            return tokens;
-        }
+        if (isAtEnd())  break;
         
         char32_t currentChar = m_CurentChar;
         SourceLoc startLoc = m_Loc;  // Save the starting location
@@ -48,6 +45,7 @@ std::vector<Token> Lexer::tokenize() {
 }
 
 void Lexer::advance() {
+    if (isAtEnd()) throw std::out_of_range("Cannot advance past end of source");
     if (m_CurentChar == U'\n') {
         m_Loc.line++;
         m_Loc.index++;
