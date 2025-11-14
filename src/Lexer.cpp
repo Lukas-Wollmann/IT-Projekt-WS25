@@ -122,7 +122,7 @@ U8String Lexer::skipToClosing() {
         }
         if (!isAtEnd() && m_CurentChar == U'\'') advance();
         return U8String(illegalSs.str());
-    };
+}
 
 Token Lexer::lexNumber(SourceLoc startLoc) {
     std::stringstream ss;
