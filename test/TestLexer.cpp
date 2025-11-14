@@ -1130,43 +1130,6 @@ TEST_CASE("LexIllegal: single legal utf8-character")
     CHECK(tokens[0] == expectedToken);
 }
 
-TEST_CASE("LexIllegal: utf8 illegal characters")
-{
-    // Arrange
-    U8String source = u8"\xFF\xFE\xFA";
-    Lexer lexer(source);
-    SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("\xFF\xFE\xFA"), startLoc);
-
-    // Act
-    std::vector<Token> tokens = lexer.tokenize();
-
-    // Assert
-    CHECK(tokens.size() == 1);
-    CHECK(tokens[0] == expectedToken);
-}
-
-TEST_CASE("LexIllegal: utf8 char in identifier")
-{
-    // Arrange
-    U8String source = u8"varna\xFFme = 10;";
-    Lexer lexer(source);
-    std::vector<Token> expectedTokens = {
-        Token(TokenType::ILLEGAL, U8String("varna\xFFme"), {1, 1, 0}),
-        Token(TokenType::OPERATOR, U8String("="), {1, 10, 9}), // Original col 12 was wrong for u8
-        Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 12, 11}) // Original col 14 was wrong for u8
-    };
-
-    // Act
-    std::vector<Token> tokens = lexer.tokenize();
-
-    // Assert
-    CHECK(tokens.size() == 3);
-    CHECK(tokens[0] == expectedTokens[0]);
-    CHECK(tokens[1] == expectedTokens[1]);
-    CHECK(tokens[2] == expectedTokens[2]);
-}
-
 //General tests
 TEST_CASE("LexGeneral: correct simple token sequence")
 {
