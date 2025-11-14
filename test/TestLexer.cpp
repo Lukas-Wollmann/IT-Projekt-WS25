@@ -618,6 +618,22 @@ TEST_CASE("LexChar: char literal with solo backslash")
     CHECK(tokens[0] == expectedToken);
 }
 
+TEST_CASE("LexChar: char literal with solo backslash and unterminated")
+{
+    // Arrange
+    U8String source = u8"'\\";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+    Token expectedToken(TokenType::ILLEGAL, U8String("\\"), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0] == expectedToken);
+}
+
 //LexSeparator tests
 TEST_CASE("LexSeparator: single separator")
 {
