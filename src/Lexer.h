@@ -32,8 +32,7 @@ private:
     bool isCurrentComment() const;
     bool isStartBlockComment() const;
     bool isAtEnd() const;
-    char32_t peek() const;
-    char32_t peek2() const;
+    char32_t peek(size_t distance) const;
     void skipWhitespace();
 
     Token lexNumber(SourceLoc startLoc);

@@ -64,11 +64,11 @@ bool Lexer::isCurrentSingleOperator() const {
 }
 
 bool Lexer::isCurrentDoubleOperator() const {
-    return std::find(s_DoubleOps.begin(), s_DoubleOps.end(), U8String(m_CurentChar) + peek()) != s_DoubleOps.end();
+    return std::find(s_DoubleOps.begin(), s_DoubleOps.end(), U8String(m_CurentChar) + peek(1)) != s_DoubleOps.end();
 }
 
 bool Lexer::isCurrentTripleOperator() const {
-    return std::find(s_TripleOps.begin(), s_TripleOps.end(), U8String(m_CurentChar) + peek() + peek2()) != s_TripleOps.end();
+    return std::find(s_TripleOps.begin(), s_TripleOps.end(), U8String(m_CurentChar) + peek(1) + peek(2)) != s_TripleOps.end();
 }
 
 bool Lexer::isCurrentSeparator() const {
@@ -80,38 +80,26 @@ bool Lexer::isKeyword(const U8String &lexeme) const {
 }
 
 bool Lexer::isCurrentComment() const {
-    return m_CurentChar == U'/' && peek() == U'/';
+    return m_CurentChar == U'/' && peek(1) == U'/';
 }
 
 bool Lexer::isStartBlockComment() const {
-    return m_CurentChar == U'/' && peek() == U'*';
+    return m_CurentChar == U'/' && peek(1) == U'*';
 }
 
 bool Lexer::isAtEnd() const {
     return m_CurentChar == U'\0';
 }
 
-char32_t Lexer::peek() const {
-    if (m_Iter == m_Src.end()) 
-        return U'\0';
+char32_t Lexer::peek(size_t distance) const {
+    if (distance == 0) return m_CurentChar;
 
-    auto nextIt = m_Iter;
-    ++nextIt;
-
-    return nextIt != m_Src.end() ? *nextIt : U'\0';
-}
-
-char32_t Lexer::peek2() const {
-    if (m_Iter == m_Src.end()) 
-        return U'\0';
-
-    auto nextIt = m_Iter;
-    ++nextIt;
-    if (nextIt == m_Src.end())
-        return U'\0';
-
-    ++nextIt;
-    return nextIt != m_Src.end() ? *nextIt : U'\0';
+    auto it = m_Iter;
+    for (size_t i = 0; i < distance; ++i) {
+        if (it == m_Src.end()) return U'\0';
+        ++it;
+    }
+    return it != m_Src.end() ? *it : U'\0';
 }
 
 void Lexer::skipWhitespace() {
@@ -251,8 +239,8 @@ Token Lexer::lexSeparator(SourceLoc startLoc) {
 
 Token Lexer::lexOperator(SourceLoc startLoc) {
     char32_t firstChar = m_CurentChar;
-    char32_t secondChar = peek();
-    char32_t thirdChar = peek2();
+    char32_t secondChar = peek(1);
+    char32_t thirdChar = peek(2);
     advance();
 
     U8String opLexeme(firstChar);
@@ -305,10 +293,10 @@ Token Lexer::lexBlockComment(SourceLoc startLoc) {
 
     std::stringstream ss;
     while (true) {
-        if (isAtEnd() || (m_CurentChar == U'\n' && peek() == U'\0')) {
+        if (isAtEnd() || (m_CurentChar == U'\n' && peek(1) == U'\0')) {
             return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc);
         }
-        if (m_CurentChar == U'*' && peek() == U'/') {
+        if (m_CurentChar == U'*' && peek(1) == U'/') {
             advance(); // Skip '*'
             advance(); // Skip '/'
             break;
