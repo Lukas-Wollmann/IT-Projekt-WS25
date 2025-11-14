@@ -17,6 +17,20 @@ enum class TokenType
 	ILLEGAL
 };
 
+enum class ErrorTypeToken
+{
+	NOT_ILLEGAL,
+	
+	UNTERMINATED_STRING,
+	SOLO_BACKSLASH_IN_CHAR_LITERAL,
+	INVALID_ESCAPE_SEQUENCE,
+	MULTIPLE_CHAR_IN_CHAR_LITERAL,
+	UNTERMINATED_CHAR_LITERAL,
+	EMPTY_CHAR_LITERAL,
+	UNTERMINATED_BLOCK_COMMENT,
+	ILLEGAL_IDENTIFIER
+};
+
 struct SourceLoc {
     size_t line, column, index;
 };
@@ -28,9 +42,21 @@ struct Token {
 	const TokenType type;
 	const U8String lexeme;
 	const SourceLoc loc;
+
+	const ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL;
 	
 	Token(TokenType type, U8String lexeme, SourceLoc loc)
-		: type(type), lexeme(std::move(lexeme)), loc(loc) 
+		: type(type),
+		  lexeme(std::move(lexeme)),
+		  loc(loc),
+		  errorType(ErrorTypeToken::NOT_ILLEGAL)
+	{};
+
+	Token(TokenType type, U8String lexeme, SourceLoc loc, ErrorTypeToken errorType)
+		: type(type),
+		  lexeme(std::move(lexeme)),
+		  loc(loc),
+		  errorType(errorType)
 	{};
 };
 
