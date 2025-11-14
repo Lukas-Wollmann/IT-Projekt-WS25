@@ -113,6 +113,17 @@ void Lexer::skipWhitespace() {
     }
 }
 
+U8String Lexer::skipToClosing() {
+        std::stringstream illegalSs;
+        while (!isAtEnd() && m_CurentChar != U'\'' && m_CurentChar != U'\n') {
+
+            illegalSs << m_CurentChar;
+            advance();
+        }
+        if (!isAtEnd() && m_CurentChar == U'\'') advance();
+        return U8String(illegalSs.str());
+    };
+
 Token Lexer::lexNumber(SourceLoc startLoc) {
     std::stringstream ss;
     while (isdigit(m_CurentChar)) {
@@ -146,31 +157,10 @@ Token Lexer::lexString(SourceLoc startLoc) {
     return Token(TokenType::STRING_LITERAL, stringLexeme, startLoc);
 }
 
-//unclean have to fix later
-Token Lexer::lexChar(SourceLoc startLoc) {
-    advance(); // Skip opening quote
-    if (isAtEnd()) {
-        return Token(TokenType::ILLEGAL, U8String(u8""), startLoc);
-    }
-
-    // Helper to skip to closing quote for recovery
-    auto skipToClosing = [this]() {
-        std::stringstream illegalSs;
-        while (!isAtEnd() && m_CurentChar != U'\'' && m_CurentChar != U'\n') {
-
-            illegalSs << m_CurentChar;
-            advance();
-        }
-        if (!isAtEnd() && m_CurentChar == U'\'') advance();
-        return U8String(illegalSs.str());
-    };
-
+Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
     std::stringstream valueSs; // actual value for CHAR_LITERAL
-
-    // Escaped character
-    if (m_CurentChar == U'\\') {
-        rawSs << U'\\';
+    rawSs << U'\\';
         advance();
         if (isAtEnd()) {
             return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
@@ -206,6 +196,21 @@ Token Lexer::lexChar(SourceLoc startLoc) {
         // return mapped char as string
         valueSs << mapped;
         return Token(TokenType::CHAR_LITERAL, U8String(valueSs.str()), startLoc);
+}
+
+//unclean have to fix later
+Token Lexer::lexChar(SourceLoc startLoc) {
+    advance(); // Skip opening quote
+    if (isAtEnd()) {
+        return Token(TokenType::ILLEGAL, U8String(u8""), startLoc);
+    }
+
+    std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
+    std::stringstream valueSs; // actual value for CHAR_LITERAL
+
+    // Escaped character
+    if (m_CurentChar == U'\\') {
+        return lexEscapedChar(startLoc);
     }
 
     // Non-escaped character
