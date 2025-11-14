@@ -7,15 +7,22 @@
 using TypePtr = std::unique_ptr<const struct Type>;
 using TypeList = std::vector<TypePtr>;
 
+enum struct TypeKind : u8
+{ 
+    Primitive, 
+    Pointer, 
+    Array, 
+    Function, 
+    Error 
+};
+
 struct Type 
 {
-    enum struct Kind { Primitive, Pointer, Array, Function, Error };
-
 private:
-    const Kind m_Kind;
+    const TypeKind m_Kind;
 
 protected:
-    explicit Type(const Kind kind);
+    explicit Type(const TypeKind kind);
 
 public:
     virtual ~Type() = default;
@@ -24,24 +31,32 @@ public:
     virtual bool equals(const Type &other) const = 0;
     virtual TypePtr copy() const = 0;
 
-    Kind getKind() const { return m_Kind; }
+    TypeKind getKind() const { return m_Kind; }
+};
+
+enum struct PrimitiveTypeKind : u8 
+{ 
+    I32, 
+    U32, 
+    F32, 
+    String, 
+    Char, 
+    Bool 
 };
 
 struct PrimitiveType : public Type
 {
-    enum struct PrimitiveKind : u8 { I32, U32, F32, String, Char, Bool };
-
 private:
-    const PrimitiveKind m_Primitive;
+    const PrimitiveTypeKind m_Primitive;
 
 public:
-    explicit PrimitiveType(PrimitiveKind primitive);
+    explicit PrimitiveType(PrimitiveTypeKind primitive);
 
     void toString(std::ostream &os) const override;
     bool equals(const Type &other) const override;
     TypePtr copy() const override;
 
-    PrimitiveKind getPrimitive() const { return m_Primitive; }
+    PrimitiveTypeKind getPrimitive() const { return m_Primitive; }
 };
 
 struct PointerType : public Type
@@ -105,15 +120,9 @@ public:
 
 std::ostream &operator<<(std::ostream &os, const Type &type);
 std::ostream &operator<<(std::ostream &os, const TypeList &typeList);
-std::ostream &operator<<(std::ostream &os, PrimitiveType::PrimitiveKind primitive);
+std::ostream &operator<<(std::ostream &os, PrimitiveTypeKind primitive);
 
 bool operator==(const Type &left, const Type &right);
 bool operator!=(const Type &left, const Type &right);
 bool operator==(const TypeList &left, const TypeList &right);
 bool operator!=(const TypeList &left, const TypeList &right);
-
-using PrimitiveTypePtr = std::unique_ptr<const PrimitiveType>;
-using PointerTypePtr = std::unique_ptr<const PointerType>;
-using ArrayTypePtr = std::unique_ptr<const ArrayType>;
-using FunctionTypePtr = std::unique_ptr<const FunctionType>;
-using ErrorTypePtr = std::unique_ptr<const ErrorType>;

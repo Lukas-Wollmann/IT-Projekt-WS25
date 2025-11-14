@@ -76,7 +76,7 @@ TEST_CASE("StringLit: toString works")
 TEST_CASE("ArrayExpr: toString works")
 {
     // Arrange
-    auto arrayType = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto arrayType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
     auto value1 = std::make_unique<IntLit>(187);
     auto value2 = std::make_unique<IntLit>(67);
     
@@ -100,7 +100,7 @@ TEST_CASE("UnaryExpr: toString works")
 {
     // Arrange
     auto operand = std::make_unique<IntLit>(7);
-    auto unary = std::make_unique<UnaryExpr>(UnaryOperatorKind::Negative, std::move(operand));
+    auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Negative, std::move(operand));
     std::stringstream ss;
 
     // Act
@@ -116,7 +116,7 @@ TEST_CASE("BinaryExpr: toString works")
     // Arrange
     auto left = std::make_unique<IntLit>(2);
     auto right = std::make_unique<IntLit>(3);
-    auto bin = std::make_unique<BinaryExpr>(BinaryOperatorKind::Addition, std::move(left), std::move(right));
+    auto bin = std::make_unique<BinaryExpr>(BinaryOpKind::Addition, std::move(left), std::move(right));
     std::stringstream ss;
 
     // Act
@@ -232,7 +232,7 @@ TEST_CASE("ReturnStmt: toString works")
 TEST_CASE("VarDecl: toString works")
 {
     // Arrange
-    auto type = std::make_unique<PrimitiveType>(PrimitiveKind::I32);
+    auto type = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
     auto val = std::make_unique<IntLit>(99);
     auto decl = std::make_unique<VarDecl>("myVar", std::move(type), std::move(val));
     std::stringstream ss;
@@ -249,14 +249,14 @@ TEST_CASE("FuncDecl: toString works")
 {
     // Arrange
     ParamList params;
-    params.push_back(std::make_unique<Param>("a", std::make_unique<PrimitiveType>(PrimitiveKind::I32)));
-    params.push_back(std::make_unique<Param>("b", std::make_unique<PrimitiveType>(PrimitiveKind::F32)));
+    params.push_back({ "a", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32) });
+    params.push_back({ "b", std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32) });
 
     StmtList stmts;
     stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<IntLit>(0)));
 
     auto body = std::make_unique<CodeBlock>(std::move(stmts));
-    auto retType = std::make_unique<PrimitiveType>(PrimitiveKind::Bool);
+    auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
     auto func = std::make_unique<FuncDecl>("foo", std::move(params), std::move(retType), std::move(body));
     std::stringstream ss;
 
@@ -265,5 +265,5 @@ TEST_CASE("FuncDecl: toString works")
     std::string result = ss.str();
 
     // Assert
-    CHECK(result =="FuncDecl(foo, {Param(a, i32), Param(b, f32)}, bool, CodeBlock({ReturnStmt(IntLit(0))}))");
+    CHECK(result =="FuncDecl(foo, {a: i32, b: f32}, bool, CodeBlock({ReturnStmt(IntLit(0))}))");
 }

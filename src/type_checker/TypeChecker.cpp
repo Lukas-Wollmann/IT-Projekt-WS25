@@ -12,31 +12,80 @@ TypeChecker::TypeChecker()
     m_SymbolTable.pushScope();
 }
 
-void TypeChecker::checkUnaryExpr(UnaryExpr &expr)
+void TypeChecker::visit(IntLit &node)
 {
-    // Infer the type of the expression the operator is applied to
-    checkExpr(expr.getOperand());
- 
-    const Type &type = expr.getOperand().getType().value();
+    if (node.getType().has_value())
+        throw std::runtime_error("Expected untyped IntLit node");
+
+    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
+}
+
+void TypeChecker::visit(FloatLit &node)
+{
+    if (node.getType().has_value())
+        throw std::runtime_error("Expected untyped FloatLit node");
+    
+    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
+}
+
+void TypeChecker::visit(CharLit &node)
+{
+    if (node.getType().has_value())
+        throw std::runtime_error("Expected untyped CharLit node");
+    
+    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+}
+
+void TypeChecker::visit(BoolLit &node)
+{
+    if (node.getType().has_value())
+        throw std::runtime_error("Expected untyped BoolLit node");
+    
+    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool));
+}
+
+void TypeChecker::visit(StringLit &node)
+{
+    if (node.getType().has_value())
+        throw std::runtime_error("Expected untyped StringLit node");
+    
+    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::String));
+}
+
+void TypeChecker::visit(ArrayExpr &node)
+{
+    (void)node;
+    throw std::runtime_error("Not implemented");
+}
+
+void TypeChecker::visit(UnaryExpr &node)
+{
+    // Infert the type of the operand expression
+    node.getOperand().accept(*this);
+    
+    const Type &type = node.getOperand().getType().value();
     
     // For now, the unary operation just yields the same result.
     // If the result has type <error-type> just keep it as well.
-    expr.setType(type.copy());
+    node.setType(type.copy());
 }
 
-void TypeChecker::checkBinaryExpr(BinaryExpr &expr)
+void TypeChecker::visit(BinaryExpr &node)
 {
-    checkExpr(expr.getLeftOp());
-    checkExpr(expr.getRightOp());
+    // Infer the type of the left and right operand expressions
+    node.getLeftOp().accept(*this);
+    node.getRightOp().accept(*this);
 
-    const Type &leftType = expr.getLeftOp().getType().value();
-    const Type &rightType = expr.getRightOp().getType().value();
+    const Type &leftType = node.getLeftOp().getType().value();
+    const Type &rightType = node.getRightOp().getType().value();
     
     // If one of the two expressions is of type <error-type> 
-    // then propagate the error upwards in the type tree. 
-    if (leftType.getKind() == Type::Kind::Error || rightType.getKind() == Type::Kind::Error)
+    // then propagate the error upwards in the type tree.
+    // The error did not really happen here, so dont add to m_Errors.
+    if (leftType.getKind() == TypeKind::Error 
+    || rightType.getKind() == TypeKind::Error)
     {
-        expr.setType(std::make_unique<ErrorType>());
+        node.setType(std::make_unique<ErrorType>());
         return;
     }
     
@@ -44,7 +93,7 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr)
     // (Criteria for now, this will be changed.)
     if (leftType == rightType)
     {
-        expr.setType(leftType.copy());
+        node.setType(leftType.copy());
         return;
     }
 
@@ -52,119 +101,128 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr)
     // the binary expression an <error-type> to mark the subtree as invalid.
     std::stringstream ss;
     ss << "Found illegal binary expression: ";
-    ss << expr.getOp() << " on " << leftType << " and " << rightType;
-    
+    ss << node.getOp() << " cannot be called with ";
+    ss  << leftType << " and " << rightType;
     
     m_Errors.push_back(TypeError(ss.str()));
-    expr.setType(std::make_unique<ErrorType>());
+    node.setType(std::make_unique<ErrorType>());
 }
 
-void TypeChecker::checkVarRef(const VarRef &expr)
+void TypeChecker::visit(FuncCall &node)
 {
-    auto symbol = m_SymbolTable.getSymbol(expr.getIdent());
+    (void)node;
+    throw std::runtime_error("Not implemented");
+}
+
+void TypeChecker::visit(VarRef &node)
+{
+    auto symbol = m_SymbolTable.getSymbol(node.getIdent());
 
     // The symbol is known, so take its type
     if (symbol.has_value())
     {
-        expr.setType(symbol.value().get().getType().copy());
+        node.setType(symbol.value().get().getType().copy());
         return;
     }
 
     // The symbol is unknown, so throw an error
     std::stringstream ss;
-    ss << "Undefined identifier: " << expr.getIdent();
+    ss << "Undefined identifier: " << node.getIdent();
     m_Errors.push_back(TypeError(ss.str()));
 
-    expr.setType(std::make_unique<ErrorType>());
+    node.setType(std::make_unique<ErrorType>());
 }
 
-void TypeChecker::checkExpr(const Expr &expr)
+void TypeChecker::visit(CodeBlock &stmt)
 {
-    if (expr.getType().has_value())
-        throw std::runtime_error("Expected untyped expression node");
+    m_SymbolTable.pushScope();
 
-    switch (expr.getNodeKind())
-    {
-        case NodeKind::IntLit:
-            expr.setType(std::make_unique<PrimitiveType>(PrimitiveKind::I32));
-            return;
-        
-        case NodeKind::FloatLit:
-            expr.setType(std::make_unique<PrimitiveType>(PrimitiveKind::F32));
-            return;
+    for (StmtPtr &n : stmt.getStmts())
+        n->accept(*this);
 
-        case NodeKind::UnaryExpr: 
-            checkUnaryExpr(dynamic_cast<const UnaryExpr&>(expr));
-            return;
-
-        case NodeKind::BinaryExpr: 
-            checkBinaryExpr(dynamic_cast<const BinaryExpr&>(expr));
-            return;
-
-        case NodeKind::VarRef:
-            checkVarRef(dynamic_cast<const VarRef&>(expr));
-            return;
-
-        default:
-            throw std::runtime_error("Encountered unimplemented Expr node.");
-    }
+    m_SymbolTable.popScope();
 }
 
-void TypeChecker::checkVarDecl(const VarDecl &node)
+void TypeChecker::visit(IfStmt &node)
 {
-    checkExpr(node.getValue());
+    (void)node;
+    throw std::runtime_error("Not implemented");
+}
+
+void TypeChecker::visit(WhileStmt &node)
+{
+    (void)node;
+    throw std::runtime_error("Not implemented");
+}
+
+void TypeChecker::visit(ReturnStmt &node)
+{
+    // Type check the return expression
+    node.getExpr().accept(*this);
+
+    // Get the type of the return value
+    const Type &type = node.getExpr().getType().value().get();
+
+    if (!m_CurrentFunctionReturnType)
+        throw std::runtime_error("Illegal ReturnStmt: m_CurrentFunctionReturnType is nullptr");
+
+    // If the type is <error-type> or if the return type matches
+    // the function declaration, its okay and return
+    if (type.getKind() == TypeKind::Error || type == *m_CurrentFunctionReturnType)
+        return;
+
+    // The return type is not matching the function declaration
+    std::stringstream ss;
+    ss << "The type " << type << " does not match function declaration. ";
+    ss << "Expected type: " << *m_CurrentFunctionReturnType;
+
+    m_Errors.push_back(TypeError(ss.str()));
+}
+
+void TypeChecker::visit(VarDecl &node)
+{
+    // Infer the type of the assigned expression
+    node.getValue().accept(*this);
 
     const Type &type = node.getValue().getType().value();
 
-    if (type.getKind() != Type::Kind::Error && type != node.getType())
+    // The expression is not of type <error-type> but does not match type 
+    // type of the variable declaration - this is an actual error
+    if (type.getKind() != TypeKind::Error && type != node.getType())
     {
         std::stringstream ss;
         ss << "Missmatchting types at variable declaration: ";
         ss << "Expected " << node.getType() << " but got " << type;
+
         m_Errors.push_back(TypeError(ss.str()));   
     }
 
+    // Does this symbol already exist in the current scope (shadowing possible)
     if (m_SymbolTable.hasSymbolInCurrentScope(node.getIdent()))
     {
         std::stringstream ss;
         ss << "Illegal redefinition of symbol: " << node.getIdent();
-        m_Errors.push_back(TypeError(ss.str()));
 
+        m_Errors.push_back(TypeError(ss.str()));
         return;
     }
 
     m_SymbolTable.addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
 }
 
-void TypeChecker::checkCodeBlock(const CodeBlock &stmt)
+void TypeChecker::visit(FuncDecl &node)
 {
     m_SymbolTable.pushScope();
 
-    for (const StmtPtr &n : stmt.getStmts())
-        checkStmt(*n);
+    // Add all params as symbols to the function scope
+    for (const auto &param : node.getParams())
+        m_SymbolTable.addSymbol(param.first, SymbolInfo(param.second->copy()));
+
+    // Set the current expected return type
+    m_CurrentFunctionReturnType = node.getReturnType().copy();
+
+    // Type check the function body (in a nested scope, allows param shadowing)
+    node.getBody().accept(*this);
 
     m_SymbolTable.popScope();
-}
-
-void TypeChecker::checkStmt(const Stmt &stmt)
-{
-    if (auto expr = dynamic_cast<const Expr*>(&stmt))
-    {
-        checkExpr(*expr);
-        return;
-    }
-    
-    switch (stmt.getNodeKind())
-    {
-        case NodeKind::VarDecl:
-            checkVarDecl(dynamic_cast<const VarDecl&>(stmt));
-            return;
-        
-        case NodeKind::CodeBlock:
-            checkCodeBlock(dynamic_cast<const CodeBlock&>(stmt));
-            return;
-
-        default:
-            throw std::runtime_error("Encountered unimplemented Stmt node");
-    }
 }

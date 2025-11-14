@@ -2,20 +2,20 @@
 #include <codecvt>
 #include <locale>
 
-Node::Node(Kind kind)
+Node::Node(NodeKind kind)
     : m_Kind(kind)
 {}
 
-Node::Kind Node::getNodeKind() const
+NodeKind Node::getNodeKind() const
 {
     return m_Kind;
 }
 
-Stmt::Stmt(Kind kind)
+Stmt::Stmt(NodeKind kind)
     : Node(kind)
 {}
 
-Expr::Expr(Kind kind)
+Expr::Expr(NodeKind kind)
     : Stmt(kind)
 {}
 
@@ -28,92 +28,92 @@ std::optional<Ref<const Type>> Expr::getType() const
 }
 
 IntLit::IntLit(i32 value)
-    : Expr(Kind::IntLit)
+    : Expr(NodeKind::IntLit)
     , m_Value(value)
 {}
 
 FloatLit::FloatLit(f32 value)
-    : Expr(Kind::FloatLit)
+    : Expr(NodeKind::FloatLit)
     , m_Value(value)
 {}
 
 CharLit::CharLit(char32_t value)
-    : Expr(Kind::CharLit)
+    : Expr(NodeKind::CharLit)
     , m_Value(value)
 {}
 
 BoolLit::BoolLit(bool value)
-    : Expr(Kind::BoolLit)
+    : Expr(NodeKind::BoolLit)
     , m_Value(value)
 {}
 
 StringLit::StringLit(std::string value)
-    : Expr(Kind::StringLit)
+    : Expr(NodeKind::StringLit)
     , m_Value(std::move(value))
 {}
 
 ArrayExpr::ArrayExpr(TypePtr elemType, ExprList values)
-    : Expr(Kind::ArrayExpr)
+    : Expr(NodeKind::ArrayExpr)
     , m_ElemType(std::move(elemType))
     , m_Values(std::move(values))
 {}
 
-UnaryExpr::UnaryExpr(OperatorKind op, ExprPtr operand)
-    : Expr(Kind::UnaryExpr)
+UnaryExpr::UnaryExpr(UnaryOpKind op, ExprPtr operand)
+    : Expr(NodeKind::UnaryExpr)
     , m_Op(op)
     , m_Operand(std::move(operand))
 {}
 
-BinaryExpr::BinaryExpr(OperatorKind op, ExprPtr leftOp, ExprPtr rightOp)
-    : Expr(Kind::BinaryExpr)
+BinaryExpr::BinaryExpr(BinaryOpKind op, ExprPtr leftOp, ExprPtr rightOp)
+    : Expr(NodeKind::BinaryExpr)
     , m_Op(op)
     , m_LeftOp(std::move(leftOp))
     , m_RightOp(std::move(rightOp))
 {}
 
 VarRef::VarRef(std::string ident)
-    : Expr(Kind::VarRef)
+    : Expr(NodeKind::VarRef)
     , m_Ident(std::move(ident))
 {}
 
 FuncCall::FuncCall(std::string ident, ExprList args)
-    : Expr(Kind::FuncCall)
+    : Expr(NodeKind::FuncCall)
     , m_Ident(std::move(ident))
     , m_Args(std::move(args))
 {}
 
 CodeBlock::CodeBlock(StmtList stmts)
-    : Stmt(Kind::CodeBlock)
+    : Stmt(NodeKind::CodeBlock)
     , m_Stmts(std::move(stmts))
 {}
 
 IfStmt::IfStmt(ExprPtr cond, CodeBlockPtr thenBlock, CodeBlockPtr elseBlock)
-    : Stmt(Kind::IfStmt)
+    : Stmt(NodeKind::IfStmt)
     , m_Cond(std::move(cond))
     , m_Then(std::move(thenBlock))
     , m_Else(std::move(elseBlock))
 {}
 
 WhileStmt::WhileStmt(ExprPtr cond, CodeBlockPtr body)
-    : Stmt(Kind::WhileStmt)
+    : Stmt(NodeKind::WhileStmt)
     , m_Cond(std::move(cond))
     , m_Body(std::move(body))
 {}
 
 ReturnStmt::ReturnStmt(ExprPtr expr)
-    : Stmt(Kind::ReturnStmt)
+    : Stmt(NodeKind::ReturnStmt)
     , m_Expr(std::move(expr))
 {}
 
 VarDecl::VarDecl(std::string ident, TypePtr type, ExprPtr value)
-    : Stmt(Kind::VarDecl)
+    : Stmt(NodeKind::VarDecl)
     , m_Ident(std::move(ident))
     , m_Type(std::move(type))
     , m_Value(std::move(value))
 {}
 
 FuncDecl::FuncDecl(std::string ident, ParamList params, TypePtr returnType, CodeBlockPtr body)
-    : Node(Kind::FuncDecl)
+    : Node(NodeKind::FuncDecl)
     , m_Ident(std::move(ident))
     , m_Params(std::move(params))
     , m_ReturnType(std::move(returnType))
@@ -265,9 +265,9 @@ std::ostream &operator<<(std::ostream &os, const Node &node)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, UnaryExpr::OperatorKind op)
+std::ostream &operator<<(std::ostream &os, UnaryOpKind op)
 {
-    using enum UnaryExpr::OperatorKind;
+    using enum UnaryOpKind;
 
     switch (op)
     {
@@ -280,9 +280,9 @@ std::ostream &operator<<(std::ostream &os, UnaryExpr::OperatorKind op)
     return os << "<Unknown-Unary-Operator>";
 }
 
-std::ostream &operator<<(std::ostream &os, BinaryExpr::OperatorKind op)
+std::ostream &operator<<(std::ostream &os, BinaryOpKind op)
 {
-    using enum BinaryExpr::OperatorKind;
+    using enum BinaryOpKind;
 
     switch (op)
     {

@@ -1,12 +1,12 @@
 #include "Type.h"
 
 
-Type::Type(Kind kind)
+Type::Type(TypeKind kind)
     : m_Kind(kind)
 {}
 
-PrimitiveType::PrimitiveType(PrimitiveKind primitive)
-    : Type(Kind::Primitive)
+PrimitiveType::PrimitiveType(PrimitiveTypeKind primitive)
+    : Type(TypeKind::Primitive)
     , m_Primitive(primitive)
 {}
 
@@ -31,7 +31,7 @@ TypePtr PrimitiveType::copy() const
 }
 
 PointerType::PointerType(TypePtr pointeeType)
-    : Type(Kind::Pointer)
+    : Type(TypeKind::Pointer)
     , m_PointeeType(std::move(pointeeType))
 {}
 
@@ -56,7 +56,7 @@ TypePtr PointerType::copy() const
 }
 
 ArrayType::ArrayType(TypePtr elementType, std::optional<size_t> arraySize)
-    : Type(Kind::Array)
+    : Type(TypeKind::Array)
     , m_ElementType(std::move(elementType))
     , m_ArraySize(arraySize)
 {}
@@ -89,7 +89,7 @@ TypePtr ArrayType::copy() const
 }
 
 FunctionType::FunctionType(TypeList parameterTypes, TypePtr returnType)
-    : Type(Kind::Function)
+    : Type(TypeKind::Function)
     , m_ParameterTypes(std::move(parameterTypes))
     , m_ReturnType(std::move(returnType))
 {}
@@ -124,7 +124,7 @@ TypePtr FunctionType::copy() const
 }
 
 ErrorType::ErrorType() 
-    : Type(Kind::Error) 
+    : Type(TypeKind::Error) 
 {}
 
 void ErrorType::toString(std::ostream &os) const
@@ -161,9 +161,9 @@ std::ostream &operator<<(std::ostream &os, const TypeList &typeList)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, PrimitiveType::PrimitiveKind primitive)
+std::ostream &operator<<(std::ostream &os, PrimitiveTypeKind primitive)
 {
-    using enum PrimitiveType::PrimitiveKind;
+    using enum PrimitiveTypeKind;
 
     switch (primitive)
     {
