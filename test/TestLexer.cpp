@@ -797,9 +797,9 @@ TEST_CASE("LexOperator: operators with whitespace")
     std::vector<Token> expectedTokens_recalc = {
         Token(TokenType::OPERATOR, U8String("+"), {1, 3, 2}),
         Token(TokenType::OPERATOR, U8String("-"), {1, 7, 6}),
-        Token(TokenType::OPERATOR, U8String("*"), {1, 10, 9}),
-        Token(TokenType::OPERATOR, U8String("/"), {2, 2, 13}),
-        Token(TokenType::OPERATOR, U8String("%"), {2, 4, 15})
+        Token(TokenType::OPERATOR, U8String("*"), {1, 11, 10}),
+        Token(TokenType::OPERATOR, U8String("/"), {2, 2, 14}),
+        Token(TokenType::OPERATOR, U8String("%"), {2, 4, 16})
     };
 
     // Act
@@ -1014,8 +1014,8 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers and keywords with whitespace")
     std::vector<Token> expectedTokens = {
         Token(TokenType::IDENTIFIER, U8String("var"), {1, 3, 2}),
         Token(TokenType::KEYWORD, U8String("if"), {1, 9, 8}),
-        Token(TokenType::KEYWORD, U8String("else"), {1, 13, 12}),
-        Token(TokenType::KEYWORD, U8String("while"), {2, 2, 19})
+        Token(TokenType::KEYWORD, U8String("else"), {1, 14, 13}),
+        Token(TokenType::KEYWORD, U8String("while"), {2, 2, 20})
     };
     
     // Act
