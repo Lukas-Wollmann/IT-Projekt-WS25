@@ -100,7 +100,7 @@ TEST_CASE("LexString: unterminated string literal")
     U8String source = u8"\"Unterminated string";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("Unterminated string"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("Unterminated string"), startLoc, ErrorTypeToken::UNTERMINATED_STRING);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -284,7 +284,7 @@ TEST_CASE("LexChar: unterminated char literal")
     U8String source = u8"'b";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("b"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("b"), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -300,7 +300,7 @@ TEST_CASE("LexChar: empty char literal")
     U8String source = u8"''";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String(""), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String(""), startLoc, ErrorTypeToken::EMPTY_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -316,7 +316,7 @@ TEST_CASE("LexChar: char literal with multiple characters")
     U8String source = u8"'ab'";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("ab"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("ab"), startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -469,7 +469,7 @@ TEST_CASE("LexChar: whole sentence in one char literal")
     U8String source = u8"'Hello, World!'";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("Hello, World!"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("Hello, World!"), startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -485,7 +485,7 @@ TEST_CASE("LexChar: illegal escape sequence in char literal")
     U8String source = u8"'\\x'";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("\\x"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("\\x"), startLoc, ErrorTypeToken::INVALID_ESCAPE_SEQUENCE);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -501,7 +501,7 @@ TEST_CASE("LexChar: missing closing quote in char literal and other tokens after
     U8String source = u8"'a + b";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("a + b"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("a + b"), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -518,7 +518,7 @@ TEST_CASE("LexChar: missing opening quote in char literal")
     Lexer lexer(source);
     std::vector<Token> expectedTokens = {
         Token(TokenType::IDENTIFIER, U8String("a"), {1, 1, 0}),
-        Token(TokenType::ILLEGAL, U8String(""), {1, 2, 1})
+        Token(TokenType::ILLEGAL, U8String(""), {1, 2, 1}, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)
     };
 
     // Act
@@ -552,7 +552,7 @@ TEST_CASE("LexChar: missing closing quote and char literal in next line")
     U8String source = u8"'a\n'b'";
     Lexer lexer(source);
     std::vector<Token> expectedTokens = {
-        Token(TokenType::ILLEGAL, U8String("a"), {1, 1, 0}),
+        Token(TokenType::ILLEGAL, U8String("a"), {1, 1, 0}, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL),
         Token(TokenType::CHAR_LITERAL, U8String("b"), {2, 1, 3})
     };
 
@@ -571,9 +571,9 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line")
     U8String source = u8"'a 'b'";
     Lexer lexer(source);
     std::vector<Token> expectedTokens = {
-        Token(TokenType::ILLEGAL, U8String("a "), {1, 1, 0}),
+        Token(TokenType::ILLEGAL, U8String("a "), {1, 1, 0}, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL),
         Token(TokenType::IDENTIFIER, U8String("b"), {1, 5, 4}),
-        Token(TokenType::ILLEGAL, U8String(""), {1, 6, 5})
+        Token(TokenType::ILLEGAL, U8String(""), {1, 6, 5}, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)
     };
 
     // Act
@@ -593,6 +593,22 @@ TEST_CASE("LexChar: char literal with japanese character")
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
     Token expectedToken(TokenType::CHAR_LITERAL, U8String("あ"), startLoc);
+
+    // Act
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Assert
+    CHECK(tokens.size() == 1);
+    CHECK(tokens[0] == expectedToken);
+}
+
+TEST_CASE("LexChar: char literal with solo backslash")
+{
+    // Arrange
+    U8String source = u8"'\\'";
+    Lexer lexer(source);
+    SourceLoc startLoc{1, 1, 0};
+    Token expectedToken(TokenType::ILLEGAL, U8String("\\"), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -1103,7 +1119,7 @@ TEST_CASE("LexComments: unclosed multi-line comment")
     U8String source = u8"/* This is an unclosed comment";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String(" This is an unclosed comment"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String(" This is an unclosed comment"), startLoc, ErrorTypeToken::UNTERMINATED_BLOCK_COMMENT);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -1120,7 +1136,7 @@ TEST_CASE("LexIllegal: single legal utf8-character")
     U8String source = u8"ß";
     Lexer lexer(source);
     SourceLoc startLoc{1, 1, 0};
-    Token expectedToken(TokenType::ILLEGAL, U8String("ß"), startLoc);
+    Token expectedToken(TokenType::ILLEGAL, U8String("ß"), startLoc, ErrorTypeToken::ILLEGAL_IDENTIFIER);
 
     // Act
     std::vector<Token> tokens = lexer.tokenize();
@@ -1296,7 +1312,7 @@ TEST_CASE("LexGeneral: incorrect simple token sequence")
         Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
         Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
         Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 10, 9}),
-        Token(TokenType::ILLEGAL, U8String("a"), {1, 13, 12}) // Unterminated char literal
+        Token(TokenType::ILLEGAL, U8String("a"), {1, 13, 12}, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)
     };
 
     // Act
