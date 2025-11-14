@@ -163,6 +163,11 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     rawSs << U'\\';
         advance();
         if (isAtEnd()) {
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+        }
+
+        if(m_CurentChar == U'\'' && peek(1) != U'\'') {
+            advance();
             return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
         }
         char32_t esc = m_CurentChar;
