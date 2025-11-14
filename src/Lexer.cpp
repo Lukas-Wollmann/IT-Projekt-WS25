@@ -144,7 +144,7 @@ Token Lexer::lexString(SourceLoc startLoc) {
     while ((m_CurentChar != U'"') || (m_CurentChar == U'"' && prevChar == U'\\' && prevprevChar != U'\\')) {
         if (isAtEnd()) {
             // Unterminated string literal
-            return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc);
+            return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc, ErrorTypeToken::UNTERMINATED_STRING);
         }
 
         prevprevChar = prevChar;
@@ -163,7 +163,7 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     rawSs << U'\\';
         advance();
         if (isAtEnd()) {
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc);
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
         }
         char32_t esc = m_CurentChar;
         rawSs << esc;
@@ -183,13 +183,13 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
         advance(); // move past escape char
         if (!validEscape) {
             U8String illegalChars = skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::INVALID_ESCAPE_SEQUENCE);
         }
 
         // expect closing quote
         if (m_CurentChar != U'\'') {
             U8String illegalChars = skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
+            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
         }
         advance(); // consume closing quote
 
@@ -202,7 +202,7 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
 Token Lexer::lexChar(SourceLoc startLoc) {
     advance(); // Skip opening quote
     if (isAtEnd()) {
-        return Token(TokenType::ILLEGAL, U8String(u8""), startLoc);
+        return Token(TokenType::ILLEGAL, U8String(u8""), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
     }
 
     std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
@@ -219,7 +219,7 @@ Token Lexer::lexChar(SourceLoc startLoc) {
     // If the character we saw was a closing quote immediately -> empty char literal -> ILLEGAL
     if (c == U'\'') {
         advance();
-        return Token(TokenType::ILLEGAL, U8String(""), startLoc);
+        return Token(TokenType::ILLEGAL, U8String(""), startLoc, ErrorTypeToken::EMPTY_CHAR_LITERAL);
     }
 
     rawSs << c;
@@ -229,7 +229,7 @@ Token Lexer::lexChar(SourceLoc startLoc) {
     // Expect closing quote now
     if (m_CurentChar != U'\'') {
         U8String illegalChars = skipToClosing();
-        return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc);
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
     }
 
     advance(); // consume closing quote
@@ -299,7 +299,7 @@ Token Lexer::lexBlockComment(SourceLoc startLoc) {
     std::stringstream ss;
     while (true) {
         if (isAtEnd() || (m_CurentChar == U'\n' && peek(1) == U'\0')) {
-            return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc);
+            return Token(TokenType::ILLEGAL, U8String(ss.str()), startLoc, ErrorTypeToken::UNTERMINATED_BLOCK_COMMENT);
         }
         if (m_CurentChar == U'*' && peek(1) == U'/') {
             advance(); // Skip '*'
@@ -318,5 +318,5 @@ Token Lexer::lexIllegal(SourceLoc startLoc) {
     ss << m_CurentChar;
     advance();
     U8String illegalLexeme(ss.str());
-    return Token(TokenType::ILLEGAL, illegalLexeme, startLoc);
+    return Token(TokenType::ILLEGAL, illegalLexeme, startLoc, ErrorTypeToken::ILLEGAL_IDENTIFIER);
 }
