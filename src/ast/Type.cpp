@@ -161,16 +161,18 @@ std::ostream &operator<<(std::ostream &os, const TypeList &typeList)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, PrimitiveKind primitive)
+std::ostream &operator<<(std::ostream &os, PrimitiveType::PrimitiveKind primitive)
 {
+    using enum PrimitiveType::PrimitiveKind;
+
     switch (primitive)
     {
-        case PrimitiveKind::I32:    return os << "i32";
-        case PrimitiveKind::U32:    return os << "u32";
-        case PrimitiveKind::F32:    return os << "f32";
-        case PrimitiveKind::String: return os << "string";
-        case PrimitiveKind::Char:   return os << "char";
-        case PrimitiveKind::Bool:   return os << "bool";
+        case I32:    return os << "i32";
+        case U32:    return os << "u32";
+        case F32:    return os << "f32";
+        case String: return os << "string";
+        case Char:   return os << "char";
+        case Bool:   return os << "bool";
     }
 
     return os << "<Illegal-Primitive-Kind>";

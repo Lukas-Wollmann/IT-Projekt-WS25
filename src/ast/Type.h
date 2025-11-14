@@ -4,21 +4,8 @@
 #include <vector>
 #include "Typedef.h"
 
-
 using TypePtr = std::unique_ptr<const struct Type>;
 using TypeList = std::vector<TypePtr>;
-
-enum struct PrimitiveKind : u8 { I32, U32, F32, String, Char, Bool };
-
-std::ostream &operator<<(std::ostream &os, const Type &type);
-std::ostream &operator<<(std::ostream &os, const TypeList &typeList);
-std::ostream &operator<<(std::ostream &os, PrimitiveKind primitive);
-
-bool operator==(const Type &left, const Type &right);
-bool operator!=(const Type &left, const Type &right);
-bool operator==(const TypeList &left, const TypeList &right);
-bool operator!=(const TypeList &left, const TypeList &right);
-
 
 struct Type 
 {
@@ -40,9 +27,10 @@ public:
     Kind getKind() const { return m_Kind; }
 };
 
-
 struct PrimitiveType : public Type
 {
+    enum struct PrimitiveKind : u8 { I32, U32, F32, String, Char, Bool };
+
 private:
     const PrimitiveKind m_Primitive;
 
@@ -55,7 +43,6 @@ public:
 
     PrimitiveKind getPrimitive() const { return m_Primitive; }
 };
-
 
 struct PointerType : public Type
 {
@@ -71,7 +58,6 @@ public:
 
     const Type &getPointeeType() const { return *m_PointeeType; }
 };
-
 
 struct ArrayType : public Type
 {
@@ -89,7 +75,6 @@ public:
     const Type &getElementType() const { return *m_ElementType; }
     std::optional<size_t> getArraySize() const { return m_ArraySize; }
 };
-
 
 struct FunctionType : public Type
 {
@@ -117,6 +102,15 @@ public:
     bool equals(const Type &other) const override;
     TypePtr copy() const override; 
 };
+
+std::ostream &operator<<(std::ostream &os, const Type &type);
+std::ostream &operator<<(std::ostream &os, const TypeList &typeList);
+std::ostream &operator<<(std::ostream &os, PrimitiveType::PrimitiveKind primitive);
+
+bool operator==(const Type &left, const Type &right);
+bool operator!=(const Type &left, const Type &right);
+bool operator==(const TypeList &left, const TypeList &right);
+bool operator!=(const TypeList &left, const TypeList &right);
 
 using PrimitiveTypePtr = std::unique_ptr<const PrimitiveType>;
 using PointerTypePtr = std::unique_ptr<const PointerType>;

@@ -12,7 +12,7 @@ TypeChecker::TypeChecker()
     m_SymbolTable.pushScope();
 }
 
-void TypeChecker::checkUnaryExpr(const UnaryExpr &expr)
+void TypeChecker::checkUnaryExpr(UnaryExpr &expr)
 {
     // Infer the type of the expression the operator is applied to
     checkExpr(expr.getOperand());
@@ -24,7 +24,7 @@ void TypeChecker::checkUnaryExpr(const UnaryExpr &expr)
     expr.setType(type.copy());
 }
 
-void TypeChecker::checkBinaryExpr(const BinaryExpr &expr)
+void TypeChecker::checkBinaryExpr(BinaryExpr &expr)
 {
     checkExpr(expr.getLeftOp());
     checkExpr(expr.getRightOp());

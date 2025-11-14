@@ -2,26 +2,24 @@
 #include <codecvt>
 #include <locale>
 
-
-Node::Node(const NodeKind kind)
+Node::Node(Kind kind)
     : m_Kind(kind)
 {}
 
-NodeKind Node::getNodeKind() const
+Node::Kind Node::getNodeKind() const
 {
     return m_Kind;
 }
 
-Stmt::Stmt(const NodeKind kind)
+Stmt::Stmt(Kind kind)
     : Node(kind)
 {}
 
-Expr::Expr(const NodeKind kind, std::optional<TypePtr> type)
+Expr::Expr(Kind kind)
     : Stmt(kind)
-    , m_Type(std::move(type))
 {}
 
-std::optional<std::reference_wrapper<const Type>> Expr::getType() const
+std::optional<Ref<const Type>> Expr::getType() const
 {
     if (m_Type && *m_Type) 
         return std::cref(**m_Type);
@@ -30,97 +28,92 @@ std::optional<std::reference_wrapper<const Type>> Expr::getType() const
 }
 
 IntLit::IntLit(i32 value)
-    : Expr(NodeKind::IntLit)
+    : Expr(Kind::IntLit)
     , m_Value(value)
 {}
 
 FloatLit::FloatLit(f32 value)
-    : Expr(NodeKind::FloatLit)
+    : Expr(Kind::FloatLit)
     , m_Value(value)
 {}
 
 CharLit::CharLit(char32_t value)
-    : Expr(NodeKind::CharLit)
+    : Expr(Kind::CharLit)
     , m_Value(value)
 {}
 
 BoolLit::BoolLit(bool value)
-    : Expr(NodeKind::BoolLit)
+    : Expr(Kind::BoolLit)
     , m_Value(value)
 {}
 
 StringLit::StringLit(std::string value)
-    : Expr(NodeKind::StringLit)
+    : Expr(Kind::StringLit)
     , m_Value(std::move(value))
 {}
 
 ArrayExpr::ArrayExpr(TypePtr elemType, ExprList values)
-    : Expr(NodeKind::ArrayExpr)
+    : Expr(Kind::ArrayExpr)
     , m_ElemType(std::move(elemType))
     , m_Values(std::move(values))
 {}
 
-UnaryExpr::UnaryExpr(UnaryOperatorKind op, ExprPtr operand)
-    : Expr(NodeKind::UnaryExpr)
+UnaryExpr::UnaryExpr(OperatorKind op, ExprPtr operand)
+    : Expr(Kind::UnaryExpr)
     , m_Op(op)
     , m_Operand(std::move(operand))
 {}
 
-BinaryExpr::BinaryExpr(BinaryOperatorKind op, ExprPtr leftOp, ExprPtr rightOp)
-    : Expr(NodeKind::BinaryExpr)
+BinaryExpr::BinaryExpr(OperatorKind op, ExprPtr leftOp, ExprPtr rightOp)
+    : Expr(Kind::BinaryExpr)
     , m_Op(op)
     , m_LeftOp(std::move(leftOp))
     , m_RightOp(std::move(rightOp))
 {}
 
 VarRef::VarRef(std::string ident)
-    : Expr(NodeKind::VarRef)
+    : Expr(Kind::VarRef)
     , m_Ident(std::move(ident))
 {}
 
 FuncCall::FuncCall(std::string ident, ExprList args)
-    : Expr(NodeKind::FuncCall)
+    : Expr(Kind::FuncCall)
     , m_Ident(std::move(ident))
     , m_Args(std::move(args))
 {}
 
 CodeBlock::CodeBlock(StmtList stmts)
-    : Stmt(NodeKind::CodeBlock)
+    : Stmt(Kind::CodeBlock)
     , m_Stmts(std::move(stmts))
 {}
 
 IfStmt::IfStmt(ExprPtr cond, CodeBlockPtr thenBlock, CodeBlockPtr elseBlock)
-    : Stmt(NodeKind::IfStmt)
+    : Stmt(Kind::IfStmt)
     , m_Cond(std::move(cond))
     , m_Then(std::move(thenBlock))
     , m_Else(std::move(elseBlock))
 {}
 
 WhileStmt::WhileStmt(ExprPtr cond, CodeBlockPtr body)
-    : Stmt(NodeKind::WhileStmt)
+    : Stmt(Kind::WhileStmt)
     , m_Cond(std::move(cond))
     , m_Body(std::move(body))
 {}
 
 ReturnStmt::ReturnStmt(ExprPtr expr)
-    : Stmt(NodeKind::ReturnStmt)
+    : Stmt(Kind::ReturnStmt)
     , m_Expr(std::move(expr))
 {}
 
 VarDecl::VarDecl(std::string ident, TypePtr type, ExprPtr value)
-    : Stmt(NodeKind::VarDecl)
+    : Stmt(Kind::VarDecl)
     , m_Ident(std::move(ident))
     , m_Type(std::move(type))
     , m_Value(std::move(value))
 {}
 
-Param::Param(std::string ident, TypePtr type)
-    : m_Ident(std::move(ident))
-    , m_Type(std::move(type))
-{}
-
 FuncDecl::FuncDecl(std::string ident, ParamList params, TypePtr returnType, CodeBlockPtr body)
-    : Node(NodeKind::FuncDecl)
+    : Node(Kind::FuncDecl)
     , m_Ident(std::move(ident))
     , m_Params(std::move(params))
     , m_ReturnType(std::move(returnType))
@@ -258,7 +251,7 @@ void FuncDecl::toString(std::ostream &os) const
     {
         if (i > 0) os << ", ";
         
-        os << *m_Params[i];
+        os << m_Params[i].first << ": " << *m_Params[i].second;
     }
 
     os << "}, ";
@@ -272,56 +265,57 @@ std::ostream &operator<<(std::ostream &os, const Node &node)
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const Param &param)
+std::ostream &operator<<(std::ostream &os, UnaryExpr::OperatorKind op)
 {
-    return os << "Param(" << param.getIdent() << ", " << *param.getType() << ")";
-}
+    using enum UnaryExpr::OperatorKind;
 
-std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op)
-{
     switch (op)
     {
-        case UnaryOperatorKind::LogicalNot: return os << "LogicalNot";
-        case UnaryOperatorKind::BitwiseNot: return os << "BitwiseNot";
-        case UnaryOperatorKind::Positive:   return os << "Positive";
-        case UnaryOperatorKind::Negative:   return os << "Negative";
+        case LogicalNot: return os << "LogicalNot";
+        case BitwiseNot: return os << "BitwiseNot";
+        case Positive:   return os << "Positive";
+        case Negative:   return os << "Negative";
     }
+
     return os << "<Unknown-Unary-Operator>";
 }
 
-std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op)
+std::ostream &operator<<(std::ostream &os, BinaryExpr::OperatorKind op)
 {
+    using enum BinaryExpr::OperatorKind;
+
     switch (op)
     {
-        case BinaryOperatorKind::Addition:                 return os << "Addition";
-        case BinaryOperatorKind::Subtraction:              return os << "Subtraction";
-        case BinaryOperatorKind::Multiplication:           return os << "Multiplication";
-        case BinaryOperatorKind::Division:                 return os << "Division";
-        case BinaryOperatorKind::Modulo:                   return os << "Modulo";
-        case BinaryOperatorKind::Equality:                 return os << "Equality";
-        case BinaryOperatorKind::Inequality:               return os << "Inequality";
-        case BinaryOperatorKind::LessThan:                 return os << "LessThan";
-        case BinaryOperatorKind::GreaterThan:              return os << "GreaterThan";
-        case BinaryOperatorKind::LessThanOrEqual:          return os << "LessThanOrEqual";
-        case BinaryOperatorKind::GreaterThanOrEqual:       return os << "GreaterThanOrEqual";
-        case BinaryOperatorKind::LogicalAnd:               return os << "LogicalAnd";
-        case BinaryOperatorKind::LogicalOr:                return os << "LogicalOr";
-        case BinaryOperatorKind::BitwiseAnd:               return os << "BitwiseAnd";
-        case BinaryOperatorKind::BitwiseOr:                return os << "BitwiseOr";
-        case BinaryOperatorKind::BitwiseXor:               return os << "BitwiseXor";
-        case BinaryOperatorKind::LeftShift:                return os << "LeftShift";
-        case BinaryOperatorKind::RightShift:               return os << "RightShift";
-        case BinaryOperatorKind::Assignment:               return os << "Assignment";
-        case BinaryOperatorKind::AdditionAssignment:       return os << "AdditionAssignment";
-        case BinaryOperatorKind::SubtractionAssignment:    return os << "SubtractionAssignment";
-        case BinaryOperatorKind::MultiplicationAssignment: return os << "MultiplicationAssignment";
-        case BinaryOperatorKind::DivisionAssignment:       return os << "DivisionAssignment";
-        case BinaryOperatorKind::ModuloAssignment:         return os << "ModuloAssignment";
-        case BinaryOperatorKind::BitwiseAndAssignment:     return os << "BitwiseAndAssignment";
-        case BinaryOperatorKind::BitwiseOrAssignment:      return os << "BitwiseOrAssignment";
-        case BinaryOperatorKind::BitwiseXorAssignment:     return os << "BitwiseXorAssignment";
-        case BinaryOperatorKind::LeftShiftAssignment:      return os << "LeftShiftAssignment";
-        case BinaryOperatorKind::RightShiftAssignment:     return os << "RightShiftAssignment";
+        case Addition:                 return os << "Addition";
+        case Subtraction:              return os << "Subtraction";
+        case Multiplication:           return os << "Multiplication";
+        case Division:                 return os << "Division";
+        case Modulo:                   return os << "Modulo";
+        case Equality:                 return os << "Equality";
+        case Inequality:               return os << "Inequality";
+        case LessThan:                 return os << "LessThan";
+        case GreaterThan:              return os << "GreaterThan";
+        case LessThanOrEqual:          return os << "LessThanOrEqual";
+        case GreaterThanOrEqual:       return os << "GreaterThanOrEqual";
+        case LogicalAnd:               return os << "LogicalAnd";
+        case LogicalOr:                return os << "LogicalOr";
+        case BitwiseAnd:               return os << "BitwiseAnd";
+        case BitwiseOr:                return os << "BitwiseOr";
+        case BitwiseXor:               return os << "BitwiseXor";
+        case LeftShift:                return os << "LeftShift";
+        case RightShift:               return os << "RightShift";
+        case Assignment:               return os << "Assignment";
+        case AdditionAssignment:       return os << "AdditionAssignment";
+        case SubtractionAssignment:    return os << "SubtractionAssignment";
+        case MultiplicationAssignment: return os << "MultiplicationAssignment";
+        case DivisionAssignment:       return os << "DivisionAssignment";
+        case ModuloAssignment:         return os << "ModuloAssignment";
+        case BitwiseAndAssignment:     return os << "BitwiseAndAssignment";
+        case BitwiseOrAssignment:      return os << "BitwiseOrAssignment";
+        case BitwiseXorAssignment:     return os << "BitwiseXorAssignment";
+        case LeftShiftAssignment:      return os << "LeftShiftAssignment";
+        case RightShiftAssignment:     return os << "RightShiftAssignment";
     }
+
     return os << "<Unknown-Binary-Operator>";
 }
