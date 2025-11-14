@@ -47,7 +47,7 @@ std::ostream &operator<<(std::ostream &os, ErrorTypeToken type)
 
 std::ostream &operator<<(std::ostream &os, const Token &t) 
 {
-    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", " << t.loc.column << ", " << t.loc.index << ")";
+    return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", " << t.loc.column << ", " << t.loc.index << ", " << t.errorType << ")";
 }
 
 bool operator==(const Token& lhs, const Token& rhs)
