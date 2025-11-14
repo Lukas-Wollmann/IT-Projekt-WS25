@@ -15,6 +15,11 @@ std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
     while (!isAtEnd()) {
         skipWhitespace();
+        if (isAtEnd())
+        {
+            return tokens;
+        }
+        
         char32_t currentChar = m_CurentChar;
         SourceLoc startLoc = m_Loc;  // Save the starting location
         
