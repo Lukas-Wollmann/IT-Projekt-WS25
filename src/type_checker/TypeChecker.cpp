@@ -2,7 +2,6 @@
 #include <cassert>
 #include <sstream>
 
-
 TypeError::TypeError(std::string msg)
     : m_Msg(std::move(msg)) 
 {}
@@ -10,6 +9,11 @@ TypeError::TypeError(std::string msg)
 TypeChecker::TypeChecker()
 {
     m_SymbolTable.pushScope();
+}
+
+TypeChecker::~TypeChecker()
+{
+    m_SymbolTable.popScope();
 }
 
 void TypeChecker::visit(IntLit &node)
@@ -78,7 +82,7 @@ void TypeChecker::visit(BinaryExpr &node)
 
     const Type &leftType = node.getLeftOp().getType().value();
     const Type &rightType = node.getRightOp().getType().value();
-    
+
     // If one of the two expressions is of type <error-type> 
     // then propagate the error upwards in the type tree.
     // The error did not really happen here, so dont add to m_Errors.
@@ -110,8 +114,65 @@ void TypeChecker::visit(BinaryExpr &node)
 
 void TypeChecker::visit(FuncCall &node)
 {
-    (void)node;
-    throw std::runtime_error("Not implemented");
+    auto symbol = m_SymbolTable.getSymbol(node.getIdent());
+
+    if (!symbol.has_value())
+    {   
+        node.setType(std::make_unique<ErrorType>());
+        
+        std::stringstream ss;
+        ss << "Illegal call to undefined function " << node.getIdent();
+
+        m_Errors.push_back(TypeError(ss.str()));
+        return;
+    }
+
+    const Type &type = symbol->get().getType();
+
+    if (type.getKind() != TypeKind::Function)
+    {
+        node.setType(std::make_unique<ErrorType>());
+        
+        std::stringstream ss;
+        ss << "Illegal call to " << node.getIdent() << ": ";
+        ss << " this symbol is not a function.";
+
+        m_Errors.push_back(TypeError(ss.str()));
+        return;
+    }
+
+    const FunctionType &funcType = static_cast<const FunctionType&>(type);
+    const TypeList &paramTypes = funcType.getParameterTypes();
+    ExprList &args = node.getArgs();
+    
+    node.setType(funcType.getReturnType().copy());
+
+    if (args.size() != paramTypes.size())
+    {
+        std::stringstream ss;
+        ss << "Illegal call to " << node.getIdent() << ": expected ";
+        ss << paramTypes.size() << " arguments but got " << args.size();
+
+        m_Errors.push_back(TypeError(ss.str()));
+        return;
+    }
+
+    for (size_t i = 0; i < args.size(); ++i)
+    {
+        args[i]->accept(*this);
+
+        const Type &argType = args[i]->getType()->get();
+        const Type &paramType = *paramTypes[i];
+        
+        if (argType.getKind() == TypeKind::Error || argType == paramType)
+            continue;
+
+        std::stringstream ss;
+        ss << "Cannot use type " << argType << " as parameter ";
+        ss << " for an argument of type " << paramType;
+
+        m_Errors.push_back(TypeError(ss.str()));
+    }
 }
 
 void TypeChecker::visit(VarRef &node)
@@ -121,7 +182,7 @@ void TypeChecker::visit(VarRef &node)
     // The symbol is known, so take its type
     if (symbol.has_value())
     {
-        node.setType(symbol.value().get().getType().copy());
+        node.setType(symbol->get().getType().copy());
         return;
     }
 
@@ -145,14 +206,36 @@ void TypeChecker::visit(CodeBlock &stmt)
 
 void TypeChecker::visit(IfStmt &node)
 {
-    (void)node;
-    throw std::runtime_error("Not implemented");
+    node.getCond().accept(*this);
+    
+    const Type &type = node.getCond().getType()->get();
+
+    // If the condition has type <error-type> fail silently
+    if (type.getKind() != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool))
+    {
+        std::stringstream ss;
+        ss << "Cannot accept type " << type << " inside an if condition.";
+
+        m_Errors.push_back(TypeError(ss.str()));
+    }
 }
 
 void TypeChecker::visit(WhileStmt &node)
 {
-    (void)node;
-    throw std::runtime_error("Not implemented");
+    node.getCond().accept(*this);
+    
+    const Type &type = node.getCond().getType()->get();
+
+    // If the condition has type <error-type> fail silently
+    if (type.getKind() != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool))
+    {
+        std::stringstream ss;
+        ss << "Cannot accept type " << type << " inside a while condition.";
+
+        m_Errors.push_back(TypeError(ss.str()));
+    }
+    
+    node.getBody().accept(*this);
 }
 
 void TypeChecker::visit(ReturnStmt &node)
@@ -161,7 +244,7 @@ void TypeChecker::visit(ReturnStmt &node)
     node.getExpr().accept(*this);
 
     // Get the type of the return value
-    const Type &type = node.getExpr().getType().value().get();
+    const Type &type = node.getExpr().getType()->get();
 
     if (!m_CurrentFunctionReturnType)
         throw std::runtime_error("Illegal ReturnStmt: m_CurrentFunctionReturnType is nullptr");
@@ -225,4 +308,18 @@ void TypeChecker::visit(FuncDecl &node)
     node.getBody().accept(*this);
 
     m_SymbolTable.popScope();
+
+    // Now we have to add this function to the scope
+    TypeList paramTypes;
+
+    for (const Param &param : node.getParams())
+    {
+        paramTypes.push_back(param.second->copy());
+    }
+
+    auto funcType = std::make_unique<FunctionType>(
+        std::move(paramTypes), node.getReturnType().copy()
+    );
+    
+    m_SymbolTable.addSymbol(node.getIdent(), SymbolInfo(std::move(funcType)));
 }

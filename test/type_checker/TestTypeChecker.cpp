@@ -119,3 +119,46 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
     for (const TypeError &err : tc.m_Errors)
         std::cout << err.m_Msg << std::endl;
 }
+
+TEST_CASE("TypeChecker: Sandbox")
+{
+    StmtList stmts;
+    
+    ParamList params;
+    params.push_back({ "a", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32) });
+    params.push_back({ "b", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32) });
+
+    StmtList body;
+    body.push_back(std::make_unique<ReturnStmt>(
+        std::make_unique<IntLit>(20)
+    ));
+
+    stmts.push_back(std::make_unique<FuncDecl>(
+        "add",
+        std::move(params),
+        std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32),
+        std::make_unique<CodeBlock>(std::move(body))
+    ));
+
+    ExprList args;
+    args.push_back(std::make_unique<IntLit>(20));
+    args.push_back(std::make_unique<IntLit>(15));
+    args.push_back(std::make_unique<IntLit>(15));
+
+    stmts.push_back(std::make_unique<VarDecl>(
+        "x",
+        std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
+        std::make_unique<FuncCall>(
+            "add",
+            std::move(args)
+        )
+    ));
+
+    auto block = std::make_unique<CodeBlock>(std::move(stmts));
+
+    TypeChecker tc;
+    block->accept(tc);
+
+    for (const TypeError &err : tc.m_Errors)
+        std::cout << err.m_Msg << std::endl;
+}

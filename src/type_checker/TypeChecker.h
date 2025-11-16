@@ -22,6 +22,7 @@ public:
     TypePtr m_CurrentFunctionReturnType;
 
     TypeChecker();
+    ~TypeChecker();
 
     void visit(IntLit &node) override;
     void visit(FloatLit &node) override;

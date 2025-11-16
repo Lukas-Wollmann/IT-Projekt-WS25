@@ -358,9 +358,8 @@ public:
 using Param = std::pair<std::string, TypePtr>;
 using ParamList = std::vector<Param>;
 
-struct FuncDecl : public Node 
+struct FuncDecl : public Stmt 
 {
-
 private:
     const std::string m_Ident;
     ParamList m_Params;

@@ -3,7 +3,7 @@
 #include <locale>
 
 Node::Node(NodeKind kind)
-    : m_Kind(kind)
+    : m_Kind(kind) 
 {}
 
 NodeKind Node::getNodeKind() const
@@ -113,7 +113,7 @@ VarDecl::VarDecl(std::string ident, TypePtr type, ExprPtr value)
 {}
 
 FuncDecl::FuncDecl(std::string ident, ParamList params, TypePtr returnType, CodeBlockPtr body)
-    : Node(NodeKind::FuncDecl)
+    : Stmt(NodeKind::FuncDecl)
     , m_Ident(std::move(ident))
     , m_Params(std::move(params))
     , m_ReturnType(std::move(returnType))

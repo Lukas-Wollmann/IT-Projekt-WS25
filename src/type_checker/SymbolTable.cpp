@@ -1,6 +1,5 @@
 #include "type_checker/SymbolTable.h"
 
-
 SymbolInfo::SymbolInfo(TypePtr type)
     : m_Type(std::move(type))
 {}
