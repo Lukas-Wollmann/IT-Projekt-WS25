@@ -13,13 +13,13 @@ ContinuationIndentWidth: 8
 # Braces
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterEnum: true
+  AfterEnum: false
   AfterStruct: false
   SplitEmptyFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 
 # Spaces
 SpaceBeforeParens: ControlStatements
@@ -37,7 +37,7 @@ PointerAlignment: Right
 ReferenceAlignment: Right
 
 # Line breaks
-ColumnLimit: 125
+ColumnLimit: 100
 PenaltyBreakBeforeFirstCallParameter: 200
 PenaltyBreakComment: 300
 PenaltyBreakString: 1000
@@ -70,6 +70,18 @@ AlignTrailingComments: true
 # Misc
 SortUsingDeclarations: true
 KeepEmptyLinesAtTheStartOfBlocks: false
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: BeforeComma
 AllowAllArgumentsOnNextLine: false
-...
+
+SeparateDefinitionBlocks: Always
+EmptyLineBeforeAccessModifier: LogicalBlock
+AccessModifierOffset: -4
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: false
+IndentCaseLabels: true
+CaseIndentation: 4
+EnumTrailingComma: Remove
+RemoveEmptyLinesInUnwrappedLines: true
