@@ -2,8 +2,15 @@
 #include <cassert>
 #include <sstream>
 
+std::ostream &operator<<(std::ostream &os, const TypeError &err)
+{
+    os << "Error at " << err.m_Loc.line << ":" << err.m_Loc.column;
+    return os << ": '" << err.m_Msg << "'";
+}
+
 TypeError::TypeError(std::string msg)
-    : m_Msg(std::move(msg)) 
+    : m_Msg(std::move(msg))
+    , m_Loc{0, 0, 0}
 {}
 
 TypeChecker::TypeChecker()
@@ -313,9 +320,8 @@ void TypeChecker::visit(FuncDecl &node)
     TypeList paramTypes;
 
     for (const Param &param : node.getParams())
-    {
         paramTypes.push_back(param.second->copy());
-    }
+    
 
     auto funcType = std::make_unique<FunctionType>(
         std::move(paramTypes), node.getReturnType().copy()

@@ -1,18 +1,20 @@
 #pragma once
 #include "type_checker/SymbolTable.h"
+#include "Token.h"
 #include "ast/AST.h"
 #include "ast/Type.h"
 #include "ast/Visitor.h"
-
 
 struct TypeError
 {
 public:
     std::string m_Msg;
+    SourceLoc m_Loc;
 
     TypeError(std::string msg);
-};
 
+    friend std::ostream &operator<<(std::ostream &os, const TypeError &err);
+};
 
 struct TypeChecker : public Visitor
 {

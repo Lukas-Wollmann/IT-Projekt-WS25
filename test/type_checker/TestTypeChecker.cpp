@@ -160,5 +160,5 @@ TEST_CASE("TypeChecker: Sandbox")
     block->accept(tc);
 
     for (const TypeError &err : tc.m_Errors)
-        std::cout << err.m_Msg << std::endl;
+        std::cout << err << std::endl;
 }
