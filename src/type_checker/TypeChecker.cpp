@@ -13,16 +13,6 @@ TypeError::TypeError(std::string msg)
     , m_Loc{0, 0, 0}
 {}
 
-TypeChecker::TypeChecker()
-{
-    m_SymbolTable.pushScope();
-}
-
-TypeChecker::~TypeChecker()
-{
-    m_SymbolTable.popScope();
-}
-
 void TypeChecker::visit(IntLit &node)
 {
     if (node.getType().has_value())
@@ -203,12 +193,12 @@ void TypeChecker::visit(VarRef &node)
 
 void TypeChecker::visit(CodeBlock &stmt)
 {
-    m_SymbolTable.pushScope();
+    m_SymbolTable.enterScope();
 
     for (StmtPtr &n : stmt.getStmts())
         n->accept(*this);
 
-    m_SymbolTable.popScope();
+    m_SymbolTable.exitScope();
 }
 
 void TypeChecker::visit(IfStmt &node)
@@ -288,7 +278,7 @@ void TypeChecker::visit(VarDecl &node)
     }
 
     // Does this symbol already exist in the current scope (shadowing possible)
-    if (m_SymbolTable.hasSymbolInCurrentScope(node.getIdent()))
+    if (m_SymbolTable.isSymbolDefinedInCurrentScope(node.getIdent()))
     {
         std::stringstream ss;
         ss << "Illegal redefinition of symbol: " << node.getIdent();
@@ -302,7 +292,7 @@ void TypeChecker::visit(VarDecl &node)
 
 void TypeChecker::visit(FuncDecl &node)
 {
-    m_SymbolTable.pushScope();
+    m_SymbolTable.enterScope();
 
     // Add all params as symbols to the function scope
     for (const auto &param : node.getParams())
@@ -314,7 +304,7 @@ void TypeChecker::visit(FuncDecl &node)
     // Type check the function body (in a nested scope, allows param shadowing)
     node.getBody().accept(*this);
 
-    m_SymbolTable.popScope();
+    m_SymbolTable.exitScope();
 
     // Now we have to add this function to the scope
     TypeList paramTypes;

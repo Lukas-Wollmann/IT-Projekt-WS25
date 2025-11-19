@@ -159,6 +159,9 @@ TEST_CASE("TypeChecker: Sandbox")
     TypeChecker tc;
     block->accept(tc);
 
+
+    tc.m_SymbolTable.getGlobalScope()->toString(std::cout);
+
     for (const TypeError &err : tc.m_Errors)
         std::cout << err << std::endl;
 }

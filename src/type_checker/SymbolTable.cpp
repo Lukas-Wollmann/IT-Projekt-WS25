@@ -4,48 +4,96 @@ SymbolInfo::SymbolInfo(TypePtr type)
     : m_Type(std::move(type))
 {}
 
-Scope &SymbolTable::pushScope()
-{
-    m_Scopes.push_back(Scope());
+Scope::Scope(WeakScopePtr parent) 
+    : m_Parent(std::move(parent)) 
+{}
 
-    return m_Scopes.back();
+ScopePtr Scope::enterScope()
+{
+    m_Children.emplace_back(std::make_shared<Scope>(shared_from_this()));
+    
+    return m_Children.back();
 }
 
-void SymbolTable::popScope()
+ScopePtr Scope::getParent() const 
 {
-    if (m_Scopes.empty())
-        throw std::runtime_error("Called popScope on empty SymbolTable");
-
-    m_Scopes.pop_back();
+    return m_Parent.lock();
 }
 
-std::optional<Ref<const SymbolInfo>> SymbolTable::getSymbol(const std::string &name) const
+void Scope::addSymbol(std::string name, SymbolInfo symbol)
 {
-    for (auto scope = m_Scopes.rbegin(); scope != m_Scopes.rend(); ++scope) 
-    {
-        auto it = scope->find(name);
+    m_Symbols.emplace(std::move(name), std::move(symbol));
+}
 
-        if (it != scope->end()) return it->second;
-    }
+std::optional<Ref<const SymbolInfo>> Scope::getSymbol(const std::string &name) const
+{
+    auto it = m_Symbols.find(name);
 
+    if (it != m_Symbols.end())
+        return it->second;
+
+    if (auto parent = m_Parent.lock()) 
+        return parent->getSymbol(name);
+    
     return std::nullopt;
+}
+
+bool Scope::isSymbolDefinedInThisScope(const std::string name)
+{   
+    return m_Symbols.find(name) != m_Symbols.end();
+}
+
+void Scope::toString(std::ostream &os, size_t indent) const
+{
+    std::string prefix(indent, ' ');
+    
+    os << prefix << "Scope {\n";
+
+    for (const auto &[name, symbol] : m_Symbols)
+        os << prefix << "  Symbol(" << name << ", " << symbol.getType() << ")\n";
+    
+    for (const ScopePtr &child : m_Children)
+        child->toString(os, indent + 4);
+
+    os << prefix << "}\n";
+}
+
+SymbolTable::SymbolTable()
+    : m_GlobalScope(std::make_shared<Scope>())
+    , m_Current(m_GlobalScope)
+{}
+
+ScopePtr SymbolTable::enterScope()
+{
+    return m_Current = m_Current->enterScope();    
+}
+
+void SymbolTable::exitScope()
+{
+    ScopePtr parent = m_Current->getParent();
+    
+    if (!parent)
+        throw std::runtime_error("Cannot exit the global scope");
+
+    m_Current = parent;
 }
 
 void SymbolTable::addSymbol(std::string name, SymbolInfo symbol)
 {
-    if (m_Scopes.empty())
-        throw std::runtime_error("Called addSymbol on empty SymbolTable");
-
-    m_Scopes.back().emplace(std::move(name), std::move(symbol));
+    m_Current->addSymbol(std::move(name), std::move(symbol));
 }
 
-
-bool SymbolTable::hasSymbolInCurrentScope(const std::string name)
+std::optional<Ref<const SymbolInfo>> SymbolTable::getSymbol(const std::string &name) const
 {
-    if (m_Scopes.empty())
-        throw std::runtime_error("Called hasSymbolInCurrentScope on empty SymbolTable");
+    return m_Current->getSymbol(name);
+}
 
-    const Scope &current = m_Scopes.back();
-    
-    return current.find(name) != current.end();
+bool SymbolTable::isSymbolDefinedInCurrentScope(const std::string name)
+{
+    return m_Current->isSymbolDefinedInThisScope(name);
+}
+
+ScopePtr SymbolTable::getGlobalScope() const
+{
+    return m_GlobalScope;
 }

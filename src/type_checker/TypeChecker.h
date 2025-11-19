@@ -22,10 +22,7 @@ public:
     SymbolTable m_SymbolTable;
     std::vector<TypeError> m_Errors;
     TypePtr m_CurrentFunctionReturnType;
-
-    TypeChecker();
-    ~TypeChecker();
-
+    
     void visit(IntLit &node) override;
     void visit(FloatLit &node) override;
     void visit(CharLit &node) override;
