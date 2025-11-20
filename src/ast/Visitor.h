@@ -21,20 +21,20 @@ struct Visitor
 {
     virtual ~Visitor() = default;
 
-    virtual void visit(IntLit &node) = 0;
-    virtual void visit(FloatLit &node) = 0;
-    virtual void visit(CharLit &node) = 0;
-    virtual void visit(BoolLit &node) = 0;
-    virtual void visit(StringLit &node) = 0;
-    virtual void visit(ArrayExpr &node) = 0;
-    virtual void visit(UnaryExpr &node) = 0;
-    virtual void visit(BinaryExpr &node) = 0;
-    virtual void visit(FuncCall &node) = 0;
-    virtual void visit(VarRef &node) = 0;
-    virtual void visit(CodeBlock &node) = 0;
-    virtual void visit(IfStmt &node) = 0;
-    virtual void visit(WhileStmt &node) = 0;
-    virtual void visit(ReturnStmt &node) = 0;
-    virtual void visit(VarDecl &node) = 0;
-    virtual void visit(FuncDecl &node) = 0;
+    virtual void visit(IntLit &) {}
+    virtual void visit(FloatLit &) {}
+    virtual void visit(CharLit &) {}
+    virtual void visit(BoolLit &) {}
+    virtual void visit(StringLit &) {}
+    virtual void visit(ArrayExpr &) {}
+    virtual void visit(UnaryExpr &) {}
+    virtual void visit(BinaryExpr &) {}
+    virtual void visit(FuncCall &) {}
+    virtual void visit(VarRef &) {}
+    virtual void visit(CodeBlock &) {}
+    virtual void visit(IfStmt &) {}
+    virtual void visit(WhileStmt &) {}
+    virtual void visit(ReturnStmt &) {}
+    virtual void visit(VarDecl &) {}
+    virtual void visit(FuncDecl &) {}
 };

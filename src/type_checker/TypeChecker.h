@@ -5,24 +5,15 @@
 #include "ast/Type.h"
 #include "ast/Visitor.h"
 
-struct TypeError
+struct TypeCheckingPass : public Visitor
 {
-public:
-    std::string m_Msg;
-    SourceLoc m_Loc;
-
-    TypeError(std::string msg);
-
-    friend std::ostream &operator<<(std::ostream &os, const TypeError &err);
-};
-
-struct TypeChecker : public Visitor
-{
-public:
-    SymbolTable m_SymbolTable;
-    std::vector<TypeError> m_Errors;
+private:
+    TypeCheckingContext &m_Context;
     TypePtr m_CurrentFunctionReturnType;
     
+public:
+    TypeCheckingPass(TypeCheckingContext &context);
+
     void visit(IntLit &node) override;
     void visit(FloatLit &node) override;
     void visit(CharLit &node) override;

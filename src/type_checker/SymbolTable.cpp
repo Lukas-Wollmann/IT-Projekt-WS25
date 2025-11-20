@@ -5,14 +5,26 @@ SymbolInfo::SymbolInfo(TypePtr type)
 {}
 
 Scope::Scope(WeakScopePtr parent) 
-    : m_Parent(std::move(parent)) 
+    : m_Parent(std::move(parent))
+    , m_NextChildIndex(0)
 {}
 
-ScopePtr Scope::enterScope()
+ScopePtr Scope::createScope()
 {
     m_Children.emplace_back(std::make_shared<Scope>(shared_from_this()));
     
     return m_Children.back();
+}
+
+ScopePtr Scope::enterScope()
+{
+    if (m_NextChildIndex >= m_Children.size())
+        throw std::runtime_error("Tried to iterate through non existing child");
+
+    ScopePtr scope = m_Children[m_NextChildIndex];
+    ++m_NextChildIndex;
+
+    return scope;
 }
 
 ScopePtr Scope::getParent() const 
@@ -50,7 +62,7 @@ void Scope::toString(std::ostream &os, size_t indent) const
     os << prefix << "Scope {\n";
 
     for (const auto &[name, symbol] : m_Symbols)
-        os << prefix << "  Symbol(" << name << ", " << symbol.getType() << ")\n";
+        os << prefix << "    Symbol(" << name << ", " << symbol.getType() << ")\n";
     
     for (const ScopePtr &child : m_Children)
         child->toString(os, indent + 4);
@@ -63,9 +75,14 @@ SymbolTable::SymbolTable()
     , m_Current(m_GlobalScope)
 {}
 
+ScopePtr SymbolTable::createScope()
+{
+    return m_Current = m_Current->createScope();    
+}
+
 ScopePtr SymbolTable::enterScope()
 {
-    return m_Current = m_Current->enterScope();    
+    return m_Current = m_Current->enterScope();
 }
 
 void SymbolTable::exitScope()
@@ -96,4 +113,15 @@ bool SymbolTable::isSymbolDefinedInCurrentScope(const std::string name)
 ScopePtr SymbolTable::getGlobalScope() const
 {
     return m_GlobalScope;
+}
+
+TypeError::TypeError(std::string msg)
+    : m_Msg(std::move(msg))
+    , m_Loc{0, 0, 0}
+{}
+
+std::ostream &operator<<(std::ostream &os, const TypeError &err)
+{
+    os << "Error at " << err.m_Loc.line << ":" << err.m_Loc.column;
+    return os << ": '" << err.m_Msg << "'";
 }
