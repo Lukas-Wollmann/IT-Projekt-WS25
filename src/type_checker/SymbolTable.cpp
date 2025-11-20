@@ -6,7 +6,6 @@ SymbolInfo::SymbolInfo(TypePtr type)
 
 Scope::Scope(WeakScopePtr parent) 
     : m_Parent(std::move(parent))
-    , m_NextChildIndex(0)
 {}
 
 ScopePtr Scope::createScope()
@@ -14,17 +13,6 @@ ScopePtr Scope::createScope()
     m_Children.emplace_back(std::make_shared<Scope>(shared_from_this()));
     
     return m_Children.back();
-}
-
-ScopePtr Scope::enterScope()
-{
-    if (m_NextChildIndex >= m_Children.size())
-        throw std::runtime_error("Tried to iterate through non existing child");
-
-    ScopePtr scope = m_Children[m_NextChildIndex];
-    ++m_NextChildIndex;
-
-    return scope;
 }
 
 ScopePtr Scope::getParent() const 
@@ -70,6 +58,34 @@ void Scope::toString(std::ostream &os, size_t indent) const
     os << prefix << "}\n";
 }
 
+TraversalContext::TraversalContext(ScopePtr root) 
+    : m_Current(std::move(root))
+{
+    m_ChildIndexStack.push_back(0);
+}
+
+ScopePtr TraversalContext::enterScope()
+{
+    size_t &idx = m_ChildIndexStack.back();
+    m_Current = m_Current->m_Children[idx];
+    ++idx;
+    m_ChildIndexStack.push_back(0);
+    return m_Current;
+}
+
+ScopePtr TraversalContext::exitScope() 
+{
+    ScopePtr parent = m_Current->getParent();
+
+    if (!parent) 
+        throw std::runtime_error("Cannot exit if scope has no parent");
+    
+    m_Current = parent;
+    m_ChildIndexStack.pop_back();
+
+    return m_Current;
+}
+
 SymbolTable::SymbolTable()
     : m_GlobalScope(std::make_shared<Scope>())
     , m_Current(m_GlobalScope)
@@ -78,11 +94,6 @@ SymbolTable::SymbolTable()
 ScopePtr SymbolTable::createScope()
 {
     return m_Current = m_Current->createScope();    
-}
-
-ScopePtr SymbolTable::enterScope()
-{
-    return m_Current = m_Current->enterScope();
 }
 
 void SymbolTable::exitScope()

@@ -29,7 +29,6 @@ private:
     std::unordered_map<std::string, SymbolInfo> m_Symbols;
     std::vector<ScopePtr> m_Children;
     WeakScopePtr m_Parent;
-    size_t m_NextChildIndex;
 
 public:
     Scope(WeakScopePtr parent = {});
@@ -40,7 +39,6 @@ public:
     Scope &operator=(Scope &&) = delete;
 
     ScopePtr createScope();
-    ScopePtr enterScope();
     ScopePtr getParent() const;
     void addSymbol(std::string name, SymbolInfo symbol);
     std::optional<Ref<const SymbolInfo>> getSymbol(const std::string &name) const;
@@ -56,37 +54,11 @@ private:
     std::vector<size_t> m_ChildIndexStack;
 
 public:
-    explicit TraversalContext(ScopePtr root) 
-        : m_Current(std::move(root))
-    {
-        m_ChildIndexStack.push_back(0);
-    }
+    explicit TraversalContext(ScopePtr root);
 
-    ScopePtr enterScope() 
-    {
-        size_t &nextIndex = m_ChildIndexStack.back();
-
-        if (m_Current->m_Children.size() >= nextIndex) 
-            throw std::out_of_range("Cannot enter non existing scope");
-        
-        m_Current = m_Current->m_Children[nextIndex];
-        ++nextIndex;
-
-        m_ChildIndexStack.push_back(0);
-        return m_Current;
-    }
-
-    ScopePtr exitScope() 
-    {
-        m_Current = m_Current->getParent();
-
-        if (!m_Current) 
-            throw std::runtime_error("Cannot exit if scope has no parent");
-        
-        m_ChildIndexStack.pop_back();
-
-        return m_Current;
-    }
+    ScopePtr enterScope();
+    ScopePtr exitScope();
+    ScopePtr getCurrent() const { return m_Current; }
 };
 
 struct SymbolTable
@@ -103,7 +75,6 @@ public:
     SymbolTable &operator=(SymbolTable &&) = delete;
 
     ScopePtr createScope();
-    ScopePtr enterScope();
     void exitScope();
     void resetScopeIterationState();
 

@@ -9,6 +9,7 @@ struct TypeCheckingPass : public Visitor
 {
 private:
     TypeCheckingContext &m_Context;
+    TraversalContext m_Iter;
     TypePtr m_CurrentFunctionReturnType;
     
 public:

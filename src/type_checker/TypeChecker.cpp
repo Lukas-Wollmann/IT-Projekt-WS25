@@ -3,6 +3,7 @@
 
 TypeCheckingPass::TypeCheckingPass(TypeCheckingContext &context)
     : m_Context(context)
+    , m_Iter(context.getSymbolTable().getGlobalScope())
 {}
 
 void TypeCheckingPass::visit(IntLit &node)
@@ -103,7 +104,7 @@ void TypeCheckingPass::visit(BinaryExpr &node)
 
 void TypeCheckingPass::visit(FuncCall &node)
 {
-    auto symbol = m_Context.getSymbolTable().getSymbol(node.getIdent());
+    auto symbol = m_Iter.getCurrent()->getSymbol(node.getIdent());
 
     if (!symbol.has_value())
     {   
@@ -166,7 +167,7 @@ void TypeCheckingPass::visit(FuncCall &node)
 
 void TypeCheckingPass::visit(VarRef &node)
 {
-    auto symbol = m_Context.getSymbolTable().getSymbol(node.getIdent());
+    auto symbol = m_Iter.getCurrent()->getSymbol(node.getIdent());
 
     // The symbol is known, so take its type
     if (symbol.has_value())
@@ -185,12 +186,12 @@ void TypeCheckingPass::visit(VarRef &node)
 
 void TypeCheckingPass::visit(CodeBlock &stmt)
 {
-    m_Context.getSymbolTable().enterScope();
+    m_Iter.enterScope();
 
     for (StmtPtr &n : stmt.getStmts())
         n->accept(*this);
 
-    m_Context.getSymbolTable().exitScope();
+    m_Iter.exitScope();
 }
 
 void TypeCheckingPass::visit(IfStmt &node)
@@ -270,7 +271,7 @@ void TypeCheckingPass::visit(VarDecl &node)
     }
 
     // Does this symbol already exist in the current scope (shadowing possible)
-    if (m_Context.getSymbolTable().isSymbolDefinedInCurrentScope(node.getIdent()))
+    if (m_Iter.getCurrent()->isSymbolDefinedInThisScope(node.getIdent()))
     {
         std::stringstream ss;
         ss << "Illegal redefinition of symbol: " << node.getIdent();
@@ -279,16 +280,16 @@ void TypeCheckingPass::visit(VarDecl &node)
         return;
     }
 
-    m_Context.getSymbolTable().addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
+    m_Iter.getCurrent()->addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
 }
 
 void TypeCheckingPass::visit(FuncDecl &node)
 {
-    m_Context.getSymbolTable().enterScope();
+    m_Iter.enterScope();
 
     // Add all params as symbols to the function scope
     for (const auto &param : node.getParams())
-        m_Context.getSymbolTable().addSymbol(param.first, SymbolInfo(param.second->copy()));
+        m_Iter.getCurrent()->addSymbol(param.first, SymbolInfo(param.second->copy()));
 
     // Set the current expected return type
     m_CurrentFunctionReturnType = node.getReturnType().copy();
@@ -296,7 +297,7 @@ void TypeCheckingPass::visit(FuncDecl &node)
     // Type check the function body (in a nested scope, allows param shadowing)
     node.getBody().accept(*this);
 
-    m_Context.getSymbolTable().exitScope();
+    m_Iter.exitScope();
 
     // We already explored this function during the exploration pass, dont
     // add it to the symbol table a second time, that would break it.
