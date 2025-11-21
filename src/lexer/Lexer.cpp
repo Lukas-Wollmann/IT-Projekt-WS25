@@ -182,6 +182,7 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
         case U't':  mapped = U'\t'; break;
         case U'r':  mapped = U'\r'; break;
         case U'0':  mapped = U'\0'; break;
+        case U'"':  mapped = U'"'; break;
         default:   validEscape = false; break;
     }
 
