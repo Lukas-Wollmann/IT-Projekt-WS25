@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "../src/Lexer.h"
+#include "../src/lexer/Lexer.h"
 #include "../src/core/U8String.h"
 
 //LexNumber tests
