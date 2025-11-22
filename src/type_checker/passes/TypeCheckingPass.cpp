@@ -1,10 +1,16 @@
-#include "TypeChecker.h"
+#include "TypeCheckingPass.h"
 #include <sstream>
 
-TypeCheckingPass::TypeCheckingPass(TypeCheckingContext &context)
+TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
     : m_Context(context)
-    , m_Iter(context.getSymbolTable().getGlobalScope())
-{}
+{
+    m_SymbolTable.enterScope();
+}
+
+TypeCheckingPass::~TypeCheckingPass()
+{
+    m_SymbolTable.exitScope();  
+}
 
 void TypeCheckingPass::visit(IntLit &node)
 {
@@ -98,26 +104,26 @@ void TypeCheckingPass::visit(BinaryExpr &node)
     ss << node.getOp() << " cannot be called with ";
     ss  << leftType << " and " << rightType;
     
-    m_Context.addError(TypeError(ss.str()));
+    m_Context.addError(ss.str());
     node.setType(std::make_unique<ErrorType>());
 }
 
 void TypeCheckingPass::visit(FuncCall &node)
 {
-    auto symbol = m_Iter.getCurrent()->getSymbol(node.getIdent());
+    auto func = m_Context.getGlobalNamespace().getFunction(node.getIdent());
 
-    if (!symbol.has_value())
+    if (!func.has_value())
     {   
         node.setType(std::make_unique<ErrorType>());
         
         std::stringstream ss;
         ss << "Illegal call to undefined function " << node.getIdent();
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
         return;
     }
 
-    const Type &type = symbol->get().getType();
+    const Type &type = func->get().getType();
 
     if (type.getKind() != TypeKind::Function)
     {
@@ -127,7 +133,7 @@ void TypeCheckingPass::visit(FuncCall &node)
         ss << "Illegal call to " << node.getIdent() << ": ";
         ss << " this symbol is not a function.";
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
         return;
     }
 
@@ -143,7 +149,7 @@ void TypeCheckingPass::visit(FuncCall &node)
         ss << "Illegal call to " << node.getIdent() << ": expected ";
         ss << paramTypes.size() << " arguments but got " << args.size();
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
         return;
     }
 
@@ -161,14 +167,14 @@ void TypeCheckingPass::visit(FuncCall &node)
         ss << "Cannot use type " << argType << " as parameter ";
         ss << " for an argument of type " << paramType;
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
     }
 }
 
 void TypeCheckingPass::visit(VarRef &node)
 {
-    auto symbol = m_Iter.getCurrent()->getSymbol(node.getIdent());
-
+    auto symbol = m_SymbolTable.getSymbol(node.getIdent());
+    
     // The symbol is known, so take its type
     if (symbol.has_value())
     {
@@ -179,19 +185,19 @@ void TypeCheckingPass::visit(VarRef &node)
     // The symbol is unknown, so throw an error
     std::stringstream ss;
     ss << "Undefined identifier: " << node.getIdent();
-    m_Context.addError(TypeError(ss.str()));
+    m_Context.addError(ss.str());
 
     node.setType(std::make_unique<ErrorType>());
 }
 
 void TypeCheckingPass::visit(CodeBlock &stmt)
 {
-    m_Iter.enterScope();
+    m_SymbolTable.enterScope();
 
     for (StmtPtr &n : stmt.getStmts())
         n->accept(*this);
 
-    m_Iter.exitScope();
+    m_SymbolTable.exitScope();
 }
 
 void TypeCheckingPass::visit(IfStmt &node)
@@ -206,7 +212,7 @@ void TypeCheckingPass::visit(IfStmt &node)
         std::stringstream ss;
         ss << "Cannot accept type " << type << " inside an if condition.";
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
     }
 }
 
@@ -222,7 +228,7 @@ void TypeCheckingPass::visit(WhileStmt &node)
         std::stringstream ss;
         ss << "Cannot accept type " << type << " inside a while condition.";
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
     }
     
     node.getBody().accept(*this);
@@ -249,7 +255,7 @@ void TypeCheckingPass::visit(ReturnStmt &node)
     ss << "The type " << type << " does not match function declaration. ";
     ss << "Expected type: " << *m_CurrentFunctionReturnType;
 
-    m_Context.addError(TypeError(ss.str()));
+    m_Context.addError(ss.str());
 }
 
 void TypeCheckingPass::visit(VarDecl &node)
@@ -267,29 +273,29 @@ void TypeCheckingPass::visit(VarDecl &node)
         ss << "Missmatchting types at variable declaration: ";
         ss << "Expected " << node.getType() << " but got " << type;
 
-        m_Context.addError(TypeError(ss.str()));   
+        m_Context.addError(ss.str());   
     }
 
     // Does this symbol already exist in the current scope (shadowing possible)
-    if (m_Iter.getCurrent()->isSymbolDefinedInThisScope(node.getIdent()))
+    if (m_SymbolTable.isSymbolDefinedInCurrentScope(node.getIdent()))
     {
         std::stringstream ss;
         ss << "Illegal redefinition of symbol: " << node.getIdent();
 
-        m_Context.addError(TypeError(ss.str()));
+        m_Context.addError(ss.str());
         return;
     }
 
-    m_Iter.getCurrent()->addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
+    m_SymbolTable.addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
 }
 
 void TypeCheckingPass::visit(FuncDecl &node)
 {
-    m_Iter.enterScope();
+    m_SymbolTable.enterScope();
 
     // Add all params as symbols to the function scope
     for (const auto &param : node.getParams())
-        m_Iter.getCurrent()->addSymbol(param.first, SymbolInfo(param.second->copy()));
+        m_SymbolTable.addSymbol(param.first, SymbolInfo(param.second->copy()));
 
     // Set the current expected return type
     m_CurrentFunctionReturnType = node.getReturnType().copy();
@@ -297,8 +303,14 @@ void TypeCheckingPass::visit(FuncDecl &node)
     // Type check the function body (in a nested scope, allows param shadowing)
     node.getBody().accept(*this);
 
-    m_Iter.exitScope();
+    m_SymbolTable.exitScope();
 
     // We already explored this function during the exploration pass, dont
     // add it to the symbol table a second time, that would break it.
+}
+
+void TypeCheckingPass::visit(Module &node)
+{
+    for (FuncDeclPtr &decl : node.getDeclarations())
+        decl->accept(*this);
 }

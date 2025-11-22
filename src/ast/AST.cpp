@@ -1,6 +1,5 @@
 #include "AST.h"
-#include <codecvt>
-#include <locale>
+#include "core/U8String.h"
 
 Node::Node(NodeKind kind)
     : m_Kind(kind) 
@@ -113,7 +112,7 @@ VarDecl::VarDecl(std::string ident, TypePtr type, ExprPtr value)
 {}
 
 FuncDecl::FuncDecl(std::string ident, ParamList params, TypePtr returnType, CodeBlockPtr body)
-    : Stmt(NodeKind::FuncDecl)
+    : Node(NodeKind::FuncDecl)
     , m_Ident(std::move(ident))
     , m_Params(std::move(params))
     , m_ReturnType(std::move(returnType))
@@ -132,11 +131,7 @@ void FloatLit::toString(std::ostream &os) const
 
 void CharLit::toString(std::ostream &os) const
 {
-    std::u32string u32str(1, m_Value);
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-    std::string utf8 = conv.to_bytes(u32str);
-
-    os << "CharLit('" << utf8 << "')";
+    os << "CharLit('" << m_Value << "')";
 }
 
 void BoolLit::toString(std::ostream &os) const
@@ -257,6 +252,27 @@ void FuncDecl::toString(std::ostream &os) const
     os << "}, ";
     os << *m_ReturnType << ", ";
     os << *m_Body << ")";
+}
+
+Module::Module(std::string moduleName, FuncDeclList declarations)
+    : Node(NodeKind::Module)
+    , m_ModuleName(std::move(moduleName))
+    , m_Declarations(std::move(declarations))
+{}
+
+void Module::toString(std::ostream &os) const
+{
+    os << "Module(";
+    os << m_ModuleName << ", {";
+
+    for (size_t i = 0; i < m_Declarations.size(); ++i)
+    {
+        if (i > 0) os << ", ";
+        
+        os << *m_Declarations[i];
+    }
+
+    os << "})";
 }
 
 std::ostream &operator<<(std::ostream &os, const Node &node)

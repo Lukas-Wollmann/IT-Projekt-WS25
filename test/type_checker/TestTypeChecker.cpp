@@ -1,18 +1,19 @@
 #include "Doctest.h"
-#include "type_checker/TypeChecker.h"
-#include "type_checker/ExplorationPass.h"
-#if 0
+#include "type_checker/passes/ExplorationPass.h"
+#include "type_checker/passes/TypeCheckingPass.h"
+
 TEST_CASE("TypeChecker: IntLit type will be infered as PrimitiveType::I32")
 {   
     // Arrange
     auto intLit = std::make_unique<IntLit>(67);
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
     // Act
     intLit->accept(tc);
 
     // Assert
-    CHECK(tc.m_Errors.empty());
+    CHECK(ctx.getErrors().empty());
     CHECK(intLit->getType().has_value());
 
     const Type &type = intLit->getType().value().get();
@@ -26,13 +27,14 @@ TEST_CASE("TypeChecker: FloatLit type will be infered as PrimitiveType::F32")
 {   
     // Arrange
     auto floatLit = std::make_unique<FloatLit>(187.0f);
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
     // Act
     floatLit->accept(tc);
 
     // Assert
-    CHECK(tc.m_Errors.empty());
+    CHECK(ctx.getErrors().empty());
     CHECK(floatLit->getType().has_value());
 
     const Type &type = floatLit->getType().value().get();
@@ -46,13 +48,14 @@ TEST_CASE("TypeChecker: CharLit type will be infered as PrimitiveType::Char")
 {   
     // Arrange
     auto charLit = std::make_unique<CharLit>('X');
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
     // Act
     charLit->accept(tc);
 
     // Assert
-    CHECK(tc.m_Errors.empty());
+    CHECK(ctx.getErrors().empty());
     CHECK(charLit->getType().has_value());
 
     const Type &type = charLit->getType().value().get();
@@ -66,13 +69,14 @@ TEST_CASE("TypeChecker: BoolLit type will be infered as PrimitiveType::Bool")
 {   
     // Arrange
     auto boolLit = std::make_unique<BoolLit>(false);
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
     // Act
     boolLit->accept(tc);
 
     // Assert
-    CHECK(tc.m_Errors.empty());
+    CHECK(ctx.getErrors().empty());
     CHECK(boolLit->getType().has_value());
 
     const Type &type = boolLit->getType().value().get();
@@ -86,13 +90,14 @@ TEST_CASE("TypeChecker: StringLit type will be infered as PrimitiveType::String"
 {   
     // Arrange
     auto strLit = std::make_unique<StringLit>("UwU");
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
     // Act
     strLit->accept(tc);
 
     // Assert
-    CHECK(tc.m_Errors.empty());
+    CHECK(ctx.getErrors().empty());
     CHECK(strLit->getType().has_value());
 
     const Type &type = strLit->getType().value().get();
@@ -114,58 +119,84 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
         std::make_unique<CodeBlock>(std::move(stmts))
     );
 
-    TypeCheckingPass tc;
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
     funcDecl->accept(tc);
 
-    for (const TypeError &err : tc.m_Errors)
-        std::cout << err.m_Msg << std::endl;
+    for (const auto &err : ctx.getErrors())
+        std::cout << err << std::endl;
 }
-#endif
+
 TEST_CASE("TypeChecker: Sandbox")
 {
-    StmtList stmts;
     
     ParamList params;
     params.push_back({ "a", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32) });
     params.push_back({ "b", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32) });
-
-    StmtList body;
-    body.push_back(std::make_unique<ReturnStmt>(
-        std::make_unique<IntLit>(20)
+    
+    ExprList args;
+    args.push_back(std::make_unique<VarRef>("a"));
+    args.push_back(std::make_unique<BinaryExpr>(
+        BinaryOpKind::Subtraction,
+        std::make_unique<VarRef>("b"),
+        std::make_unique<IntLit>(1)
     ));
-
-    stmts.push_back(std::make_unique<FuncDecl>(
+    
+    StmtList body;
+    body.push_back(std::make_unique<VarDecl>(
+        "x",
+        std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32),
+        std::make_unique<FuncCall>(
+            "add",
+            std::move(args)
+        )
+    ));
+    body.push_back(std::make_unique<WhileStmt>(
+        std::make_unique<BoolLit>(false),
+        std::make_unique<CodeBlock>(StmtList{})
+    ));
+    body.push_back(std::make_unique<ReturnStmt>(
+        std::make_unique<VarRef>("x")
+    ));
+    
+    FuncDeclList decls;
+    decls.push_back(std::make_unique<FuncDecl>(
         "add",
         std::move(params),
         std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32),
         std::make_unique<CodeBlock>(std::move(body))
     ));
 
-    ExprList args;
-    args.push_back(std::make_unique<IntLit>(20));
-    args.push_back(std::make_unique<IntLit>(15));
-    args.push_back(std::make_unique<IntLit>(15));
+    auto module = std::make_unique<Module>("test_module", std::move(decls));
 
-    stmts.push_back(std::make_unique<VarDecl>(
-        "x",
-        std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
-        std::make_unique<FuncCall>(
-            "add",
-            std::move(args)
-        )
-    ));
+    /*
+        The AST above is basically:
 
-    auto block = std::make_unique<CodeBlock>(std::move(stmts));
+        A file called test_module:
+        ```
+        func add(a: i32, b: i32) -> i32 {
+            x: i32 = add(a, b - 1);
 
-    TypeCheckingContext ctx;
+            while (false) {}
+
+            return x;
+        }
+        ```
+    
+    */
+
+    std::cout << *module << std::endl;
+
+    TypeCheckerContext ctx;
     
     ExplorationPass ep(ctx);
-    block->accept(ep);
+    module->accept(ep);
 
-    ctx.getSymbolTable().getGlobalScope()->toString(std::cout);
+    std::cout << ctx.getGlobalNamespace();
+    
+    TypeCheckingPass tc(ctx);
+    module->accept(tc);
 
-    TypeCheckingPass tp(ctx);
-    block->accept(tp);
-
-    ctx.getSymbolTable().getGlobalScope()->toString(std::cout);
+    for (auto e : ctx.getErrors())
+        std::cout << e << std::endl;
 }

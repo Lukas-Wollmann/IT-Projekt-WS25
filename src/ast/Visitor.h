@@ -16,6 +16,7 @@ struct WhileStmt;
 struct ReturnStmt;
 struct VarDecl;
 struct FuncDecl;
+struct Module;
 
 struct Visitor
 {
@@ -37,4 +38,5 @@ struct Visitor
     virtual void visit(ReturnStmt &) {}
     virtual void visit(VarDecl &) {}
     virtual void visit(FuncDecl &) {}
+    virtual void visit(Module &) {}
 };

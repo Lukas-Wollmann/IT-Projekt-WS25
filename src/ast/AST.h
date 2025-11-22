@@ -17,6 +17,8 @@ using ExprList = std::vector<ExprPtr>;
 using StmtPtr = std::unique_ptr<Stmt>;
 using StmtList = std::vector<StmtPtr>;
 using CodeBlockPtr = std::unique_ptr<CodeBlock>;
+using FuncDeclPtr = std::unique_ptr<FuncDecl>;
+using FuncDeclList = std::vector<FuncDeclPtr>;
 
 enum struct NodeKind 
 {
@@ -35,7 +37,8 @@ enum struct NodeKind
     WhileStmt,
     ReturnStmt,
     VarDecl,
-    FuncDecl
+    FuncDecl,
+    Module
 };
 
 struct Node 
@@ -160,7 +163,7 @@ private:
     ExprList m_Values;
 
 public:
-    explicit ArrayExpr(TypePtr elemType, ExprList values);
+    ArrayExpr(TypePtr elemType, ExprList values);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -185,7 +188,7 @@ private:
     ExprPtr m_Operand;
 
 public:
-    explicit UnaryExpr(UnaryOpKind op, ExprPtr operand);
+    UnaryExpr(UnaryOpKind op, ExprPtr operand);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -236,7 +239,7 @@ private:
     ExprPtr m_LeftOp, m_RightOp;
 
 public:
-    explicit BinaryExpr(BinaryOpKind op, ExprPtr leftOp, ExprPtr rightOp);
+    BinaryExpr(BinaryOpKind op, ExprPtr leftOp, ExprPtr rightOp);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -267,7 +270,7 @@ private:
     ExprList m_Args;
     
 public:
-    explicit FuncCall(std::string ident, ExprList args);
+    FuncCall(std::string ident, ExprList args);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -297,7 +300,7 @@ private:
     CodeBlockPtr m_Then, m_Else;
 
 public:
-    explicit IfStmt(ExprPtr cond, CodeBlockPtr then, CodeBlockPtr else_);
+    IfStmt(ExprPtr cond, CodeBlockPtr then, CodeBlockPtr else_);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -314,7 +317,7 @@ private:
     CodeBlockPtr m_Body;
     
 public:
-    explicit WhileStmt(ExprPtr cond, CodeBlockPtr body);
+    WhileStmt(ExprPtr cond, CodeBlockPtr body);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -345,7 +348,7 @@ private:
     ExprPtr m_Value;
 
 public:
-    explicit VarDecl(std::string name, TypePtr type, ExprPtr value);
+    VarDecl(std::string ident, TypePtr type, ExprPtr value);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -358,7 +361,7 @@ public:
 using Param = std::pair<std::string, TypePtr>;
 using ParamList = std::vector<Param>;
 
-struct FuncDecl : public Stmt 
+struct FuncDecl : public Node 
 {
 private:
     const std::string m_Ident;
@@ -367,7 +370,7 @@ private:
     CodeBlockPtr m_Body;
 
 public:
-    explicit FuncDecl(std::string name, ParamList params, TypePtr returnType, CodeBlockPtr body);
+    FuncDecl(std::string name, ParamList params, TypePtr returnType, CodeBlockPtr body);
     
     void toString(std::ostream &os) const override;
     void accept(Visitor &v) override { v.visit(*this); }
@@ -376,4 +379,20 @@ public:
     ParamList &getParams() { return m_Params; } 
     const Type &getReturnType() const { return *m_ReturnType; }
     CodeBlock &getBody() const { return *m_Body; }
+};
+
+struct Module : public Node
+{
+private:
+    std::string m_ModuleName;
+    FuncDeclList m_Declarations;
+
+public:
+    Module(std::string moduleName, FuncDeclList declarations);
+
+    void toString(std::ostream &os) const override;
+    void accept(Visitor &v) override { v.visit(*this); }
+
+    const std::string &getModuleName() const { return m_ModuleName; }
+    FuncDeclList &getDeclarations() { return m_Declarations; }
 };

@@ -1,6 +1,6 @@
 #pragma once
-#include "type_checker/SymbolTable.h"
-#include "Token.h"
+#include "type_checker/common/SymbolTable.h"
+#include "type_checker/common/TypeCheckerContext.h"
 #include "ast/AST.h"
 #include "ast/Type.h"
 #include "ast/Visitor.h"
@@ -8,12 +8,13 @@
 struct TypeCheckingPass : public Visitor
 {
 private:
-    TypeCheckingContext &m_Context;
-    TraversalContext m_Iter;
+    TypeCheckerContext &m_Context;
+    SymbolTable m_SymbolTable;
     TypePtr m_CurrentFunctionReturnType;
     
 public:
-    TypeCheckingPass(TypeCheckingContext &context);
+    TypeCheckingPass(TypeCheckerContext &context);
+    ~TypeCheckingPass();
 
     void visit(IntLit &node) override;
     void visit(FloatLit &node) override;
@@ -31,4 +32,5 @@ public:
     void visit(ReturnStmt &node) override;
     void visit(VarDecl &node) override;
     void visit(FuncDecl &node) override;
+    void visit(Module &node) override;
 };

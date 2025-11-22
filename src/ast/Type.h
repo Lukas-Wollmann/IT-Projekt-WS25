@@ -126,3 +126,5 @@ bool operator==(const Type &left, const Type &right);
 bool operator!=(const Type &left, const Type &right);
 bool operator==(const TypeList &left, const TypeList &right);
 bool operator!=(const TypeList &left, const TypeList &right);
+
+using FunctionTypePtr = std::unique_ptr<FunctionType>;
