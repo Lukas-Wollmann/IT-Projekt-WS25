@@ -54,8 +54,26 @@ void TypeCheckingPass::visit(StringLit &node)
 
 void TypeCheckingPass::visit(ArrayExpr &node)
 {
-    (void)node;
-    throw std::runtime_error("Not implemented");
+    size_t arraySize = node.getValues().size();
+
+    node.setType(std::make_unique<ArrayType>(node.getElementType().copy(), arraySize));
+
+    for (ExprPtr &expr : node.getValues())
+    {
+        expr->accept(*this);
+
+        const Type &type = expr->getType().value();
+
+        // Missmatch between array element type and array type
+        if (type.getKind() != TypeKind::Error && type != node.getElementType())
+        {
+            std::stringstream ss;
+            ss << "Expected type " << node.getElementType();
+            ss << " for array elements but found " << type << " instead.";
+
+            m_Context.addError(ss.str());
+        }
+    }
 }
 
 void TypeCheckingPass::visit(UnaryExpr &node)

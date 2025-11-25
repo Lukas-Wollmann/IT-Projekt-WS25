@@ -151,6 +151,23 @@ TEST_CASE("TypeChecker: Sandbox")
             std::move(args)
         )
     ));
+
+    ExprList arrElems;
+    arrElems.push_back(std::make_unique<FloatLit>(1.0f));
+    arrElems.push_back(std::make_unique<FloatLit>(2.0f));
+    arrElems.push_back(std::make_unique<FloatLit>(3.0f));
+
+    body.push_back(std::make_unique<VarDecl>(
+        "y",
+        std::make_unique<ArrayType>(
+            std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
+            3
+        ),
+        std::make_unique<ArrayExpr>(
+            std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
+            std::move(arrElems)
+        )
+    ));
     body.push_back(std::make_unique<WhileStmt>(
         std::make_unique<BoolLit>(false),
         std::make_unique<CodeBlock>(StmtList{})
@@ -176,6 +193,7 @@ TEST_CASE("TypeChecker: Sandbox")
         ```
         func add(a: i32, b: i32) -> i32 {
             x: i32 = add(a, b - 1);
+            y: [3]f32 = { 1.0f, 2.0f, 3.0f };
 
             while (false) {}
 
