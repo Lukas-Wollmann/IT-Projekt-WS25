@@ -161,46 +161,47 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
     std::stringstream valueSs; // actual value for CHAR_LITERAL
     rawSs << U'\\';
+    advance();
+    if (isAtEnd()) {
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+    }
+
+    if(m_CurentChar == U'\'' && peek(1) != U'\'') {
         advance();
-        if (isAtEnd()) {
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
-        }
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
+    }
+    char32_t esc = m_CurentChar;
+    rawSs << esc;
 
-        if(m_CurentChar == U'\'' && peek(1) != U'\'') {
-            advance();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
-        }
-        char32_t esc = m_CurentChar;
-        rawSs << esc;
+    char mapped = U'\0';
+    bool validEscape = true;
+    switch (esc) {
+        case U'\\': mapped = U'\\'; break;
+        case U'\'': mapped = U'\''; break;
+        case U'n':  mapped = U'\n'; break;
+        case U't':  mapped = U'\t'; break;
+        case U'r':  mapped = U'\r'; break;
+        case U'0':  mapped = U'\0'; break;
+        case U'"':  mapped = U'"'; break;
+        default:   validEscape = false; break;
+    }
 
-        char mapped = U'\0';
-        bool validEscape = true;
-        switch (esc) {
-            case U'\\': mapped = U'\\'; break;
-            case U'\'': mapped = U'\''; break;
-            case U'n':  mapped = U'\n'; break;
-            case U't':  mapped = U'\t'; break;
-            case U'r':  mapped = U'\r'; break;
-            case U'0':  mapped = U'\0'; break;
-            default:   validEscape = false; break;
-        }
+    advance(); // move past escape char
+    if (!validEscape) {
+        U8String illegalChars = skipToClosing();
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::INVALID_ESCAPE_SEQUENCE);
+    }
 
-        advance(); // move past escape char
-        if (!validEscape) {
-            U8String illegalChars = skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::INVALID_ESCAPE_SEQUENCE);
-        }
+    // expect closing quote
+    if (m_CurentChar != U'\'') {
+        U8String illegalChars = skipToClosing();
+        return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
+    }
+    advance(); // consume closing quote
 
-        // expect closing quote
-        if (m_CurentChar != U'\'') {
-            U8String illegalChars = skipToClosing();
-            return Token(TokenType::ILLEGAL, U8String(rawSs.str()) + illegalChars, startLoc, ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
-        }
-        advance(); // consume closing quote
-
-        // return mapped char as string
-        valueSs << mapped;
-        return Token(TokenType::CHAR_LITERAL, U8String(valueSs.str()), startLoc);
+    // return mapped char as string
+    valueSs << mapped;
+    return Token(TokenType::CHAR_LITERAL, U8String(valueSs.str()), startLoc);
 }
 
 //unclean have to fix later
