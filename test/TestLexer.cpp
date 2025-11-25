@@ -1,6 +1,6 @@
 #include "Doctest.h"
-#include "../src/lexer/Lexer.h"
-#include "../src/core/U8String.h"
+#include "lexer/Lexer.h"
+#include "core/U8String.h"
 
 //LexNumber tests
 TEST_CASE("LexNumber: simple integer")
