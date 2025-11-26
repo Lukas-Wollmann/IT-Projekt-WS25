@@ -1,0 +1,412 @@
+I0: 	S -> * File, $
+		File -> * FunctionDeclaration File, $
+		File -> *, $
+		FunctionDeclaration -> * "func" id "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ")" "->" "(" Type ")" CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ParamList ")" CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ParamList ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ParamList ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> * "func" id "(" ParamList ")" "->" "(" Type ")" CodeBlock, "func" | $
+
+I1: 	S -> File *, $
+
+I2: 	File -> FunctionDeclaration * File, $
+		File -> * FunctionDeclaration File, $
+		File -> *, $
+
+I3: 	File -> FunctionDeclaration File *, $
+
+
+I4:		FunctionDeclaration -> "func" * id "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ")" "->" "(" Type ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ParamList ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ParamList ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ParamList ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" * id "(" ParamList ")" "->" "(" Type ")" CodeBlock, "func" | $
+
+
+I5:		FunctionDeclaration -> "func" id * "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ")" "->" "(" Type ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ParamList ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ParamList ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ParamList ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id * "(" ParamList ")" "->" "(" Type ")" CodeBlock, "func" | $
+
+I6:		FunctionDeclaration -> "func" id "(" * ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ")" "->" "(" Type ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ParamList ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ParamList ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ParamList ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" * ParamList ")" "->" "(" Type ")" CodeBlock, "func" | $
+		ParamList -> * id ":" Type, ")"
+		ParamList -> * id ":" Type ParamList, ")"
+
+I7: 	ParamList -> id * ":" Type, ")"
+		ParamList -> id * ":" Type ParamList, ")"
+
+I8: 	ParamList -> id ":" * Type, ")"
+		ParamList -> id ":" * Type ParamList, ")"
+		Type -> * id, ")" | id
+		Type -> * "*" Type, ")" | id
+		Type -> * "[" "]" Type, ")" | id
+		Type -> * "[" num "]" Type, ")" | id
+
+I9: 	Type -> id *, ")" | id
+
+I10:	Type -> * "*" Type, ")" | id
+		Type -> * id, ")" | id
+		Type -> * "*" Type, ")" | id
+		Type -> * "[" "]" Type, ")" | id
+		Type -> * "[" num "]" Type, ")" | id
+
+I11:	Type -> * Type "*", ")" | id
+
+I12:	Type -> "[" * "]" Type, ")" | id
+		Type -> "[" * num "]" Type, ")" | id
+
+I13:	Type -> "[" "]" * Type, ")" | id
+		Type -> * id, ")" | id
+		Type -> * "*" Type, ")" | id
+		Type -> * "[" "]" Type, ")" | id
+		Type -> * "[" num "]" Type, ")" | id
+
+I14:	Type -> "[" "]" Type *, ")" | id
+
+I15:	Type -> "[" num * "]" Type, ")" | id
+
+I16:	Type -> "[" num "]" * Type, ")" | id
+		Type -> * id, ")" | id
+		Type -> * "*" Type, ")" | id
+		Type -> * "[" "]" Type, ")" | id
+		Type -> * "[" num "]" Type, ")" | id
+
+I17:	Type -> "[" num "]" Type *, ")" | id
+
+I18: 	ParamList -> id ":" Type *, ")"
+		ParamList -> id ":" Type * ParamList, ")"
+		ParamList -> * id ":" Type, ")"
+		ParamList -> * id ":" Type ParamList, ")"
+
+I19:	FunctionDeclaration -> "func" id "(" ")" * CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" * "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" * "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" * "->" "(" Type ")" CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I20:	FunctionDeclaration -> "func" id "(" ")" CodeBlock *, "func" | $
+
+I21:	FunctionDeclaration -> "func" id "(" ")" "->" * "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" "->" * Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" "->" * "(" Type ")" CodeBlock, "func" | $
+		Type -> * id, "{"
+		Type -> * "*" Type, "{"
+		Type -> * "[" "]" Type, "{"
+		Type -> * "[" num "]" Type, "{"
+
+I22:	Type -> id *, "{"
+
+I23:	Type -> "*" * Type, "{"
+		Type -> * id, "{"
+		Type -> * "*" Type, "{"
+		Type -> * "[" "]" Type, "{"
+		Type -> * "[" num "]" Type, "{"
+
+I24:	Type -> "*" Type *, "{"
+
+I25:	Type -> "[" * "]" Type, "{"
+		Type -> "[" * num "]" Type, "{"
+
+I26:	Type -> "[" "]" * Type, "{"
+		Type -> * id, "{"
+		Type -> * "*" Type, "{"
+		Type -> * "[" "]" Type, "{"
+		Type -> * "[" num "]" Type, "{"
+
+I27:	Type -> "[" "]" Type *, "{"
+		
+I28:	Type -> "[" num * "]" Type, "{"
+
+I29:	Type -> "[" num "]" * Type, "{"
+		Type -> * id, "{"
+		Type -> * "*" Type, "{"
+		Type -> * "[" "]" Type, "{"
+		Type -> * "[" num "]" Type, "{"
+
+I30:	Type -> "[" num "]" Type *, "{"
+
+I31:	FunctionDeclaration -> "func" id "(" ")" "->" Type * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I32:	FunctionDeclaration -> "func" id "(" ")" "->" Type CodeBlock *, "func" | $
+
+I33:	FunctionDeclaration -> "func" id "(" ")" "->" * "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ")" "->" * "(" Type ")" CodeBlock, "func" | $
+
+I34:	FunctionDeclaration -> "func" id "(" ")" "->" "(" * ")" CodeBlock, "func" | $
+
+I35:	FunctionDeclaration -> "func" id "(" ")" "->" "(" ")" * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I36:	FunctionDeclaration -> "func" id "(" ")" "->" "(" ")" CodeBlock *, "func" | $
+
+I37:	FunctionDeclaration -> "func" id "(" ")" "->" "(" * Type ")" CodeBlock, "func" | $
+		Type -> * id, ")"
+		Type -> * "*" Type, ")"
+		Type -> * "[" "]" Type, ")"
+		Type -> * "[" num "]" Type, ")"
+
+I38:	Type -> id *, ")"
+		
+I39:	Type -> "*" * Type, ")"
+		Type -> * id, ")"
+		Type -> * "*" Type, ")"
+		Type -> * "[" "]" Type, ")"
+		Type -> * "[" num "]" Type, ")"
+
+I40:	Type -> "*" Type *, ")"
+
+I41:	Type -> "[" * "]" Type, ")"
+		Type -> "[" * num "]" Type, ")"
+
+I42:	Type -> "[" "]" * Type, ")"
+		Type -> * id, ")"
+		Type -> * "*" Type, ")"
+		Type -> * "[" "]" Type, ")"
+		Type -> * "[" num "]" Type, ")"
+
+I43:	Type -> "[" "]" Type *, ")"
+
+I44:	Type -> "[" num * "]" Type, ")"
+
+I45:	Type -> "[" num "]" * Type, ")"
+		Type -> * id, ")"
+		Type -> * "*" Type, ")"
+		Type -> * "[" "]" Type, ")"
+		Type -> * "[" num "]" Type, ")"
+
+I45:	Type -> "[" num "]" Type *, ")"
+
+I55:	FunctionDeclaration -> "func" id "(" ")" "->" "(" Type * ")" CodeBlock, "func" | $
+
+I56:	FunctionDeclaration -> "func" id "(" ")" "->" "(" Type ")" * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+	
+I57:	FunctionDeclaration -> "func" id "(" ")" "->" "(" Type ")" CodeBlock *, "func" | $
+
+I58:	FunctionDeclaration -> "func" id "(" ParamList * ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList * ")" "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList * ")" "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList * ")" "->" "(" Type ")" CodeBlock, "func" | $
+
+I58:	FunctionDeclaration -> "func" id "(" ParamList ")" * CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" * "->" "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" * "->" Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" * "->" "(" Type ")" CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I59:	FunctionDeclaration -> "func" id "(" ParamList ")" CodeBlock *, "func" | $
+
+I60:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" * "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" "->" * Type CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" "->" * "(" Type ")" CodeBlock, "func" | $
+		Type -> * id, "{"
+		Type -> * "*" Type, "{"
+		Type -> * "[" "]" Type, "{"
+		Type -> * "[" num "]" Type, "{"
+		
+I61:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" Type * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I62:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" Type CodeBlock *, "func" | $
+
+I63:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" * "(" ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" "->" * "(" Type ")" CodeBlock, "func" | $
+
+I64:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" * ")" CodeBlock, "func" | $
+		FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" * Type ")" CodeBlock, "func" | $
+		Type -> * id, ")"
+		Type -> * "*" Type, ")"
+		Type -> * "[" "]" Type, ")"
+		Type -> * "[" num "]" Type, ")"
+
+I65:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" ")" * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I66:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" ")" CodeBlock *, "func" | $
+
+I67:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" Type * ")" CodeBlock, "func" | $
+
+I68:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" Type ")" * CodeBlock, "func" | $
+		CodeBlock -> * "{" "}", "func" | $
+		CodeBlock -> * "{" StatementList "}", "func" | $
+
+I69:	FunctionDeclaration -> "func" id "(" ParamList ")" "->" "(" Type ")" CodeBlock *, "func" | $
+
+I70:	CodeBlock -> "{" * "}", "func" | $
+		CodeBlock -> "{" * StatementList "}", "func" | $
+		StatementList -> * Statement StatementList, "}"
+		StatementList -> *, "}"
+		Statement -> * ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * Expression ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * Declaration ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * "return" Expression ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * IfBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Statement -> * Loop, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Expression -> * id, ";"
+		Expression -> * FunctionCall, ";"
+		Expression -> * literal, ";"
+		Expression -> * "[" "]" Type "{" "}", ";"
+		Expression -> * "[" int "]" Type "{" "}", ";"
+		Expression -> * "[" "]" Type "{" ExpressionList "}", ";"
+		Expression -> * "[" int "]" Type "{" ExpressionList "}", ";"
+		Expression -> * Expression BOperator Expression, ";"
+		Expression -> * UOperator Expression, ";"
+		Expression -> * "(" Expression ")", ";"
+		Expression -> * Expression "[" Expression "]", ";"
+		Expression -> * "new" Type "(" ")", ";"
+		Expression -> * "new" Type "(" Expression ")", ";"
+		Declaration -> * id ":" Type "=" Expression, ";"
+		CodeBlock -> * "{" StatementList "}", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		IfBlock -> * "if" "(" Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		IfBlock -> * "if" "(" Expression ")" CodeBlock "else" IfBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		IfBlock -> * "if" "(" Expression ")" CodeBlock "else" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Loop -> * "while" "(" Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		FunctionCall -> * id "(" ")", ";"
+		FunctionCall -> * id "(" ExpressionList ")", ";"
+
+I71:	CodeBlock -> "{" "}" *, "func" | $
+
+I72:	CodeBlock -> "{" StatementList * "}", "func" | $
+
+I73:	CodeBlock -> "{" StatementList "}" *, "func" | $
+
+I75:	StatementList -> Statement * StatementList *, "}"
+
+I75:	StatementList -> Statement StatementList *, "}"
+
+I76:	Statement -> ";" *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I77:	Statement -> Expression * ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I78:	Statement -> Expression ";" *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I79:	Statement -> Declaration * ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I80:	Statement -> Declaration ";" *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I81:	Statement -> "return" * Expression ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Expression -> * id, ";" // TODO
+		Expression -> * FunctionCall, ";" // TODO
+		Expression -> * literal, ";" // TODO
+		Expression -> * "[" "]" Type "{" "}", ";" // TODO
+		Expression -> * "[" int "]" Type "{" "}", ";" // TODO
+		Expression -> * "[" "]" Type "{" ExpressionList "}", ";" // TODO
+		Expression -> * "[" int "]" Type "{" ExpressionList "}", ";" // TODO
+		Expression -> * Expression BOperator Expression, ";" // TODO
+		Expression -> * UOperator Expression, ";" // TODO
+		Expression -> * "(" Expression ")", ";" // TODO
+		Expression -> * Expression "[" Expression "]", ";" // TODO
+		Expression -> * "new" Type "(" ")", ";" // TODO
+		Expression -> * "new" Type "(" Expression ")", ";" // TODO
+		Declaration -> * id ":" Type "=" Expression, ";" // TODO
+
+I82:	Statement -> "return" Expression * ";", id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I83:	Statement -> "return" Expression ";" *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I84:	Statement -> CodeBlock *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I85:	Statement -> IfBlock *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I86:	Statement -> Loop *, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I87:	IfBlock -> "if" * "(" Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		IfBlock -> "if" * "(" Expression ")" CodeBlock "else" IfBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		IfBlock -> "if" * "(" Expression ")" CodeBlock "else" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I86:	IfBlock -> "if" "(" * Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}" // TODO
+		IfBlock -> "if" "(" * Expression ")" CodeBlock "else" IfBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}" // TODO
+		IfBlock -> "if" "(" * Expression ")" CodeBlock "else" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}" // TODO
+		Expression -> * id, ")"
+		Expression -> * FunctionCall, ")"
+		Expression -> * literal, ")"
+		Expression -> * "[" "]" Type "{" "}", ")"
+		Expression -> * "[" int "]" Type "{" "}", ")"
+		Expression -> * "[" "]" Type "{" ExpressionList "}", ")"
+		Expression -> * "[" int "]" Type "{" ExpressionList "}", ")"
+		Expression -> * Expression BOperator Expression, ")"
+		Expression -> * UOperator Expression, ")"
+		Expression -> * "(" Expression ")", ")"
+		Expression -> * Expression "[" Expression "]", ")"
+		Expression -> * "new" Type "(" ")", ")"
+		Expression -> * "new" Type "(" Expression ")", ")"
+		FunctionCall -> * id "(" ")", ")"
+		FunctionCall -> * id "(" ExpressionList ")", ")"
+
+I86:	Loop -> "while" * "(" Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+
+I86:	Loop -> "while" "(" * Expression ")" CodeBlock, id | "(" | "[" | "{" | ";" | "return" | "while" | "if" | literal | Operator | "new" | "}"
+		Expression -> * id, ")" // TODO
+		Expression -> * FunctionCall, ")" // TODO
+		Expression -> * literal, ")" // TODO
+		Expression -> * "[" "]" Type "{" "}", ")" // TODO
+		Expression -> * "[" int "]" Type "{" "}", ")" // TODO
+		Expression -> * "[" "]" Type "{" ExpressionList "}", ")" // TODO
+		Expression -> * "[" int "]" Type "{" ExpressionList "}", ")" // TODO
+		Expression -> * Expression BOperator Expression, ")" // TODO
+		Expression -> * UOperator Expression, ")" // TODO
+		Expression -> * "(" Expression ")", ")" // TODO
+		Expression -> * Expression "[" Expression "]", ")" // TODO
+		Expression -> * "new" Type "(" ")", ")" // TODO
+		Expression -> * "new" Type "(" Expression ")", ")" // TODO
+		FunctionCall -> * id "(" ")", ")" // TODO
+		FunctionCall -> * id "(" ExpressionList ")", ")" // TODO
+
+I86:	FunctionCall -> id * "(" ")", ";"
+		FunctionCall -> id * "(" ExpressionList ")", ";"
+
+I86:	FunctionCall -> id "(" * ")", ";"
+		FunctionCall -> id "(" * ExpressionList ")", ";"
+		ExpressionList -> * Expression, ")"
+		ExpressionList -> * Expression "," ExpressionList, ")"
+		Expression -> * id, ")" | "," // TODO
+		Expression -> * FunctionCall, ")" | "," // TODO
+		Expression -> * literal, ")" | "," // TODO
+		Expression -> * "[" "]" Type "{" "}", ")" | "," // TODO
+		Expression -> * "[" int "]" Type "{" "}", ")" | "," // TODO
+		Expression -> * "[" "]" Type "{" ExpressionList "}", ")" | "," // TODO
+		Expression -> * "[" int "]" Type "{" ExpressionList "}", ")" | "," // TODO
+		Expression -> * Expression BOperator Expression, ")" | "," // TODO
+		Expression -> * UOperator Expression, ")" | "," // TODO
+		Expression -> * "(" Expression ")", ")" | "," // TODO
+		Expression -> * Expression "[" Expression "]", ")" | "," // TODO
+		Expression -> * "new" Type "(" ")", ")" | "," // TODO
+		Expression -> * "new" Type "(" Expression ")", ")" | "," // TODO
+
+		
+I86:	FunctionCall -> id "(" ")" *, ";"
+
+I87:	FunctionCall -> id "(" ExpressionList * ")", ";"
+
+I88:	FunctionCall -> id "(" ExpressionList ")" *, ";"
+
+I89:	ExpressionList -> Expression *, ")"
+		ExpressionList -> Expression * "," ExpressionList, ")"
+		
+I90:	ExpressionList -> Expression "," * ExpressionList, ")"
