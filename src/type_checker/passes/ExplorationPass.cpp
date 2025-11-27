@@ -1,37 +1,30 @@
 #include "ExplorationPass.h"
+
 #include <sstream>
 
-ExplorationPass::ExplorationPass(TypeCheckerContext &context)
-    : m_Context(context)
-{}
+ExplorationPass::ExplorationPass(TypeCheckerContext &context) : m_Context(context) {}
 
-void ExplorationPass::visit(FuncDecl &node) 
-{
-    TypeList paramTypes;
-
-    for (const Param &param : node.getParams())
-        paramTypes.push_back(param.second->copy());
-
-    auto funcType = std::make_unique<FunctionType>(
-        std::move(paramTypes), node.getReturnType().copy()
-    );
-
-    Namespace &gloabl = m_Context.getGlobalNamespace();
-
-    if (gloabl.getFunction(node.getIdent()))
-    {
-        std::stringstream ss;
-        ss << "Illegal redeclaration of function '" << node.getIdent() << "'.";
-        m_Context.addError(ss.str());
-    }
-    else
-    {
-        gloabl.addFunction(FunctionDeclaration(node.getIdent(), std::move(funcType)));
-    }
+void ExplorationPass::visit(const ast::Module &n) {
+	for (auto &d : n.decls)
+		dispatch(*d);
 }
 
-void ExplorationPass::visit(Module &node)
-{
-    for (FuncDeclPtr &decl : node.getDeclarations())
-        decl->accept(*this);
+void ExplorationPass::visit(const ast::FuncDecl &n) {
+	TypeList params;
+
+	for (auto &p : n.params)
+		params.push_back(p.second->copy());
+
+	auto funcType = std::make_unique<FunctionType>(std::move(params), n.returnType->copy());
+
+	Namespace &gloabl = m_Context.getGlobalNamespace();
+
+	if (gloabl.getFunction(n.ident)) {
+		std::stringstream ss;
+		ss << "Illegal redeclaration of function '" << n.ident << "'.";
+		m_Context.addError(ss.str());
+		return;
+	}
+
+	gloabl.addFunction(FunctionDeclaration(n.ident, std::move(funcType)));
 }

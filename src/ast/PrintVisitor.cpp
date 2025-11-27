@@ -8,36 +8,114 @@ std::ostream &operator<<(std::ostream &os, const ast::Node &n) {
 	return os;
 }
 
-void PrintVisitor::visit(const ast::IntLit &n) {}
+void PrintVisitor::visit(const ast::IntLit &n) { m_OStream << "IntLit(" << n.value << ")"; }
 
-void PrintVisitor::visit(const ast::FloatLit &n) {}
+void PrintVisitor::visit(const ast::FloatLit &n) { m_OStream << "FloatLit(" << n.value << ")"; }
 
-void PrintVisitor::visit(const ast::CharLit &n) {}
+void PrintVisitor::visit(const ast::CharLit &n) { m_OStream << "CharLit('" << n.value << "')"; }
 
-void PrintVisitor::visit(const ast::BoolLit &n) {}
+void PrintVisitor::visit(const ast::BoolLit &n) {
+	m_OStream << "BoolLit(" << (n.value ? "true" : "false") << ")";
+}
 
-void PrintVisitor::visit(const ast::StringLit &n) {}
+void PrintVisitor::visit(const ast::StringLit &n) { m_OStream << "StringLit(\"" << n.value << "\")"; }
 
-void PrintVisitor::visit(const ast::ArrayExpr &n) {}
+void PrintVisitor::visit(const ast::ArrayExpr &n) {
+	m_OStream << "ArrayExpr(" << *n.elementType << ", {";
 
-void PrintVisitor::visit(const ast::UnaryExpr &n) {}
+	for (size_t i = 0; i < n.values.size(); ++i)
+		m_OStream << (i ? ", " : "") << *n.values[i];
 
-void PrintVisitor::visit(const ast::BinaryExpr &n) {}
+	m_OStream << "})";
+}
 
-void PrintVisitor::visit(const ast::FuncCall &n) {}
+void PrintVisitor::visit(const ast::UnaryExpr &n) {
+	m_OStream << "UnaryExpr(" << n.op << ", ";
+	dispatch(*n.operand);
+	m_OStream << ")";
+}
 
-void PrintVisitor::visit(const ast::VarRef &n) {}
+void PrintVisitor::visit(const ast::BinaryExpr &n) {
+	m_OStream << "BinaryExpr(";
+	dispatch(*n.left);
+	m_OStream << ", " << n.op << ", ";
+	dispatch(*n.right);
+	m_OStream << ")";
+}
 
-void PrintVisitor::visit(const ast::BlockStmt &n) {}
+void PrintVisitor::visit(const ast::FuncCall &n) {
+	m_OStream << "FuncCall(";
+	dispatch(*n.expr);
+	m_OStream << ", {";
 
-void PrintVisitor::visit(const ast::IfStmt &n) {}
+	for (size_t i = 0; i < n.args.size(); ++i)
+		m_OStream << (i ? ", " : "") << *n.args[i];
 
-void PrintVisitor::visit(const ast::WhileStmt &n) {}
+	m_OStream << "})";
+}
 
-void PrintVisitor::visit(const ast::ReturnStmt &n) {}
+void PrintVisitor::visit(const ast::VarRef &n) { m_OStream << "VarRef(" << n.ident << ")"; }
 
-void PrintVisitor::visit(const ast::VarDef &n) {}
+void PrintVisitor::visit(const ast::BlockStmt &n) {
+	m_OStream << "BlockStmt({";
 
-void PrintVisitor::visit(const ast::FuncDecl &n) {}
+	for (size_t i = 0; i < n.stmts.size(); ++i)
+		m_OStream << (i ? ", " : "") << *n.stmts[i];
 
-void PrintVisitor::visit(const ast::Module &n) {}
+	m_OStream << "})";
+}
+
+void PrintVisitor::visit(const ast::IfStmt &n) {
+	m_OStream << "IfStmt(";
+	dispatch(*n.cond);
+	m_OStream << ", ";
+	dispatch(*n.then);
+	m_OStream << ", ";
+	dispatch(*n.else_);
+	m_OStream << ")";
+}
+
+void PrintVisitor::visit(const ast::WhileStmt &n) {
+	m_OStream << "WhileStmt(";
+	dispatch(*n.cond);
+	m_OStream << ", ";
+	dispatch(*n.body);
+	m_OStream << ")";
+}
+
+void PrintVisitor::visit(const ast::ReturnStmt &n) {
+	m_OStream << "ReturnStmt(";
+
+	if (n.expr)
+		dispatch(**n.expr);
+
+	m_OStream << ")";
+}
+
+void PrintVisitor::visit(const ast::VarDef &n) {
+	m_OStream << "VarDef(" << n.ident << ", ";
+	m_OStream << *n.type << ", ";
+	dispatch(*n.value);
+	m_OStream << ")";
+}
+
+void PrintVisitor::visit(const ast::FuncDecl &n) {
+	m_OStream << "FuncDecl(" << n.ident << ", {";
+
+	for (size_t i = 0; i < n.params.size(); ++i)
+		m_OStream << (i ? ", " : "") << n.params[i].first << ": " << *n.params[i].second;
+
+	m_OStream << "}, " << *n.returnType;
+	m_OStream << ", ";
+	dispatch(*n.body);
+	m_OStream << ")";
+}
+
+void PrintVisitor::visit(const ast::Module &n) {
+	m_OStream << "Module(" << n.name << ", {";
+
+	for (size_t i = 0; i < n.decls.size(); ++i)
+		m_OStream << (i ? ", " : "") << *n.decls[i];
+
+	m_OStream << "})";
+}

@@ -13,13 +13,14 @@ ContinuationIndentWidth: 8
 # Braces
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterEnum: true
+  AfterEnum: false
   AfterStruct: false
   SplitEmptyFunction: false
+  AfterFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Inline
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
+AllowShortCaseLabelsOnASingleLine: true
 
 # Spaces
 SpaceBeforeParens: ControlStatements
@@ -37,7 +38,7 @@ PointerAlignment: Right
 ReferenceAlignment: Right
 
 # Line breaks
-ColumnLimit: 125
+ColumnLimit: 100
 PenaltyBreakBeforeFirstCallParameter: 200
 PenaltyBreakComment: 300
 PenaltyBreakString: 1000
@@ -62,6 +63,8 @@ CommentPragmas: '^ IWYU pragma:'
 # Namespace formatting
 NamespaceIndentation: All
 CompactNamespaces: false
+NamespaceComment: false
+FixNamespaceComments: false
 
 # Alignments
 AlignConsecutiveMacros: Consecutive
@@ -70,6 +73,18 @@ AlignTrailingComments: true
 # Misc
 SortUsingDeclarations: true
 KeepEmptyLinesAtTheStartOfBlocks: false
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: BeforeComma
 AllowAllArgumentsOnNextLine: false
-...
+
+SeparateDefinitionBlocks: Always
+EmptyLineBeforeAccessModifier: LogicalBlock
+AccessModifierOffset: -4
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: false
+IndentCaseLabels: true
+RemoveEmptyLinesInUnwrappedLines: true
+AlwaysBreakTemplateDeclarations: Yes
+EnumTrailingComma: Remove

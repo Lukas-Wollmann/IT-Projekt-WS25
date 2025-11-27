@@ -1,11 +1,10 @@
 #pragma once
 #include "type_checker/common/SymbolTable.h"
 #include "type_checker/common/TypeCheckerContext.h"
-#include "ast/AST.h"
 #include "ast/Type.h"
 #include "ast/Visitor.h"
 
-struct TypeCheckingPass : public Visitor
+struct TypeCheckingPass : public Visitor<void>
 {
 private:
     TypeCheckerContext &m_Context;
@@ -15,22 +14,24 @@ private:
 public:
     TypeCheckingPass(TypeCheckerContext &context);
     ~TypeCheckingPass();
+   
+    void visit(ast::Module &n) override;
 
-    void visit(IntLit &node) override;
-    void visit(FloatLit &node) override;
-    void visit(CharLit &node) override;
-    void visit(BoolLit &node) override;
-    void visit(StringLit &node) override;
-    void visit(ArrayExpr &node) override;
-    void visit(UnaryExpr &node) override;
-    void visit(BinaryExpr &node) override;
-    void visit(FuncCall &node) override;
-    void visit(VarRef &node) override;
-    void visit(CodeBlock &node) override;
-    void visit(IfStmt &node) override;
-    void visit(WhileStmt &node) override;
-    void visit(ReturnStmt &node) override;
-    void visit(VarDecl &node) override;
-    void visit(FuncDecl &node) override;
-    void visit(Module &node) override;
+private:
+    void visit(ast::IntLit &n) override;
+    void visit(ast::FloatLit &n) override;
+    void visit(ast::CharLit &n) override;
+    void visit(ast::BoolLit &n) override;
+    void visit(ast::StringLit &n) override;
+    void visit(ast::ArrayExpr &n) override;
+    void visit(ast::UnaryExpr &n) override;
+    void visit(ast::BinaryExpr &n) override;
+    void visit(ast::FuncCall &n) override;
+    void visit(ast::VarRef &n) override;
+    void visit(ast::BlockStmt &n) override;
+    void visit(ast::IfStmt &n) override;
+    void visit(ast::WhileStmt &n) override;
+    void visit(ast::ReturnStmt &n) override;
+    void visit(ast::VarDef &n) override;
+    void visit(ast::FuncDecl &n) override;
 };

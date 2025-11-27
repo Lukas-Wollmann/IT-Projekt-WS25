@@ -1,4 +1,5 @@
 #include "TypeCheckingPass.h"
+#include "Macros.h"
 #include <sstream>
 
 TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
@@ -12,106 +13,104 @@ TypeCheckingPass::~TypeCheckingPass()
     m_SymbolTable.exitScope();  
 }
 
-void TypeCheckingPass::visit(IntLit &node)
+void TypeCheckingPass::visit(ast::IntLit &n)
 {
-    if (node.getType().has_value())
-        throw std::runtime_error("Expected untyped IntLit node");
+    VERIFY(!n.inferredType);
 
-    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
+    n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
 }
 
-void TypeCheckingPass::visit(FloatLit &node)
+void TypeCheckingPass::visit(ast::FloatLit &n)
 {
-    if (node.getType().has_value())
-        throw std::runtime_error("Expected untyped FloatLit node");
+    VERIFY(!n.inferredType);
     
-    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
+    n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32);
 }
 
-void TypeCheckingPass::visit(CharLit &node)
+void TypeCheckingPass::visit(ast::CharLit &n)
 {
-    if (node.getType().has_value())
-        throw std::runtime_error("Expected untyped CharLit node");
+    VERIFY(!n.inferredType);
     
-    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+    n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char);
 }
 
-void TypeCheckingPass::visit(BoolLit &node)
+void TypeCheckingPass::visit(ast::BoolLit &n)
 {
-    if (node.getType().has_value())
-        throw std::runtime_error("Expected untyped BoolLit node");
+    VERIFY(!n.inferredType);
     
-    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool));
+    n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
 }
 
-void TypeCheckingPass::visit(StringLit &node)
+void TypeCheckingPass::visit(ast::StringLit &n)
 {
-    if (node.getType().has_value())
-        throw std::runtime_error("Expected untyped StringLit node");
+    VERIFY(!n.inferredType);
     
-    node.setType(std::make_unique<PrimitiveType>(PrimitiveTypeKind::String));
+    n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::String);
 }
 
-void TypeCheckingPass::visit(ArrayExpr &node)
+void TypeCheckingPass::visit(ast::ArrayExpr &n)
 {
-    size_t arraySize = node.getValues().size();
+    size_t arraySize = n.values.size();
 
-    node.setType(std::make_unique<ArrayType>(node.getElementType().copy(), arraySize));
+    n.inferredType = std::make_unique<ArrayType>(n.elementType->copy(), arraySize);
 
-    for (ExprPtr &expr : node.getValues())
+    for (auto &expr : n.values)
     {
-        expr->accept(*this);
+        dispatch(*expr);
+        VERIFY(expr->inferredType);
 
-        const Type &type = expr->getType().value();
+        auto &type = *expr->inferredType;
 
         // Missmatch between array element type and array type
-        if (type.getKind() != TypeKind::Error && type != node.getElementType())
+        if (type->getKind() != TypeKind::Error && *type != *n.elementType)
         {
             std::stringstream ss;
-            ss << "Expected type " << node.getElementType();
-            ss << " for array elements but found " << type << " instead.";
+            ss << "Expected type " << *n.elementType;
+            ss << " for array elements but found " << *type << " instead.";
 
             m_Context.addError(ss.str());
         }
     }
 }
 
-void TypeCheckingPass::visit(UnaryExpr &node)
+void TypeCheckingPass::visit(ast::UnaryExpr &n)
 {
     // Infert the type of the operand expression
-    node.getOperand().accept(*this);
-    
-    const Type &type = node.getOperand().getType().value();
-    
+    dispatch(*n.operand);
+    VERIFY(n.operand->inferredType);
+
     // For now, the unary operation just yields the same result.
     // If the result has type <error-type> just keep it as well.
-    node.setType(type.copy());
+    n.inferredType = n.operand->inferredType.value()->copy();
 }
 
-void TypeCheckingPass::visit(BinaryExpr &node)
+void TypeCheckingPass::visit(ast::BinaryExpr &n)
 {
     // Infer the type of the left and right operand expressions
-    node.getLeftOp().accept(*this);
-    node.getRightOp().accept(*this);
+    dispatch(*n.left);
+    dispatch(*n.right);
 
-    const Type &leftType = node.getLeftOp().getType().value();
-    const Type &rightType = node.getRightOp().getType().value();
+    VERIFY(n.left->inferredType);
+    VERIFY(n.right->inferredType);
+
+    auto &leftType = *n.left->inferredType;
+    auto &rightType = *n.right->inferredType;
 
     // If one of the two expressions is of type <error-type> 
     // then propagate the error upwards in the type tree.
     // The error did not really happen here, so dont add to m_Errors.
-    if (leftType.getKind() == TypeKind::Error 
-    || rightType.getKind() == TypeKind::Error)
+    if (leftType->getKind() == TypeKind::Error 
+    || rightType->getKind() == TypeKind::Error)
     {
-        node.setType(std::make_unique<ErrorType>());
+        n.inferredType = std::make_unique<ErrorType>();
         return;
     }
     
     // Both types are not <error-type> and they are the same.
     // (Criteria for now, this will be changed.)
-    if (leftType == rightType)
+    if (*leftType == *rightType)
     {
-        node.setType(leftType.copy());
+        n.inferredType = leftType->copy();
         return;
     }
 
@@ -119,52 +118,43 @@ void TypeCheckingPass::visit(BinaryExpr &node)
     // the binary expression an <error-type> to mark the subtree as invalid.
     std::stringstream ss;
     ss << "Found illegal binary expression: ";
-    ss << node.getOp() << " cannot be called with ";
-    ss  << leftType << " and " << rightType;
+    ss << n.op << " cannot be called with ";
+    ss  << *leftType << " and " << *rightType;
     
     m_Context.addError(ss.str());
-    node.setType(std::make_unique<ErrorType>());
+    n.inferredType = std::make_unique<ErrorType>();
 }
 
-void TypeCheckingPass::visit(FuncCall &node)
+void TypeCheckingPass::visit(ast::FuncCall &n)
 {
-    auto func = m_Context.getGlobalNamespace().getFunction(node.getIdent());
+    dispatch(*n.expr);
+    VERIFY(n.expr->inferredType);
 
-    if (!func.has_value())
-    {   
-        node.setType(std::make_unique<ErrorType>());
-        
-        std::stringstream ss;
-        ss << "Illegal call to undefined function " << node.getIdent();
-
-        m_Context.addError(ss.str());
-        return;
-    }
-
-    const Type &type = func->get().getType();
+    auto &type = **n.expr->inferredType;
 
     if (type.getKind() != TypeKind::Function)
     {
-        node.setType(std::make_unique<ErrorType>());
-        
-        std::stringstream ss;
-        ss << "Illegal call to " << node.getIdent() << ": ";
-        ss << " this symbol is not a function.";
+        if (type.getKind() != TypeKind::Error)
+        {
+            std::stringstream ss;
+            ss << "Cannot call a non-function-type expression";
+            m_Context.addError(ss.str());
+        }
 
-        m_Context.addError(ss.str());
-        return;
+        n.inferredType = std::make_unique<ErrorType>();
+        return;   
     }
-
-    const FunctionType &funcType = static_cast<const FunctionType&>(type);
-    const TypeList &paramTypes = funcType.getParameterTypes();
-    ExprList &args = node.getArgs();
     
-    node.setType(funcType.getReturnType().copy());
+    auto &funcType = static_cast<const FunctionType&>(type);
+    auto &paramTypes = funcType.getParameterTypes();
+    auto &args = n.args;
+    
+    n.inferredType = funcType.getReturnType().copy();
 
     if (args.size() != paramTypes.size())
     {
         std::stringstream ss;
-        ss << "Illegal call to " << node.getIdent() << ": expected ";
+        ss << "Provided wrong amount of args. Expected ";
         ss << paramTypes.size() << " arguments but got " << args.size();
 
         m_Context.addError(ss.str());
@@ -173,10 +163,11 @@ void TypeCheckingPass::visit(FuncCall &node)
 
     for (size_t i = 0; i < args.size(); ++i)
     {
-        args[i]->accept(*this);
+        dispatch(*args[i]);
+        VERIFY(args[i]->inferredType);
 
-        const Type &argType = args[i]->getType()->get();
-        const Type &paramType = *paramTypes[i];
+        auto &argType = **args[i]->inferredType;
+        auto &paramType = *paramTypes[i];
         
         if (argType.getKind() == TypeKind::Error || argType == paramType)
             continue;
@@ -189,40 +180,50 @@ void TypeCheckingPass::visit(FuncCall &node)
     }
 }
 
-void TypeCheckingPass::visit(VarRef &node)
+void TypeCheckingPass::visit(ast::VarRef &n)
 {
-    auto symbol = m_SymbolTable.getSymbol(node.getIdent());
+    auto symbol = m_SymbolTable.getSymbol(n.ident);
     
     // The symbol is known, so take its type
-    if (symbol.has_value())
+    if (symbol)
     {
-        node.setType(symbol->get().getType().copy());
+        n.inferredType = symbol->get().getType().copy();
         return;
+    }
+
+    // If the symbol is not known, it maybe be a function
+    auto func = m_Context.getGlobalNamespace().getFunction(n.ident);
+    
+    if (func)
+    {
+        n.inferredType = func->get().getType().copy();
+        return;   
     }
 
     // The symbol is unknown, so throw an error
     std::stringstream ss;
-    ss << "Undefined identifier: " << node.getIdent();
+    ss << "Undefined identifier: " << n.ident;
     m_Context.addError(ss.str());
 
-    node.setType(std::make_unique<ErrorType>());
+    n.inferredType = std::make_unique<ErrorType>();
 }
 
-void TypeCheckingPass::visit(CodeBlock &stmt)
+void TypeCheckingPass::visit(ast::BlockStmt &stmt)
 {
     m_SymbolTable.enterScope();
 
-    for (StmtPtr &n : stmt.getStmts())
-        n->accept(*this);
+    for (auto &s : stmt.stmts)
+        dispatch(*s);
 
     m_SymbolTable.exitScope();
 }
 
-void TypeCheckingPass::visit(IfStmt &node)
+void TypeCheckingPass::visit(ast::IfStmt &n)
 {
-    node.getCond().accept(*this);
+    dispatch(*n.cond);
+    VERIFY(*n.cond->inferredType);
     
-    const Type &type = node.getCond().getType()->get();
+    auto &type = **n.cond->inferredType;
 
     // If the condition has type <error-type> fail silently
     if (type.getKind() != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool))
@@ -232,13 +233,17 @@ void TypeCheckingPass::visit(IfStmt &node)
 
         m_Context.addError(ss.str());
     }
+
+    dispatch(*n.then);
+    dispatch(*n.else_);
 }
 
-void TypeCheckingPass::visit(WhileStmt &node)
+void TypeCheckingPass::visit(ast::WhileStmt &n)
 {
-    node.getCond().accept(*this);
-    
-    const Type &type = node.getCond().getType()->get();
+    dispatch(*n.cond);
+    VERIFY(*n.cond->inferredType);
+
+    auto &type = **n.cond->inferredType;
 
     // If the condition has type <error-type> fail silently
     if (type.getKind() != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool))
@@ -249,20 +254,21 @@ void TypeCheckingPass::visit(WhileStmt &node)
         m_Context.addError(ss.str());
     }
     
-    node.getBody().accept(*this);
+    dispatch(*n.body);
 }
 
-void TypeCheckingPass::visit(ReturnStmt &node)
+void TypeCheckingPass::visit(ast::ReturnStmt &n)
 {
-    // Type check the return expression
-    node.getExpr().accept(*this);
+    VERIFY(m_CurrentFunctionReturnType);
 
-    // Get the type of the return value
-    const Type &type = node.getExpr().getType()->get();
+    // TODO: Add void type and return types with no values
+    VERIFY(n.expr);
 
-    if (!m_CurrentFunctionReturnType)
-        throw std::runtime_error("Illegal ReturnStmt: m_CurrentFunctionReturnType is nullptr");
+    dispatch(**n.expr);
+    VERIFY(n.expr->get()->inferredType);
 
+    auto &type = **n.expr->get()->inferredType;
+    
     // If the type is <error-type> or if the return type matches
     // the function declaration, its okay and return
     if (type.getKind() == TypeKind::Error || type == *m_CurrentFunctionReturnType)
@@ -271,55 +277,57 @@ void TypeCheckingPass::visit(ReturnStmt &node)
     // The return type is not matching the function declaration
     std::stringstream ss;
     ss << "The type " << type << " does not match function declaration. ";
-    ss << "Expected type: " << *m_CurrentFunctionReturnType;
-
+    ss << "Expected type: " << *m_CurrentFunctionReturnType;  
+    
     m_Context.addError(ss.str());
 }
 
-void TypeCheckingPass::visit(VarDecl &node)
+void TypeCheckingPass::visit(ast::VarDef &n)
 {
     // Infer the type of the assigned expression
-    node.getValue().accept(*this);
+    dispatch(*n.value);
+    VERIFY(n.value->inferredType);
 
-    const Type &type = node.getValue().getType().value();
+    auto &type = **n.value->inferredType;
 
     // The expression is not of type <error-type> but does not match type 
     // type of the variable declaration - this is an actual error
-    if (type.getKind() != TypeKind::Error && type != node.getType())
+    if (type.getKind() != TypeKind::Error && type != *n.type)
     {
         std::stringstream ss;
         ss << "Missmatchting types at variable declaration: ";
-        ss << "Expected " << node.getType() << " but got " << type;
+        ss << "Expected " << *n.type << " but got " << type;
 
         m_Context.addError(ss.str());   
     }
 
     // Does this symbol already exist in the current scope (shadowing possible)
-    if (m_SymbolTable.isSymbolDefinedInCurrentScope(node.getIdent()))
+    if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident))
     {
         std::stringstream ss;
-        ss << "Illegal redefinition of symbol: " << node.getIdent();
+        ss << "Illegal redefinition of symbol: " << n.ident;
 
         m_Context.addError(ss.str());
         return;
     }
 
-    m_SymbolTable.addSymbol(node.getIdent(), SymbolInfo(node.getType().copy()));
+    m_SymbolTable.addSymbol(n.ident, SymbolInfo(n.type->copy()));
 }
 
-void TypeCheckingPass::visit(FuncDecl &node)
+void TypeCheckingPass::visit(ast::FuncDecl &n)
 {
     m_SymbolTable.enterScope();
 
     // Add all params as symbols to the function scope
-    for (const auto &param : node.getParams())
+    for (auto &param : n.params)
         m_SymbolTable.addSymbol(param.first, SymbolInfo(param.second->copy()));
 
     // Set the current expected return type
-    m_CurrentFunctionReturnType = node.getReturnType().copy();
+
+    m_CurrentFunctionReturnType = n.returnType->copy();
 
     // Type check the function body (in a nested scope, allows param shadowing)
-    node.getBody().accept(*this);
+    dispatch(*n.body);
 
     m_SymbolTable.exitScope();
 
@@ -327,8 +335,8 @@ void TypeCheckingPass::visit(FuncDecl &node)
     // add it to the symbol table a second time, that would break it.
 }
 
-void TypeCheckingPass::visit(Module &node)
+void TypeCheckingPass::visit(ast::Module &n)
 {
-    for (FuncDeclPtr &decl : node.getDeclarations())
-        decl->accept(*this);
+    for (auto &d : n.decls)
+        dispatch(*d);
 }

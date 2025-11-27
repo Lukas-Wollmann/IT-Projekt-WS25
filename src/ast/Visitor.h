@@ -1,6 +1,7 @@
 #pragma once
 #include "AST.h"
 #include "Typedef.h"
+#include "Macros.h"
 
 ///
 /// An interface for all traversing passes over nodes of the Abstract Syntax Tree.
@@ -12,30 +13,30 @@ struct Visitor {
 public:
 	virtual ~Visitor() = default;
 
-    template<typename U>
-    using MaybeConst = std::conditional_t<IsConst, const U, U>;
+	template <typename U>
+	using MaybeConst = std::conditional_t<IsConst, const U, U>;
 
 	T dispatch(MaybeConst<ast::Node> &node) {
 		using enum ast::NodeKind;
 
 		switch (node.kind) {
-			case IntLit:	 return visit(static_cast<MaybeConst<ast::IntLit &>>(node));
-			case FloatLit:	 return visit(static_cast<MaybeConst<ast::FloatLit &>>(node));
-			case CharLit:	 return visit(static_cast<MaybeConst<ast::CharLit &>>(node));
-			case BoolLit:	 return visit(static_cast<MaybeConst<ast::BoolLit &>>(node));
-			case StringLit:	 return visit(static_cast<MaybeConst<ast::StringLit &>>(node));
-			case ArrayExpr:	 return visit(static_cast<MaybeConst<ast::ArrayExpr &>>(node));
-			case UnaryExpr:	 return visit(static_cast<MaybeConst<ast::UnaryExpr &>>(node));
-			case BinaryExpr: return visit(static_cast<MaybeConst<ast::BinaryExpr &>>(node));
-			case FuncCall:	 return visit(static_cast<MaybeConst<ast::FuncCall &>>(node));
-			case VarRef:	 return visit(static_cast<MaybeConst<ast::VarRef &>>(node));
-			case BlockStmt:	 return visit(static_cast<MaybeConst<ast::BlockStmt &>>(node));
-			case IfStmt:	 return visit(static_cast<MaybeConst<ast::IfStmt &>>(node));
-			case WhileStmt:	 return visit(static_cast<MaybeConst<ast::WhileStmt &>>(node));
-			case ReturnStmt: return visit(static_cast<MaybeConst<ast::ReturnStmt &>>(node));
-			case VarDef:	 return visit(static_cast<MaybeConst<ast::VarDef &>>(node));
-			case FuncDecl:	 return visit(static_cast<MaybeConst<ast::FuncDecl &>>(node));
-			case Module:	 return visit(static_cast<MaybeConst<ast::Module &>>(node));
+			case IntLit:	 return visit(static_cast<MaybeConst<ast::IntLit> &>(node));
+			case FloatLit:	 return visit(static_cast<MaybeConst<ast::FloatLit> &>(node));
+			case CharLit:	 return visit(static_cast<MaybeConst<ast::CharLit> &>(node));
+			case BoolLit:	 return visit(static_cast<MaybeConst<ast::BoolLit> &>(node));
+			case StringLit:	 return visit(static_cast<MaybeConst<ast::StringLit> &>(node));
+			case ArrayExpr:	 return visit(static_cast<MaybeConst<ast::ArrayExpr> &>(node));
+			case UnaryExpr:	 return visit(static_cast<MaybeConst<ast::UnaryExpr> &>(node));
+			case BinaryExpr: return visit(static_cast<MaybeConst<ast::BinaryExpr> &>(node));
+			case FuncCall:	 return visit(static_cast<MaybeConst<ast::FuncCall> &>(node));
+			case VarRef:	 return visit(static_cast<MaybeConst<ast::VarRef> &>(node));
+			case BlockStmt:	 return visit(static_cast<MaybeConst<ast::BlockStmt> &>(node));
+			case IfStmt:	 return visit(static_cast<MaybeConst<ast::IfStmt> &>(node));
+			case WhileStmt:	 return visit(static_cast<MaybeConst<ast::WhileStmt> &>(node));
+			case ReturnStmt: return visit(static_cast<MaybeConst<ast::ReturnStmt> &>(node));
+			case VarDef:	 return visit(static_cast<MaybeConst<ast::VarDef> &>(node));
+			case FuncDecl:	 return visit(static_cast<MaybeConst<ast::FuncDecl> &>(node));
+			case Module:	 return visit(static_cast<MaybeConst<ast::Module> &>(node));
 			default:		 UNREACHABLE();
 		}
 	}
@@ -80,5 +81,5 @@ public:
 /// The visitor uses double dispatch to call the correct visit method for the
 /// corresponding node type. The visited note can not be modified.
 ///
-template<typename T>
-using ConstVisitor = Visitor<T, true>; 
+template <typename T>
+using ConstVisitor = Visitor<T, true>;

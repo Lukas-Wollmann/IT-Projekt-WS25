@@ -2,9 +2,8 @@
 #include <cstdint>
 #include <cstddef>
 #include <functional>
-
-#define UNREACHABLE() \
-    throw std::logic_error(std::string(__func__) + " should never be reachable")
+#include <optional>
+#include <memory>
 
 typedef int8_t   i8;
 typedef int16_t  i16;

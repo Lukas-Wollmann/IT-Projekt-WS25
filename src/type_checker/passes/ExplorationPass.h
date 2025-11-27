@@ -1,16 +1,22 @@
 #pragma once
 #include "ast/Visitor.h"
-#include "ast/AST.h"
 #include "type_checker/common/TypeCheckerContext.h"
 
-struct ExplorationPass : public Visitor
-{
+///
+/// Find all declaration that exist in a module. Only top level
+/// declaration are supported as of right now. That means it is
+/// not possible to nest a declaration inside another one. This
+/// has to be ensured by using correct parsing rules.
+///
+struct ExplorationPass : public ConstVisitor<void> {
 private:
-    TypeCheckerContext &m_Context;
+	TypeCheckerContext &m_Context;
 
 public:
-    ExplorationPass(TypeCheckerContext &context);
-    
-    void visit(FuncDecl &node) override;
-    void visit(Module &node) override;
+	ExplorationPass(TypeCheckerContext &context);
+
+	void visit(const ast::Module &n) override;
+
+private:
+	void visit(const ast::FuncDecl &n) override;
 };

@@ -6,7 +6,6 @@
 
 #include "Type.h"
 #include "Typedef.h"
-#include "Visitor.h"
 #include "core/U8String.h"
 
 namespace ast {
@@ -155,10 +154,10 @@ namespace ast {
 
 	struct FuncCall : public Expr {
 	public:
-		const Box<Expr> func;
+		const Box<Expr> expr;
 		const Vec<Box<Expr>> args;
 
-		FuncCall(Box<Expr> func, Vec<Box<Expr>> args);
+		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 	};
 
 	struct BlockStmt : public Stmt {
@@ -225,4 +224,4 @@ namespace ast {
 	std::ostream &operator<<(std::ostream &os, NodeKind kind);
 	std::ostream &operator<<(std::ostream &os, UnaryOpKind op);
 	std::ostream &operator<<(std::ostream &os, BinaryOpKind op);
-} // namespace ast
+}

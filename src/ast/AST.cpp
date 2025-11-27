@@ -1,6 +1,6 @@
 #include "AST.h"
-
 #include "core/U8String.h"
+#include "Macros.h"
 
 namespace ast {
 	Node::Node(NodeKind kind)
@@ -52,9 +52,9 @@ namespace ast {
 		: Expr(NodeKind::VarRef)
 		, ident(std::move(ident)) {}
 
-	FuncCall::FuncCall(Box<Expr> func, Vec<Box<Expr>> args)
+	FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
 		: Expr(NodeKind::FuncCall)
-		, func(std::move(func))
+		, expr(std::move(expr))
 		, args(std::move(args)) {}
 
 	BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
