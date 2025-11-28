@@ -37,7 +37,7 @@ std::vector<Token> Lexer::tokenize() {
         } else if (isalpha(currentChar) || currentChar == U'_') {
             tokens.push_back(lexIdentifierOrKeyword(startLoc));
         } else {
-            // Unknown character, skip it for now, implement UTF-8 support later
+            // Illegal Identifier
             tokens.push_back(lexIllegal(startLoc));
         }
     }
@@ -204,7 +204,6 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     return Token(TokenType::CHAR_LITERAL, U8String(valueSs.str()), startLoc);
 }
 
-//unclean have to fix later
 Token Lexer::lexChar(SourceLoc startLoc) {
     advance(); // Skip opening quote
     if (isAtEnd()) {
@@ -298,7 +297,7 @@ Token Lexer::lexComment(SourceLoc startLoc) {
 }
 
 Token Lexer::lexBlockComment(SourceLoc startLoc) {
-    // Assuming block comments start with '/*' and end with '*/'
+    // Assuming block comments start with '/*'
     advance(); // Skip first '/'
     advance(); // Skip '*'
 
