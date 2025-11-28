@@ -2,8 +2,10 @@
 #include "ast/PrintVisitor.h"
 #include "type_checker/passes/ExplorationPass.h"
 #include "type_checker/passes/TypeCheckingPass.h"
+#include "type_checker/passes/ControlFlowPass.h"
 
 using namespace ast;
+using namespace type;
 
 TEST_CASE("TypeChecker: IntLit type will be infered as PrimitiveType::I32") {
 	// Arrange
@@ -19,10 +21,10 @@ TEST_CASE("TypeChecker: IntLit type will be infered as PrimitiveType::I32") {
 	CHECK(intLit->inferredType);
 
 	auto &type = *intLit->inferredType.value();
-	CHECK(intLit->inferredType.value()->getKind() == TypeKind::Primitive);
+	CHECK(intLit->inferredType.value()->kind == TypeKind::Primitive);
 
 	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.getPrimitive() == PrimitiveTypeKind::I32);
+	CHECK(primitive.primitiveKind == PrimitiveTypeKind::I32);
 }
 
 TEST_CASE("TypeChecker: FloatLit type will be infered as PrimitiveType::F32") {
@@ -39,10 +41,10 @@ TEST_CASE("TypeChecker: FloatLit type will be infered as PrimitiveType::F32") {
 	CHECK(floatLit->inferredType);
 
 	const Type &type = *floatLit->inferredType.value();
-	CHECK(type.getKind() == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Primitive);
 
 	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.getPrimitive() == PrimitiveTypeKind::F32);
+	CHECK(primitive.primitiveKind == PrimitiveTypeKind::F32);
 }
 
 TEST_CASE("TypeChecker: CharLit type will be infered as PrimitiveType::Char") {
@@ -59,10 +61,10 @@ TEST_CASE("TypeChecker: CharLit type will be infered as PrimitiveType::Char") {
 	CHECK(charLit->inferredType);
 
 	const Type &type = *charLit->inferredType.value();
-	CHECK(type.getKind() == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Primitive);
 
 	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.getPrimitive() == PrimitiveTypeKind::Char);
+	CHECK(primitive.primitiveKind == PrimitiveTypeKind::Char);
 }
 
 TEST_CASE("TypeChecker: BoolLit type will be infered as PrimitiveType::Bool") {
@@ -79,10 +81,10 @@ TEST_CASE("TypeChecker: BoolLit type will be infered as PrimitiveType::Bool") {
 	CHECK(boolLit->inferredType);
 
 	const Type &type = *boolLit->inferredType.value();
-	CHECK(type.getKind() == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Primitive);
 
 	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.getPrimitive() == PrimitiveTypeKind::Bool);
+	CHECK(primitive.primitiveKind == PrimitiveTypeKind::Bool);
 }
 
 TEST_CASE("TypeChecker: StringLit type will be infered as PrimitiveType::String") {
@@ -99,10 +101,10 @@ TEST_CASE("TypeChecker: StringLit type will be infered as PrimitiveType::String"
 	CHECK(strLit->inferredType);
 
 	const Type &type = *strLit->inferredType.value();
-	CHECK(type.getKind() == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Primitive);
 
 	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.getPrimitive() == PrimitiveTypeKind::String);
+	CHECK(primitive.primitiveKind == PrimitiveTypeKind::String);
 }
 
 TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type") {
@@ -188,6 +190,9 @@ TEST_CASE("TypeChecker: Sandbox") {
 
 	TypeCheckingPass tc(ctx);
 	tc.dispatch(*module);
+
+	ControlFlowPass cfp(ctx);
+	cfp.dispatch(*module);
 
 	for (auto e : ctx.getErrors())
 		std::cout << e << std::endl;

@@ -1,11 +1,8 @@
 #pragma once
 #include <iostream>
-#include <memory>
-#include <optional>
-#include <vector>
 
-#include "Type.h"
 #include "Typedef.h"
+#include "type/Type.h"
 #include "core/U8String.h"
 
 namespace ast {
@@ -46,7 +43,7 @@ namespace ast {
 
 	struct Expr : public Stmt {
 	public:
-		Opt<Box<const Type>> inferredType;
+		Opt<Box<const type::Type>> inferredType;
 
 	protected:
 		explicit Expr(NodeKind kind);
@@ -89,10 +86,10 @@ namespace ast {
 
 	struct ArrayExpr : public Expr {
 	public:
-		const Box<const Type> elementType;
+		const Box<const type::Type> elementType;
 		const Vec<Box<Expr>> values;
 
-		ArrayExpr(Box<const Type> elementType, Vec<Box<Expr>> values);
+		ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values);
 	};
 
 	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative };
@@ -193,23 +190,23 @@ namespace ast {
 	struct VarDef : public Stmt {
 	public:
 		const std::string ident;
-		const Box<const Type> type;
+		const Box<const type::Type> type;
 		const Box<Expr> value;
 
 	public:
-		VarDef(std::string ident, Box<const Type> type, Box<Expr> value);
+		VarDef(std::string ident, Box<const type::Type> type, Box<Expr> value);
 	};
 
-	using Param = Pair<std::string, Box<const Type>>;
+	using Param = Pair<std::string, Box<const type::Type>>;
 
 	struct FuncDecl : public Node {
 	public:
 		const std::string ident;
 		const Vec<Param> params;
-		const Box<const Type> returnType;
+		const Box<const type::Type> returnType;
 		const Box<BlockStmt> body;
 
-		FuncDecl(std::string ident, Vec<Param> params, Box<const Type> returnType,
+		FuncDecl(std::string ident, Vec<Param> params, Box<const type::Type> returnType,
 				 Box<BlockStmt> body);
 	};
 
@@ -220,8 +217,8 @@ namespace ast {
 
 		Module(std::string name, Vec<Box<FuncDecl>> decls);
 	};
-
-	std::ostream &operator<<(std::ostream &os, NodeKind kind);
-	std::ostream &operator<<(std::ostream &os, UnaryOpKind op);
-	std::ostream &operator<<(std::ostream &os, BinaryOpKind op);
 }
+
+std::ostream &operator<<(std::ostream &os, ast::NodeKind kind);
+std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op);
+std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op);

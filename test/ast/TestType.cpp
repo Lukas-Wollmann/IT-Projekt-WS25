@@ -1,6 +1,11 @@
 #include "Doctest.h"
 #include <sstream>
-#include "ast/Type.h"
+#include "type/Type.h"
+#include "type/PrintVisitor.h"
+#include "type/CompareVisitor.h"
+#include "type/CloneVisitor.h"
+
+using namespace type;
 
 TEST_CASE("PrimitiveType: equal typenames means equal") 
 {
@@ -136,7 +141,7 @@ TEST_CASE("ArrayType: unsized and sized array means not equal")
 TEST_CASE("FunctionType: equal parameters and equal return types means equal")
 {
     // Arrange
-    TypeList params1;
+    Vec<Box<const Type>> params1;
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -145,7 +150,7 @@ TEST_CASE("FunctionType: equal parameters and equal return types means equal")
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
-    TypeList params2;
+    Vec<Box<const Type>> params2;
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -163,7 +168,7 @@ TEST_CASE("FunctionType: equal parameters and equal return types means equal")
 TEST_CASE("FunctionType: different parameters and equal return types means not equal")
 {
     // Arrange
-    TypeList params1;
+    Vec<Box<const Type>> params1;
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -172,7 +177,7 @@ TEST_CASE("FunctionType: different parameters and equal return types means not e
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
-    TypeList params2;
+    Vec<Box<const Type>> params2;
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
@@ -190,7 +195,7 @@ TEST_CASE("FunctionType: different parameters and equal return types means not e
 TEST_CASE("FunctionType: equal parameters and different return types means not equal")
 {
     // Arrange
-    TypeList params1;
+    Vec<Box<const Type>> params1;
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
@@ -199,7 +204,7 @@ TEST_CASE("FunctionType: equal parameters and different return types means not e
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
-    TypeList params2;
+    Vec<Box<const Type>> params2;
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
@@ -217,7 +222,7 @@ TEST_CASE("FunctionType: equal parameters and different return types means not e
 TEST_CASE("FunctionType: different parameters and different return types means not equal")
 {
     // Arrange
-    TypeList params1;
+    Vec<Box<const Type>> params1;
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
     params1.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
@@ -226,7 +231,7 @@ TEST_CASE("FunctionType: different parameters and different return types means n
     auto funcType1 = std::make_unique<FunctionType>(std::move(params1), std::move(retType1));
 
     
-    TypeList params2;
+    Vec<Box<const Type>> params2;
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params2.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -247,12 +252,12 @@ TEST_CASE("PrimitiveType: deep copy works")
     auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
 
     // Act
-    auto copy = primitiveType->copy();
+    auto copy = clone(*primitiveType);
 
     // Assert
     CHECK(copy.get() != primitiveType.get());
-    CHECK(copy->getKind() == TypeKind::Primitive);
-    CHECK(static_cast<const PrimitiveType&>(*copy).getPrimitive() == primitiveType->getPrimitive());
+    CHECK(copy->kind == TypeKind::Primitive);
+    CHECK(static_cast<const PrimitiveType&>(*copy).primitiveKind == primitiveType->primitiveKind);
 }
 
 TEST_CASE("PointerType: deep copy works")
@@ -262,12 +267,12 @@ TEST_CASE("PointerType: deep copy works")
     auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
 
     // Act
-    auto copy = ptrType->copy();
+    auto copy = clone(*ptrType);
 
     // Assert
     CHECK(copy.get() != ptrType.get());
-    CHECK(copy->getKind() == TypeKind::Pointer);
-    CHECK(static_cast<const PointerType&>(*copy).getPointeeType() == ptrType->getPointeeType());
+    CHECK(copy->kind == TypeKind::Pointer);
+    CHECK(*static_cast<const PointerType&>(*copy).pointeeType == *ptrType->pointeeType);
 }
 
 TEST_CASE("ArrayType: deep copy works")
@@ -277,18 +282,18 @@ TEST_CASE("ArrayType: deep copy works")
     auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
 
     // Act
-    auto copy = arrType->copy();
+    auto copy = clone(*arrType);
 
     // Assert
     CHECK(copy.get() != arrType.get());
-    CHECK(copy->getKind() == TypeKind::Array);
-    CHECK(static_cast<const ArrayType&>(*copy).getElementType() == arrType->getElementType());
-    CHECK(static_cast<const ArrayType&>(*copy).getArraySize() == 42);
+    CHECK(copy->kind == TypeKind::Array);
+    CHECK(*static_cast<const ArrayType&>(*copy).elementType == *arrType->elementType);
+    CHECK(static_cast<const ArrayType&>(*copy).arraySize == 42);
 }
 
 TEST_CASE("FunctionType: deep copy works")
 {
-    TypeList params;
+    Vec<Box<const Type>> params;
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -297,16 +302,20 @@ TEST_CASE("FunctionType: deep copy works")
     auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 
     // Act
-    auto copy = funcType->copy();
-    
+    auto copy = clone(*funcType);
+
     // Assert
     CHECK(copy.get() != funcType.get());
-    CHECK(copy->getKind() == TypeKind::Function);
+    CHECK(copy->kind == TypeKind::Function);
     
     auto &copyFunc = static_cast<const FunctionType&>(*copy);
 
-    CHECK(copyFunc.getParameterTypes() == funcType->getParameterTypes());
-    CHECK(copyFunc.getReturnType() == funcType->getReturnType());
+    CHECK(copyFunc.paramTypes.size() == funcType->paramTypes.size());
+    
+    for (size_t i = 0; i < copyFunc.paramTypes.size(); ++i)
+        CHECK(*copyFunc.paramTypes[i] == *funcType->paramTypes[i]);
+
+    CHECK(*copyFunc.returnType == *funcType->returnType);
 }
 
 TEST_CASE("PrimitiveType: toString works")
@@ -316,7 +325,7 @@ TEST_CASE("PrimitiveType: toString works")
     std::stringstream ss;
 
     // Act
-    primitiveType->toString(ss);
+    ss << *primitiveType;
     std::string result = ss.str();
 
     // Assert
@@ -331,7 +340,7 @@ TEST_CASE("PointerType: toString works")
     std::stringstream ss;
 
     // Act
-    ptrType->toString(ss);
+    ss << *ptrType;
     std::string result = ss.str();
 
     // Assert
@@ -346,7 +355,7 @@ TEST_CASE("ArrayType: toString works for sized")
     std::stringstream ss;
 
     // Act
-    arrType->toString(ss);
+    ss << *arrType;
     std::string result = ss.str();
 
     // Assert
@@ -361,7 +370,7 @@ TEST_CASE("ArrayType: toString works for unsized")
     std::stringstream ss;
 
     // Act
-    arrType->toString(ss);
+    ss << *arrType;
     std::string result = ss.str();
 
     // Assert
@@ -371,7 +380,7 @@ TEST_CASE("ArrayType: toString works for unsized")
 TEST_CASE("FunctionType: toString works")
 {
     // Arrange
-    TypeList params;
+    Vec<Box<const Type>> params;
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
     params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
@@ -381,9 +390,9 @@ TEST_CASE("FunctionType: toString works")
     std::stringstream ss;
 
     // Act
-    funcType->toString(ss);
+    ss << *funcType;
     std::string result = ss.str();
 
     // Assert
-    CHECK(result == "(i32,f32,char)->(bool)");
+    CHECK(result == "(i32, f32, char)->(bool)");
 }

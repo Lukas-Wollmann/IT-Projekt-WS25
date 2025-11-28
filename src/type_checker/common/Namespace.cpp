@@ -1,4 +1,5 @@
 #include "Namespace.h"
+#include "type/PrintVisitor.h"
 #include <cassert>
 
 Namespace::Namespace(std::string name)

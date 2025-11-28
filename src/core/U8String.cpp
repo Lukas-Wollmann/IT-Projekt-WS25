@@ -1,16 +1,5 @@
 #include "U8String.h"
 
-
-std::ostream &operator<<(std::ostream &os, char32_t c)
-{
-    std::string bytes;
-    utf8::append(c, std::back_inserter(bytes));
-
-    os << bytes;
-
-    return os;
-}
-
 std::ostream &operator<<(std::ostream &os, const char8_t* str)
 {
     if (!str) return os;

@@ -1,6 +1,8 @@
 #include "ExplorationPass.h"
-
+#include "type/CloneVisitor.h"
 #include <sstream>
+
+using namespace type;
 
 ExplorationPass::ExplorationPass(TypeCheckerContext &context) : m_Context(context) {}
 
@@ -10,12 +12,12 @@ void ExplorationPass::visit(const ast::Module &n) {
 }
 
 void ExplorationPass::visit(const ast::FuncDecl &n) {
-	TypeList params;
+	Vec<Box<const Type>> params;
 
 	for (auto &p : n.params)
-		params.push_back(p.second->copy());
+		params.push_back(clone(*p.second));
 
-	auto funcType = std::make_unique<FunctionType>(std::move(params), n.returnType->copy());
+	auto funcType = std::make_unique<FunctionType>(std::move(params), clone(*n.returnType));
 
 	Namespace &gloabl = m_Context.getGlobalNamespace();
 

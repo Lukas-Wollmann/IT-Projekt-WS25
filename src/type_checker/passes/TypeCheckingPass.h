@@ -1,23 +1,23 @@
 #pragma once
 #include "type_checker/common/SymbolTable.h"
 #include "type_checker/common/TypeCheckerContext.h"
-#include "ast/Type.h"
+#include "type/Type.h"
 #include "ast/Visitor.h"
 
-struct TypeCheckingPass : public Visitor<void>
+struct TypeCheckingPass : public ast::Visitor<void>
 {
 private:
     TypeCheckerContext &m_Context;
     SymbolTable m_SymbolTable;
-    TypePtr m_CurrentFunctionReturnType;
+    Box<const type::Type> m_CurrentFunctionReturnType;
     
 public:
     TypeCheckingPass(TypeCheckerContext &context);
     ~TypeCheckingPass();
    
-    void visit(ast::Module &n) override;
-
+    
 private:
+    void visit(ast::Module &n) override;
     void visit(ast::IntLit &n) override;
     void visit(ast::FloatLit &n) override;
     void visit(ast::CharLit &n) override;

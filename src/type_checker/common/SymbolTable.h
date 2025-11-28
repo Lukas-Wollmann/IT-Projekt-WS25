@@ -2,19 +2,19 @@
 #include <unordered_map>
 #include <iostream>
 #include <functional>
-#include "ast/Type.h"
+#include "type/Type.h"
 
 struct SymbolInfo
 {
 private:
-    TypePtr m_Type;
+    Box<const type::Type> m_Type;
 
 public:
-    SymbolInfo(TypePtr type);
+    SymbolInfo(Box<const type::Type> type);
     SymbolInfo(const SymbolInfo &) = delete;
     SymbolInfo(SymbolInfo &&) = default;
 
-    const Type &getType() const { return *m_Type; }
+    const type::Type &getType() const { return *m_Type; }
 };
 
 using Scope = std::unordered_map<std::string, SymbolInfo>;

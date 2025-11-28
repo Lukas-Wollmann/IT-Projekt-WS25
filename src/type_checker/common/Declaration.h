@@ -1,20 +1,20 @@
 #pragma once
-#include "ast/Type.h"
+#include "type/Type.h"
 
 struct FunctionDeclaration
 {
 private:
     std::string m_Name;
-    FunctionTypePtr m_Type;
+    Box<const type::FunctionType> m_Type;
 
 public:
-    FunctionDeclaration(std::string name, FunctionTypePtr type);
+    FunctionDeclaration(std::string name, Box<const type::FunctionType> type);
     FunctionDeclaration(const FunctionDeclaration &) = delete;
     FunctionDeclaration(FunctionDeclaration &&) = default;
 
     FunctionDeclaration &operator=(const FunctionDeclaration &) = delete;
     FunctionDeclaration &operator=(FunctionDeclaration &&) = delete;
 
-    FunctionType &getType() const;
+    const type::FunctionType &getType() const;
     const std::string &getName() const;
 };

@@ -3,6 +3,7 @@
 #include "ast/PrintVisitor.h"
 
 using namespace ast;
+using namespace type;
 
 TEST_CASE("IntLit: toString works") {
 	// Arrange

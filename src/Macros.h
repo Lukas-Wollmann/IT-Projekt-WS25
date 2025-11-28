@@ -2,7 +2,11 @@
 #include <stdexcept>
 
 #define UNREACHABLE() \
-    throw std::logic_error(std::string(__func__) + " should never be reachable")
+    do { \
+        std::stringstream ss; \
+        ss << __func__ << " in " << __FILE__ << ":" << __LINE__ << " should never be reachable"; \
+        throw std::logic_error(ss.str()); \
+    } while(0)
 
 #define VERIFY(expr) \
     do { \

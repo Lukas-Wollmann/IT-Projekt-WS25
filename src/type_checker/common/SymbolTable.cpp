@@ -1,6 +1,7 @@
 #include "SymbolTable.h"
+#include "type/PrintVisitor.h"
 
-SymbolInfo::SymbolInfo(TypePtr type)
+SymbolInfo::SymbolInfo(Box<const type::Type> type)
     : m_Type(std::move(type))
 {}
 
