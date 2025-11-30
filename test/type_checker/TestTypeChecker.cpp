@@ -152,6 +152,12 @@ TEST_CASE("TypeChecker: Sandbox") {
 										std::move(arrElems))));
 	body.push_back(std::make_unique<WhileStmt>(std::make_unique<BoolLit>(false),
 											   std::make_unique<BlockStmt>(Vec<Box<Stmt>>{})));
+    
+    body.push_back(std::make_unique<BinaryExpr>(
+        BinaryOpKind::AdditionAssignment, 
+        std::make_unique<VarRef>("a"), 
+        std::make_unique<IntLit>(2))
+    );
 	body.push_back(std::make_unique<ReturnStmt>(std::make_unique<VarRef>("x")));
 
 	Vec<Box<FuncDecl>> decls;

@@ -1,10 +1,13 @@
 #include "ExplorationPass.h"
-#include "type/CloneVisitor.h"
+
 #include <sstream>
+
+#include "type/CloneVisitor.h"
 
 using namespace type;
 
-ExplorationPass::ExplorationPass(TypeCheckerContext &context) : m_Context(context) {}
+ExplorationPass::ExplorationPass(TypeCheckerContext &context)
+	: m_Context(context) {}
 
 void ExplorationPass::visit(const ast::Module &n) {
 	for (auto &d : n.decls)

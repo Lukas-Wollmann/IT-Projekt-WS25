@@ -16,7 +16,6 @@ private:
 public:
 	ExplorationPass(TypeCheckerContext &context);
 
-	
 private:
 	void visit(const ast::Module &n) override;
 	void visit(const ast::FuncDecl &n) override;

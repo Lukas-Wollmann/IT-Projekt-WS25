@@ -8,45 +8,48 @@
 #include "type/PrintVisitor.h"
 
 using namespace type;
+using namespace ast;
 
 TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
 	: m_Context(context) {
 	m_SymbolTable.enterScope();
 }
 
-TypeCheckingPass::~TypeCheckingPass() { m_SymbolTable.exitScope(); }
+TypeCheckingPass::~TypeCheckingPass() {
+	m_SymbolTable.exitScope();
+}
 
-void TypeCheckingPass::visit(ast::IntLit &n) {
+void TypeCheckingPass::visit(IntLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
 }
 
-void TypeCheckingPass::visit(ast::FloatLit &n) {
+void TypeCheckingPass::visit(FloatLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32);
 }
 
-void TypeCheckingPass::visit(ast::CharLit &n) {
+void TypeCheckingPass::visit(CharLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char);
 }
 
-void TypeCheckingPass::visit(ast::BoolLit &n) {
+void TypeCheckingPass::visit(BoolLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
 }
 
-void TypeCheckingPass::visit(ast::StringLit &n) {
+void TypeCheckingPass::visit(StringLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::String);
 }
 
-void TypeCheckingPass::visit(ast::ArrayExpr &n) {
+void TypeCheckingPass::visit(ArrayExpr &n) {
 	size_t arraySize = n.values.size();
 
 	n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), arraySize);
@@ -68,7 +71,7 @@ void TypeCheckingPass::visit(ast::ArrayExpr &n) {
 	}
 }
 
-void TypeCheckingPass::visit(ast::UnaryExpr &n) {
+void TypeCheckingPass::visit(UnaryExpr &n) {
 	// Infert the type of the operand expression
 	dispatch(*n.operand);
 	VERIFY(n.operand->inferredType);
@@ -78,13 +81,24 @@ void TypeCheckingPass::visit(ast::UnaryExpr &n) {
 	n.inferredType = clone(**n.operand->inferredType);
 }
 
-void TypeCheckingPass::visit(ast::BinaryExpr &n) {
+void TypeCheckingPass::visit(BinaryExpr &n) {
 	// Infer the type of the left and right operand expressions
 	dispatch(*n.left);
 	dispatch(*n.right);
 
 	VERIFY(n.left->inferredType);
 	VERIFY(n.right->inferredType);
+
+	if (isAssignment(n.op) && !isAssignable(*n.left)) {
+		n.inferredType = std::make_unique<ErrorType>();
+
+		std::stringstream ss;
+		ss << "Cannot assign to r-value.";
+
+		m_Context.addError(ss.str());
+		n.inferredType = std::make_unique<ErrorType>();
+		return;
+	}
 
 	auto &leftType = *n.left->inferredType;
 	auto &rightType = *n.right->inferredType;
@@ -115,7 +129,7 @@ void TypeCheckingPass::visit(ast::BinaryExpr &n) {
 	n.inferredType = std::make_unique<ErrorType>();
 }
 
-void TypeCheckingPass::visit(ast::FuncCall &n) {
+void TypeCheckingPass::visit(FuncCall &n) {
 	dispatch(*n.expr);
 	VERIFY(n.expr->inferredType);
 
@@ -165,7 +179,7 @@ void TypeCheckingPass::visit(ast::FuncCall &n) {
 	}
 }
 
-void TypeCheckingPass::visit(ast::VarRef &n) {
+void TypeCheckingPass::visit(VarRef &n) {
 	auto symbol = m_SymbolTable.getSymbol(n.ident);
 
 	// The symbol is known, so take its type
@@ -190,7 +204,7 @@ void TypeCheckingPass::visit(ast::VarRef &n) {
 	n.inferredType = std::make_unique<ErrorType>();
 }
 
-void TypeCheckingPass::visit(ast::BlockStmt &stmt) {
+void TypeCheckingPass::visit(BlockStmt &stmt) {
 	m_SymbolTable.enterScope();
 
 	for (auto &s : stmt.stmts)
@@ -199,7 +213,7 @@ void TypeCheckingPass::visit(ast::BlockStmt &stmt) {
 	m_SymbolTable.exitScope();
 }
 
-void TypeCheckingPass::visit(ast::IfStmt &n) {
+void TypeCheckingPass::visit(IfStmt &n) {
 	dispatch(*n.cond);
 	VERIFY(*n.cond->inferredType);
 
@@ -217,7 +231,7 @@ void TypeCheckingPass::visit(ast::IfStmt &n) {
 	dispatch(*n.else_);
 }
 
-void TypeCheckingPass::visit(ast::WhileStmt &n) {
+void TypeCheckingPass::visit(WhileStmt &n) {
 	dispatch(*n.cond);
 	VERIFY(*n.cond->inferredType);
 
@@ -234,7 +248,7 @@ void TypeCheckingPass::visit(ast::WhileStmt &n) {
 	dispatch(*n.body);
 }
 
-void TypeCheckingPass::visit(ast::ReturnStmt &n) {
+void TypeCheckingPass::visit(ReturnStmt &n) {
 	VERIFY(m_CurrentFunctionReturnType);
 
 	// TODO: Add void type and return types with no values
@@ -258,7 +272,7 @@ void TypeCheckingPass::visit(ast::ReturnStmt &n) {
 	m_Context.addError(ss.str());
 }
 
-void TypeCheckingPass::visit(ast::VarDef &n) {
+void TypeCheckingPass::visit(VarDef &n) {
 	// Infer the type of the assigned expression
 	dispatch(*n.value);
 	VERIFY(n.value->inferredType);
@@ -287,7 +301,7 @@ void TypeCheckingPass::visit(ast::VarDef &n) {
 	m_SymbolTable.addSymbol(n.ident, SymbolInfo(clone(*n.type)));
 }
 
-void TypeCheckingPass::visit(ast::FuncDecl &n) {
+void TypeCheckingPass::visit(FuncDecl &n) {
 	m_SymbolTable.enterScope();
 
 	// Add all params as symbols to the function scope
@@ -307,7 +321,37 @@ void TypeCheckingPass::visit(ast::FuncDecl &n) {
 	// add it to the symbol table a second time, that would break it.
 }
 
-void TypeCheckingPass::visit(ast::Module &n) {
+void TypeCheckingPass::visit(Module &n) {
 	for (auto &d : n.decls)
 		dispatch(*d);
+}
+
+bool TypeCheckingPass::isAssignment(BinaryOpKind op) const {
+	using enum BinaryOpKind;
+
+	switch (op) {
+		case AdditionAssignment:	   return true;
+		case SubtractionAssignment:	   return true;
+		case MultiplicationAssignment: return true;
+		case DivisionAssignment:	   return true;
+		case ModuloAssignment:		   return true;
+		case RightShiftAssignment:	   return true;
+		case LeftShiftAssignment:	   return true;
+		case BitwiseOrAssignment:	   return true;
+		case BitwiseXorAssignment:	   return true;
+		case BitwiseAndAssignment:	   return true;
+		default:					   return false;
+	}
+}
+
+bool TypeCheckingPass::isAssignable(Expr &e) const {
+	if (e.kind == NodeKind::VarRef)
+		return true;
+
+	if (e.kind != NodeKind::UnaryExpr)
+		return false;
+
+	auto &unary = static_cast<const UnaryExpr &>(e);
+
+	return unary.op == UnaryOpKind::Dereference;
 }
