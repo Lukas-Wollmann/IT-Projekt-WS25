@@ -14,7 +14,6 @@ ContinuationIndentWidth: 8
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterEnum: false
-  AfterEnum: false
   AfterStruct: false
   SplitEmptyFunction: false
   AfterFunction: false
@@ -40,7 +39,6 @@ ReferenceAlignment: Right
 
 # Line breaks
 ColumnLimit: 100
-ColumnLimit: 100
 PenaltyBreakBeforeFirstCallParameter: 200
 PenaltyBreakComment: 300
 PenaltyBreakString: 1000
@@ -65,7 +63,6 @@ CommentPragmas: '^ IWYU pragma:'
 # Namespace formatting
 NamespaceIndentation: All
 CompactNamespaces: false
-NamespaceComment: false
 FixNamespaceComments: false
 
 # Alignments
@@ -89,4 +86,3 @@ AlignConsecutiveShortCaseStatements:
 IndentCaseLabels: true
 RemoveEmptyLinesInUnwrappedLines: true
 AlwaysBreakTemplateDeclarations: Yes
-EnumTrailingComma: Remove

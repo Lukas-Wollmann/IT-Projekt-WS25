@@ -1,27 +1,27 @@
 #pragma once
 #include <iostream>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
+
 #include "Declaration.h"
 
 using NamespacePtr = std::shared_ptr<struct Namespace>;
 
-struct Namespace 
-{
+struct Namespace {
 private:
-    std::string m_Name;
-    std::unordered_map<std::string, Box<const type::FunctionType>> m_Functions;
+	std::string m_Name;
+	std::unordered_map<std::string, Box<const type::FunctionType>> m_Functions;
 
-public: 
-    Namespace(std::string name);
-    Namespace(const Namespace &) = delete;
-    Namespace(Namespace &&) = delete;
+public:
+	Namespace(std::string name);
+	Namespace(const Namespace &) = delete;
+	Namespace(Namespace &&) = delete;
 
-    Namespace &operator=(const Namespace &) = delete; 
-    Namespace &operator=(Namespace &&) = delete;
+	Namespace &operator=(const Namespace &) = delete;
+	Namespace &operator=(Namespace &&) = delete;
 
-    void addFunction(std::string name, Box<const type::FunctionType> func);
-    std::optional<Ref<const type::FunctionType>> getFunction(const std::string &name) const;
+	void addFunction(std::string name, Box<const type::FunctionType> func);
+	std::optional<Ref<const type::FunctionType>> getFunction(const std::string &name) const;
 
-    friend std::ostream &operator<<(std::ostream &os, const Namespace &ns);
+	friend std::ostream &operator<<(std::ostream &os, const Namespace &ns);
 };
