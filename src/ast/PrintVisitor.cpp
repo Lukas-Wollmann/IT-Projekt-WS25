@@ -2,8 +2,7 @@
 
 namespace ast {
 	PrintVisitor::PrintVisitor(std::ostream &os)
-		: m_OStream(os) {
-	}
+		: m_OStream(os) {}
 
 	void PrintVisitor::visit(const IntLit &n) {
 		m_OStream << "IntLit(" << n.value << ")";
