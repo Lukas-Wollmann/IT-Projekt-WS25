@@ -2,8 +2,7 @@
 
 namespace type {
 	PrintVisitor::PrintVisitor(std::ostream &os)
-		: m_OStream(os) {
-	}
+		: m_OStream(os) {}
 
 	void PrintVisitor::visit(const PrimitiveType &n) {
 		m_OStream << n.primitiveKind;

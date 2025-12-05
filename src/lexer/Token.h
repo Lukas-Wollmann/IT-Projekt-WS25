@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include <string>
+
 #include "core/U8String.h"
 
-enum class TokenType
-{
+enum class TokenType {
 	IDENTIFIER,
 	STRING_LITERAL,
 	NUMERIC_LITERAL,
@@ -17,10 +17,9 @@ enum class TokenType
 	ILLEGAL
 };
 
-enum class ErrorTypeToken
-{
+enum class ErrorTypeToken {
 	NOT_ILLEGAL,
-	
+
 	UNTERMINATED_STRING,
 	SOLO_BACKSLASH_IN_CHAR_LITERAL,
 	INVALID_ESCAPE_SEQUENCE,
@@ -32,32 +31,30 @@ enum class ErrorTypeToken
 };
 
 struct SourceLoc {
-    size_t line, column, index;
+	size_t line, column, index;
 };
 
 std::ostream &operator<<(std::ostream &os, TokenType type);
 
 struct Token {
-  public:
+public:
 	const TokenType type;
 	const U8String lexeme;
 	const SourceLoc loc;
 
 	const ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL;
-	
+
 	Token(TokenType type, U8String lexeme, SourceLoc loc)
-		: type(type),
-		  lexeme(std::move(lexeme)),
-		  loc(loc),
-		  errorType(ErrorTypeToken::NOT_ILLEGAL)
-	{};
+		: type(type)
+		, lexeme(std::move(lexeme))
+		, loc(loc)
+		, errorType(ErrorTypeToken::NOT_ILLEGAL) {};
 
 	Token(TokenType type, U8String lexeme, SourceLoc loc, ErrorTypeToken errorType)
-		: type(type),
-		  lexeme(std::move(lexeme)),
-		  loc(loc),
-		  errorType(errorType)
-	{};
+		: type(type)
+		, lexeme(std::move(lexeme))
+		, loc(loc)
+		, errorType(errorType) {};
 };
 
 std::ostream &operator<<(std::ostream &os, const Token &t);
