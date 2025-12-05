@@ -7,29 +7,13 @@
 using it = utf8::iterator<std::u8string::const_iterator>;
 
 int main() {
-    std::ifstream file("res/test.bla");
-    std::string code;
-    std::string line;
-    
-    while (getline(file, line)) {
-        code.append(line);
-        code.append("\n");
-    }
+    U8String s = u8"func add() -> i32 {}";
+    Lexer lexer(std::move(s));
 
-    
-    //code.append("\0");
-    
-    for (auto t : code) {
-        std::cout << std::hex << (int) (t) << ", ";
-    }
-
-    std::cout << code << "\n";
-    std::cout << U8String(code) << "\n Test3";
-
-    Lexer lexer = Lexer(U8String(code));
     std::vector<Token> tokens = lexer.tokenize();
     for (Token t : tokens) {
         std::cout << t << "\n";
     }
+    
     return 0;
 }

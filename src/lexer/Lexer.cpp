@@ -3,10 +3,10 @@
 #include <cctype>
 #include <sstream>
 
-Lexer::Lexer(const U8String &source)
-    : m_Src(source)
+Lexer::Lexer(U8String &&source)
+    : m_Src(std::move(source))
     , m_Iter(m_Src.begin())
-    , m_CurentChar(source.empty() ? '\0' : source[0])
+    , m_CurentChar(m_Src.empty() ? '\0' : m_Src[0])
     , m_Loc{1, 1, 0} {
     // Initialize sets for keywords, operators, and separators
 }

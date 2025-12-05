@@ -41,6 +41,9 @@ public:
 	char32_t operator[](size_t idx) const;
 	U8String &operator+=(const U8String &str);
 
+    U8String &operator=(const U8String &str) = default;
+    U8String &operator=(U8String &&str) = default;
+
     friend bool operator==(const U8String left, const U8String &right);
     friend bool operator!=(const U8String &left, const U8String &right);
     friend U8String operator+(const U8String &left, const U8String &right);

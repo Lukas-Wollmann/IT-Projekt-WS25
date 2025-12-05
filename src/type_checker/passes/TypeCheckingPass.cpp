@@ -10,6 +10,7 @@
 using namespace type;
 using namespace ast;
 
+
 TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
 	: m_Context(context) {
 	m_SymbolTable.enterScope();
