@@ -140,7 +140,7 @@ TEST_CASE("FuncCall: toString works") {
 	args.push_back(std::make_unique<IntLit>(1));
 	args.push_back(std::make_unique<IntLit>(2));
 
-    auto expr = std::make_unique<VarRef>("sum");
+	auto expr = std::make_unique<VarRef>("sum");
 	auto call = std::make_unique<FuncCall>(std::move(expr), std::move(args));
 	std::stringstream ss;
 

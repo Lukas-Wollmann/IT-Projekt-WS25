@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include "Typedef.h"
-#include "type/Type.h"
 #include "core/U8String.h"
+#include "type/Type.h"
 
 namespace ast {
 	enum struct NodeKind {

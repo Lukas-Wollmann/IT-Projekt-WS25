@@ -1,9 +1,9 @@
 #pragma once
+#include <iostream>
+
 #include "Macros.h"
 #include "Type.h"
 #include "Typedef.h"
-
-#include <iostream>
 
 namespace type {
 	///
@@ -28,21 +28,33 @@ namespace type {
 				case TypeKind::Function: return visit(static_cast<Constness<FunctionType> &>(type));
 				case TypeKind::Error:	 return visit(static_cast<Constness<ErrorType> &>(type));
 				case TypeKind::Unit:	 return visit(static_cast<Constness<UnitType> &>(type));
-				default:                 UNREACHABLE();
+				default:				 UNREACHABLE();
 			}
 		}
 
-		virtual T visit(Constness<PrimitiveType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<PrimitiveType> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<PointerType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<PointerType> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<ArrayType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<ArrayType> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<FunctionType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<FunctionType> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<ErrorType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<ErrorType> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<UnitType> &) { UNREACHABLE(); }
+		virtual T visit(Constness<UnitType> &) {
+			UNREACHABLE();
+		}
 	};
 
 	///

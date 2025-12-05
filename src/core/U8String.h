@@ -34,20 +34,20 @@ public:
 	size_t length() const;
 	ConstIterator begin() const;
 	ConstIterator end() const;
-    bool empty() const;
+	bool empty() const;
 
 	// Unlike indexing into a normal ascii string, indexing
 	// into an utf-8 string is not O(1), its O(n).
 	char32_t operator[](size_t idx) const;
 	U8String &operator+=(const U8String &str);
 
-    U8String &operator=(const U8String &str) = default;
-    U8String &operator=(U8String &&str) = default;
+	U8String &operator=(const U8String &str) = default;
+	U8String &operator=(U8String &&str) = default;
 
-    friend bool operator==(const U8String left, const U8String &right);
-    friend bool operator!=(const U8String &left, const U8String &right);
-    friend U8String operator+(const U8String &left, const U8String &right);
-    friend std::ostream &operator<<(std::ostream &os, const U8String &str);
+	friend bool operator==(const U8String left, const U8String &right);
+	friend bool operator!=(const U8String &left, const U8String &right);
+	friend U8String operator+(const U8String &left, const U8String &right);
+	friend std::ostream &operator<<(std::ostream &os, const U8String &str);
 
 private:
 	void validateUTF8();
