@@ -3,10 +3,10 @@
 #include <cctype>
 #include <sstream>
 
-Lexer::Lexer(const U8String &source)
-    : m_Src(source)
+Lexer::Lexer(U8String &&source)
+    : m_Src(std::move(source))
     , m_Iter(m_Src.begin())
-    , m_CurentChar(source.empty() ? '\0' : source[0])
+    , m_CurentChar(m_Src.empty() ? '\0' : m_Src[0])
     , m_Loc{1, 1, 0} {
     // Initialize sets for keywords, operators, and separators
 }
@@ -117,7 +117,7 @@ U8String Lexer::skipToClosing() {
         std::stringstream illegalSs;
         while (!isAtEnd() && m_CurentChar != U'\'' && m_CurentChar != U'\n') {
 
-            illegalSs << m_CurentChar;
+            illegalSs << U8String(m_CurentChar);
             advance();
         }
         if (!isAtEnd() && m_CurentChar == U'\'') advance();
@@ -127,7 +127,7 @@ U8String Lexer::skipToClosing() {
 Token Lexer::lexNumber(SourceLoc startLoc) {
     std::stringstream ss;
     while (isdigit(m_CurentChar)) {
-        ss << m_CurentChar;
+        ss << U8String(m_CurentChar);
         advance();
     }
     U8String numberLexeme(ss.str());
@@ -149,7 +149,7 @@ Token Lexer::lexString(SourceLoc startLoc) {
 
         prevprevChar = prevChar;
         prevChar = m_CurentChar;
-        ss << m_CurentChar;
+        ss << U8String(m_CurentChar);
         advance();
     }
     U8String stringLexeme(ss.str());
@@ -160,7 +160,7 @@ Token Lexer::lexString(SourceLoc startLoc) {
 Token Lexer::lexEscapedChar(SourceLoc startLoc) {
     std::stringstream rawSs;   // raw contents inside the quotes (for ILLEGAL tokens)
     std::stringstream valueSs; // actual value for CHAR_LITERAL
-    rawSs << U'\\';
+    rawSs << U8String('\\');
     advance();
     if (isAtEnd()) {
         return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
@@ -171,7 +171,7 @@ Token Lexer::lexEscapedChar(SourceLoc startLoc) {
         return Token(TokenType::ILLEGAL, U8String(rawSs.str()), startLoc, ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
     }
     char32_t esc = m_CurentChar;
-    rawSs << esc;
+    rawSs << U8String(esc);
 
     char mapped = U'\0';
     bool validEscape = true;
@@ -228,8 +228,8 @@ Token Lexer::lexChar(SourceLoc startLoc) {
         return Token(TokenType::ILLEGAL, U8String(""), startLoc, ErrorTypeToken::EMPTY_CHAR_LITERAL);
     }
 
-    rawSs << c;
-    valueSs << c;
+    rawSs << U8String(c);
+    valueSs << U8String(c);
     advance(); // move past the character
 
     // Expect closing quote now
@@ -273,7 +273,7 @@ Token Lexer::lexOperator(SourceLoc startLoc) {
 Token Lexer::lexIdentifierOrKeyword(SourceLoc startLoc) {
     std::stringstream ss;
     while (isalnum(m_CurentChar) || m_CurentChar == U'_') {
-        ss << m_CurentChar;
+        ss << U8String(m_CurentChar);
         advance();
     }
     U8String identLexeme(ss.str());
@@ -290,7 +290,7 @@ Token Lexer::lexComment(SourceLoc startLoc) {
 
     std::stringstream ss;
     while (m_CurentChar != U'\n' && !isAtEnd()) {
-        ss << m_CurentChar;
+        ss << U8String(m_CurentChar);
         advance();
     }
     U8String commentLexeme(ss.str());
@@ -312,7 +312,7 @@ Token Lexer::lexBlockComment(SourceLoc startLoc) {
             advance(); // Skip '/'
             break;
         }
-        ss << m_CurentChar;
+        ss << U8String(m_CurentChar);
         advance();
     }
     U8String commentLexeme(ss.str());
@@ -321,7 +321,7 @@ Token Lexer::lexBlockComment(SourceLoc startLoc) {
 
 Token Lexer::lexIllegal(SourceLoc startLoc) {
     std::stringstream ss;
-    ss << m_CurentChar;
+    ss << U8String(m_CurentChar);
     advance();
     U8String illegalLexeme(ss.str());
     return Token(TokenType::ILLEGAL, illegalLexeme, startLoc, ErrorTypeToken::ILLEGAL_IDENTIFIER);

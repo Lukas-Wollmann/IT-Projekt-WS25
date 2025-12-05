@@ -16,9 +16,10 @@ BraceWrapping:
   AfterEnum: false
   AfterStruct: false
   SplitEmptyFunction: false
+  AfterFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: true
 
 # Spaces
@@ -62,6 +63,7 @@ CommentPragmas: '^ IWYU pragma:'
 # Namespace formatting
 NamespaceIndentation: All
 CompactNamespaces: false
+FixNamespaceComments: false
 
 # Alignments
 AlignConsecutiveMacros: Consecutive
@@ -82,6 +84,5 @@ AlignConsecutiveShortCaseStatements:
   AcrossComments: true
   AlignCaseColons: false
 IndentCaseLabels: true
-CaseIndentation: 4
-EnumTrailingComma: Remove
 RemoveEmptyLinesInUnwrappedLines: true
+AlwaysBreakTemplateDeclarations: Yes

@@ -1,0 +1,84 @@
+#include "Doctest.h"
+#include "type/PrintVisitor.h"
+#include <sstream>
+
+using namespace type;
+
+TEST_CASE("PrimitiveType: toString works")
+{
+    // Arrange
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+    std::stringstream ss;
+
+    // Act
+    ss << *primitiveType;
+    std::string result = ss.str();
+
+    // Assert
+    CHECK(result == "i32");
+}
+
+TEST_CASE("PointerType: toString works")
+{
+    // Arrange
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+    auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
+    std::stringstream ss;
+
+    // Act
+    ss << *ptrType;
+    std::string result = ss.str();
+
+    // Assert
+    CHECK(result == "*i32");
+}
+
+TEST_CASE("ArrayType: toString works for sized")
+{
+    // Arrange
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+    auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
+    std::stringstream ss;
+
+    // Act
+    ss << *arrType;
+    std::string result = ss.str();
+
+    // Assert
+    CHECK(result == "[42]i32");
+}
+
+TEST_CASE("ArrayType: toString works for unsized")
+{
+    // Arrange
+    auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+    auto arrType = std::make_unique<ArrayType>(std::move(primitiveType));
+    std::stringstream ss;
+
+    // Act
+    ss << *arrType;
+    std::string result = ss.str();
+
+    // Assert
+    CHECK(result == "[]i32");
+}
+
+TEST_CASE("FunctionType: toString works")
+{
+    // Arrange
+    Vec<Box<const Type>> params;
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
+    params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+
+    auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+    auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
+    std::stringstream ss;
+
+    // Act
+    ss << *funcType;
+    std::string result = ss.str();
+
+    // Assert
+    CHECK(result == "(i32, f32, char)->(bool)");
+}
