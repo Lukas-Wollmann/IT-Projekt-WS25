@@ -51,13 +51,19 @@ namespace type {
 		return *n.returnType == *other.returnType;
 	}
 
-	bool CompareVisitor::visit(const ErrorType &) { return m_Other.kind == TypeKind::Error; }
+	bool CompareVisitor::visit(const ErrorType &) {
+		return m_Other.kind == TypeKind::Error;
+	}
 
-	bool CompareVisitor::visit(const UnitType &) { return m_Other.kind == TypeKind::Unit; }
+	bool CompareVisitor::visit(const UnitType &) {
+		return m_Other.kind == TypeKind::Unit;
+	}
 }
 
 bool operator==(const type::Type &left, const type::Type &right) {
 	return type::CompareVisitor(right).dispatch(left);
 }
 
-bool operator!=(const type::Type &left, const type::Type &right) { return !(left == right); }
+bool operator!=(const type::Type &left, const type::Type &right) {
+	return !(left == right);
+}

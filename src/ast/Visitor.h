@@ -40,39 +40,73 @@ namespace ast {
 			}
 		}
 
-		virtual T visit(Constness<IntLit> &) { UNREACHABLE(); }
+		virtual T visit(Constness<IntLit> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<FloatLit> &) { UNREACHABLE(); }
+		virtual T visit(Constness<FloatLit> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<CharLit> &) { UNREACHABLE(); }
+		virtual T visit(Constness<CharLit> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<BoolLit> &) { UNREACHABLE(); }
+		virtual T visit(Constness<BoolLit> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<StringLit> &) { UNREACHABLE(); }
+		virtual T visit(Constness<StringLit> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<ArrayExpr> &) { UNREACHABLE(); }
+		virtual T visit(Constness<ArrayExpr> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<UnaryExpr> &) { UNREACHABLE(); }
+		virtual T visit(Constness<UnaryExpr> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<BinaryExpr> &) { UNREACHABLE(); }
+		virtual T visit(Constness<BinaryExpr> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<FuncCall> &) { UNREACHABLE(); }
+		virtual T visit(Constness<FuncCall> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<VarRef> &) { UNREACHABLE(); }
+		virtual T visit(Constness<VarRef> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<BlockStmt> &) { UNREACHABLE(); }
+		virtual T visit(Constness<BlockStmt> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<IfStmt> &) { UNREACHABLE(); }
+		virtual T visit(Constness<IfStmt> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<WhileStmt> &) { UNREACHABLE(); }
+		virtual T visit(Constness<WhileStmt> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<ReturnStmt> &) { UNREACHABLE(); }
+		virtual T visit(Constness<ReturnStmt> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<VarDef> &) { UNREACHABLE(); }
+		virtual T visit(Constness<VarDef> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<FuncDecl> &) { UNREACHABLE(); }
+		virtual T visit(Constness<FuncDecl> &) {
+			UNREACHABLE();
+		}
 
-		virtual T visit(Constness<Module> &) { UNREACHABLE(); }
+		virtual T visit(Constness<Module> &) {
+			UNREACHABLE();
+		}
 	};
 
 	///

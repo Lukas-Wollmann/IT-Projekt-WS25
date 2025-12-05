@@ -1,9 +1,9 @@
 #pragma once
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
-#include <optional>
 #include <memory>
+#include <optional>
 
 typedef int8_t   i8;
 typedef int16_t  i16;
@@ -18,16 +18,16 @@ typedef uint64_t u64;
 typedef float    f32;
 typedef double   f64;
 
-template<typename T>
+template <typename T>
 using Ref = std::reference_wrapper<T>;
 
-template<typename T>
+template <typename T>
 using Opt = std::optional<T>;
 
-template<typename T>
+template <typename T>
 using Ptr = std::shared_ptr<T>;
 
-template<typename T>
+template <typename T>
 using Box = std::unique_ptr<T>;
 
 template <typename T>

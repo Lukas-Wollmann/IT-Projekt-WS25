@@ -10,7 +10,6 @@
 using namespace type;
 using namespace ast;
 
-
 TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
 	: m_Context(context) {
 	m_SymbolTable.enterScope();
@@ -363,11 +362,11 @@ bool TypeCheckingPass::visit(FuncDecl &n) {
 	// Type check the function body (in a nested scope, allows param shadowing)
 	bool doesReturn = dispatch(*n.body);
 
-    if (!doesReturn) {
-        std::stringstream ss;
-        ss << "Not all control flow paths in function '" << n.ident << "' return a value.";
-        m_Context.addError(ss.str());
-    }
+	if (!doesReturn) {
+		std::stringstream ss;
+		ss << "Not all control flow paths in function '" << n.ident << "' return a value.";
+		m_Context.addError(ss.str());
+	}
 
 	m_SymbolTable.exitScope();
 
