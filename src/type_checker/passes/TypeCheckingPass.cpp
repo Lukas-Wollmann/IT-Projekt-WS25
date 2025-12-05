@@ -19,37 +19,46 @@ TypeCheckingPass::~TypeCheckingPass() {
 	m_SymbolTable.exitScope();
 }
 
-void TypeCheckingPass::visit(IntLit &n) {
+bool TypeCheckingPass::visit(IntLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(FloatLit &n) {
+bool TypeCheckingPass::visit(FloatLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(CharLit &n) {
+bool TypeCheckingPass::visit(CharLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(BoolLit &n) {
+bool TypeCheckingPass::visit(BoolLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	return false;
 }
 
-void TypeCheckingPass::visit(StringLit &n) {
+bool TypeCheckingPass::visit(StringLit &n) {
 	VERIFY(!n.inferredType);
 
 	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::String);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(ArrayExpr &n) {
+bool TypeCheckingPass::visit(ArrayExpr &n) {
 	size_t arraySize = n.values.size();
 
 	n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), arraySize);
@@ -69,9 +78,11 @@ void TypeCheckingPass::visit(ArrayExpr &n) {
 			m_Context.addError(ss.str());
 		}
 	}
+
+	return false;
 }
 
-void TypeCheckingPass::visit(UnaryExpr &n) {
+bool TypeCheckingPass::visit(UnaryExpr &n) {
 	// Infert the type of the operand expression
 	dispatch(*n.operand);
 	VERIFY(n.operand->inferredType);
@@ -79,9 +90,11 @@ void TypeCheckingPass::visit(UnaryExpr &n) {
 	// For now, the unary operation just yields the same result.
 	// If the result has type <error-type> just keep it as well.
 	n.inferredType = clone(**n.operand->inferredType);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(BinaryExpr &n) {
+bool TypeCheckingPass::visit(BinaryExpr &n) {
 	// Infer the type of the left and right operand expressions
 	dispatch(*n.left);
 	dispatch(*n.right);
@@ -97,7 +110,8 @@ void TypeCheckingPass::visit(BinaryExpr &n) {
 
 		m_Context.addError(ss.str());
 		n.inferredType = std::make_unique<ErrorType>();
-		return;
+
+		return false;
 	}
 
 	auto &leftType = *n.left->inferredType;
@@ -108,14 +122,16 @@ void TypeCheckingPass::visit(BinaryExpr &n) {
 	// The error did not really happen here, so dont add to m_Errors.
 	if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error) {
 		n.inferredType = std::make_unique<ErrorType>();
-		return;
+
+		return false;
 	}
 
 	// Both types are not <error-type> and they are the same.
 	// (Criteria for now, this will be changed.)
 	if (*leftType == *rightType) {
 		n.inferredType = clone(*leftType);
-		return;
+
+		return false;
 	}
 
 	// Here an actual error happenes. Add the error and make the type of
@@ -127,9 +143,11 @@ void TypeCheckingPass::visit(BinaryExpr &n) {
 
 	m_Context.addError(ss.str());
 	n.inferredType = std::make_unique<ErrorType>();
+
+	return false;
 }
 
-void TypeCheckingPass::visit(FuncCall &n) {
+bool TypeCheckingPass::visit(FuncCall &n) {
 	dispatch(*n.expr);
 	VERIFY(n.expr->inferredType);
 
@@ -143,7 +161,8 @@ void TypeCheckingPass::visit(FuncCall &n) {
 		}
 
 		n.inferredType = std::make_unique<ErrorType>();
-		return;
+
+		return false;
 	}
 
 	auto &funcType = static_cast<const FunctionType &>(type);
@@ -158,7 +177,8 @@ void TypeCheckingPass::visit(FuncCall &n) {
 		ss << paramTypes.size() << " arguments but got " << args.size();
 
 		m_Context.addError(ss.str());
-		return;
+
+		return false;
 	}
 
 	for (size_t i = 0; i < args.size(); ++i) {
@@ -177,43 +197,62 @@ void TypeCheckingPass::visit(FuncCall &n) {
 
 		m_Context.addError(ss.str());
 	}
+
+	return false;
 }
 
-void TypeCheckingPass::visit(VarRef &n) {
+bool TypeCheckingPass::visit(VarRef &n) {
 	auto symbol = m_SymbolTable.getSymbol(n.ident);
 
 	// The symbol is known, so take its type
 	if (symbol) {
 		n.inferredType = clone(symbol->get().getType());
-		return;
+
+		return false;
 	}
 
 	// If the symbol is not known, it maybe be a function
 	auto func = m_Context.getGlobalNamespace().getFunction(n.ident);
 
 	if (func) {
-		n.inferredType = clone(func->get().getType());
-		return;
+		n.inferredType = clone(func->get());
+
+		return false;
+		;
 	}
 
 	// The symbol is unknown, so throw an error
 	std::stringstream ss;
 	ss << "Undefined identifier: " << n.ident;
 	m_Context.addError(ss.str());
-
 	n.inferredType = std::make_unique<ErrorType>();
+
+	return false;
 }
 
-void TypeCheckingPass::visit(BlockStmt &stmt) {
+bool TypeCheckingPass::visit(BlockStmt &n) {
 	m_SymbolTable.enterScope();
 
-	for (auto &s : stmt.stmts)
-		dispatch(*s);
+	bool foundReturn = false;
+
+	for (size_t i = 0; i < n.stmts.size(); ++i) {
+		bool didReturn = dispatch(*n.stmts[i]);
+
+		if (foundReturn && didReturn) {
+			std::stringstream ss;
+			ss << "Unreachable statements detected after a return statement.";
+			m_Context.addError(ss.str());
+		}
+
+		foundReturn |= didReturn;
+	}
 
 	m_SymbolTable.exitScope();
+
+	return foundReturn;
 }
 
-void TypeCheckingPass::visit(IfStmt &n) {
+bool TypeCheckingPass::visit(IfStmt &n) {
 	dispatch(*n.cond);
 	VERIFY(*n.cond->inferredType);
 
@@ -227,11 +266,13 @@ void TypeCheckingPass::visit(IfStmt &n) {
 		m_Context.addError(ss.str());
 	}
 
-	dispatch(*n.then);
-	dispatch(*n.else_);
+	bool thenReturns = dispatch(*n.then);
+	bool elseReturns = dispatch(*n.else_);
+
+	return thenReturns && elseReturns;
 }
 
-void TypeCheckingPass::visit(WhileStmt &n) {
+bool TypeCheckingPass::visit(WhileStmt &n) {
 	dispatch(*n.cond);
 	VERIFY(*n.cond->inferredType);
 
@@ -246,12 +287,14 @@ void TypeCheckingPass::visit(WhileStmt &n) {
 	}
 
 	dispatch(*n.body);
+
+	return false;
 }
 
-void TypeCheckingPass::visit(ReturnStmt &n) {
+bool TypeCheckingPass::visit(ReturnStmt &n) {
 	VERIFY(m_CurrentFunctionReturnType);
 
-	// TODO: Add void type and return types with no values
+	// TODO: Add bool type and return types with no values
 	VERIFY(n.expr);
 
 	dispatch(**n.expr);
@@ -262,7 +305,7 @@ void TypeCheckingPass::visit(ReturnStmt &n) {
 	// If the type is <error-type> or if the return type matches
 	// the function declaration, its okay and return
 	if (type.kind == TypeKind::Error || type == *m_CurrentFunctionReturnType)
-		return;
+		return true;
 
 	// The return type is not matching the function declaration
 	std::stringstream ss;
@@ -270,9 +313,11 @@ void TypeCheckingPass::visit(ReturnStmt &n) {
 	ss << "Expected type: " << *m_CurrentFunctionReturnType;
 
 	m_Context.addError(ss.str());
+
+	return true;
 }
 
-void TypeCheckingPass::visit(VarDef &n) {
+bool TypeCheckingPass::visit(VarDef &n) {
 	// Infer the type of the assigned expression
 	dispatch(*n.value);
 	VERIFY(n.value->inferredType);
@@ -295,13 +340,15 @@ void TypeCheckingPass::visit(VarDef &n) {
 		ss << "Illegal redefinition of symbol: " << n.ident;
 
 		m_Context.addError(ss.str());
-		return;
+		return false;
 	}
 
 	m_SymbolTable.addSymbol(n.ident, SymbolInfo(clone(*n.type)));
+
+	return false;
 }
 
-void TypeCheckingPass::visit(FuncDecl &n) {
+bool TypeCheckingPass::visit(FuncDecl &n) {
 	m_SymbolTable.enterScope();
 
 	// Add all params as symbols to the function scope
@@ -313,17 +360,26 @@ void TypeCheckingPass::visit(FuncDecl &n) {
 	m_CurrentFunctionReturnType = clone(*n.returnType);
 
 	// Type check the function body (in a nested scope, allows param shadowing)
-	dispatch(*n.body);
+	bool doesReturn = dispatch(*n.body);
+
+    if (!doesReturn) {
+        std::stringstream ss;
+        ss << "Not all control flow paths in function '" << n.ident << "' return a value.";
+        m_Context.addError(ss.str());
+    }
 
 	m_SymbolTable.exitScope();
 
 	// We already explored this function during the exploration pass, dont
 	// add it to the symbol table a second time, that would break it.
+	return false;
 }
 
-void TypeCheckingPass::visit(Module &n) {
+bool TypeCheckingPass::visit(Module &n) {
 	for (auto &d : n.decls)
 		dispatch(*d);
+
+	return false;
 }
 
 bool TypeCheckingPass::isAssignment(BinaryOpKind op) const {

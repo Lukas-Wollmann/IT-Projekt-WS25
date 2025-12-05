@@ -10,8 +10,7 @@ struct Namespace
 {
 private:
     std::string m_Name;
-    //std::unordered_map<std::string, NamespacePtr> m_Children; No nested namespaces right now
-    std::unordered_map<std::string, FunctionDeclaration> m_Functions;
+    std::unordered_map<std::string, Box<const type::FunctionType>> m_Functions;
 
 public: 
     Namespace(std::string name);
@@ -21,8 +20,8 @@ public:
     Namespace &operator=(const Namespace &) = delete; 
     Namespace &operator=(Namespace &&) = delete;
 
-    void addFunction(FunctionDeclaration func);
-    std::optional<Ref<const FunctionDeclaration>> getFunction(const std::string &name) const;
+    void addFunction(std::string name, Box<const type::FunctionType> func);
+    std::optional<Ref<const type::FunctionType>> getFunction(const std::string &name) const;
 
     friend std::ostream &operator<<(std::ostream &os, const Namespace &ns);
 };

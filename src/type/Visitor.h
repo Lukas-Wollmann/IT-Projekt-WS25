@@ -3,6 +3,8 @@
 #include "Type.h"
 #include "Typedef.h"
 
+#include <iostream>
+
 namespace type {
 	///
 	/// An interface for all traversing passes over types. The visitor
@@ -26,7 +28,7 @@ namespace type {
 				case TypeKind::Function: return visit(static_cast<Constness<FunctionType> &>(type));
 				case TypeKind::Error:	 return visit(static_cast<Constness<ErrorType> &>(type));
 				case TypeKind::Unit:	 return visit(static_cast<Constness<UnitType> &>(type));
-				default:				 UNREACHABLE();
+				default:                 UNREACHABLE();
 			}
 		}
 

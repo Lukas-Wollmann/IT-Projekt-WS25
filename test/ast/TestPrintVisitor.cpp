@@ -1,5 +1,4 @@
 #include "Doctest.h"
-#include "ast/AST.h"
 #include "ast/PrintVisitor.h"
 
 using namespace ast;

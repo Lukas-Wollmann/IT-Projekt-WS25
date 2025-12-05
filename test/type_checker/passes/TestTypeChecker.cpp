@@ -2,7 +2,6 @@
 #include "ast/PrintVisitor.h"
 #include "type_checker/passes/ExplorationPass.h"
 #include "type_checker/passes/TypeCheckingPass.h"
-#include "type_checker/passes/ControlFlowPass.h"
 
 using namespace ast;
 using namespace type;
@@ -158,8 +157,8 @@ TEST_CASE("TypeChecker: Sandbox") {
         std::make_unique<VarRef>("a"), 
         std::make_unique<IntLit>(2))
     );
-	body.push_back(std::make_unique<ReturnStmt>(std::make_unique<VarRef>("x")));
-
+	//body.push_back(std::make_unique<ReturnStmt>(std::make_unique<VarRef>("x")));
+	
 	Vec<Box<FuncDecl>> decls;
 	decls.push_back(
 			std::make_unique<FuncDecl>("add", std::move(params),
@@ -196,9 +195,6 @@ TEST_CASE("TypeChecker: Sandbox") {
 
 	TypeCheckingPass tc(ctx);
 	tc.dispatch(*module);
-
-	ControlFlowPass cfp(ctx);
-	cfp.dispatch(*module);
 
 	for (auto e : ctx.getErrors())
 		std::cout << e << std::endl;

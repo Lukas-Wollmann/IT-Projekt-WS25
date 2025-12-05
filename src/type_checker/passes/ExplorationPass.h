@@ -8,7 +8,6 @@
 /// not possible to nest a declaration inside another one. This
 /// has to be ensured by using correct parsing rules.
 ///
-
 struct ExplorationPass : public ast::ConstVisitor<void> {
 private:
 	TypeCheckerContext &m_Context;

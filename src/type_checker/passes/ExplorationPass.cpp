@@ -31,5 +31,5 @@ void ExplorationPass::visit(const ast::FuncDecl &n) {
 		return;
 	}
 
-	gloabl.addFunction(FunctionDeclaration(n.ident, std::move(funcType)));
+	gloabl.addFunction(n.ident, std::move(funcType));
 }
