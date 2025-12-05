@@ -14,6 +14,7 @@ ContinuationIndentWidth: 8
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterEnum: false
+  AfterEnum: false
   AfterStruct: false
   SplitEmptyFunction: false
   AfterFunction: false
@@ -38,6 +39,7 @@ PointerAlignment: Right
 ReferenceAlignment: Right
 
 # Line breaks
+ColumnLimit: 100
 ColumnLimit: 100
 PenaltyBreakBeforeFirstCallParameter: 200
 PenaltyBreakComment: 300
