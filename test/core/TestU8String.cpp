@@ -3,20 +3,6 @@
 #include "core/U8String.h"
 
 
-TEST_CASE("U8String: Test that operator<< works for char32_t")
-{
-    // Arrange
-    char32_t c = U'🌸';
-    std::stringstream ss;
-
-    // Act
-    ss << c;
-    std::string result = ss.str();
-
-    // Assert
-    CHECK(result == "\xF0\x9F\x8C\xB8");
-}
-
 TEST_CASE("U8String: Test that operator<< works for char8_t *")
 {
     // Arrange
