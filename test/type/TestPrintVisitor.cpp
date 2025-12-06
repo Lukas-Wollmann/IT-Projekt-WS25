@@ -78,3 +78,29 @@ TEST_CASE("FunctionType: toString works") {
 	// Assert
 	CHECK(result == "(i32, f32, char)->(bool)");
 }
+
+TEST_CASE("ErrorType: toString works") {
+	// Arrange
+	auto errorType = std::make_unique<ErrorType>();
+	std::stringstream ss;
+
+	// Act
+	ss << *errorType;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "<error-type>");
+}
+
+TEST_CASE("UnitType: toString works") {
+	// Arrange
+	auto unitType = std::make_unique<UnitType>();
+	std::stringstream ss;
+
+	// Act
+	ss << *unitType;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "()");
+}

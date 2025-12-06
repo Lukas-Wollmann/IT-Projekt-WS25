@@ -49,9 +49,9 @@ namespace ast {
 
     void PrintVisitor::visit(const Assignment &n) {
 		m_OStream << "Assignment(";
-        m_OStream << n.assignmentKind << ", ";
 		dispatch(*n.left);
 		m_OStream << ", ";
+        m_OStream << n.assignmentKind << ", ";
 		dispatch(*n.right);
 		m_OStream << ")";
 	}
