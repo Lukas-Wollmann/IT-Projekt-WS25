@@ -121,6 +121,22 @@ TEST_CASE("BinaryExpr: toString works") {
 	CHECK(result == "BinaryExpr(IntLit(2), Addition, IntLit(3))");
 }
 
+TEST_CASE("Assignment: toString works") {
+	// Arrange
+	auto left = std::make_unique<VarRef>(u8"x");
+	auto right = std::make_unique<IntLit>(3);
+	auto assign =
+			std::make_unique<Assignment>(AssignmentKind::Multiplication, std::move(left), std::move(right));
+	std::stringstream ss;
+
+	// Act
+	ss << *assign;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "Assignment(VarRef(x), MultiplicationAssignment, IntLit(3))");
+}
+
 TEST_CASE("VarRef: toString works") {
 	// Arrange
 	auto var = std::make_unique<VarRef>(u8"x");
