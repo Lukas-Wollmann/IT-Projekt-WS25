@@ -47,6 +47,15 @@ namespace ast {
 		m_OStream << ")";
 	}
 
+    void PrintVisitor::visit(const Assignment &n) {
+		m_OStream << "Assignment(";
+        m_OStream << n.assignmentKind << ", ";
+		dispatch(*n.left);
+		m_OStream << ", ";
+		dispatch(*n.right);
+		m_OStream << ")";
+	}
+
 	void PrintVisitor::visit(const FuncCall &n) {
 		m_OStream << "FuncCall(";
 		dispatch(*n.expr);

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "core/U8String.h"
 #include "Namespace.h"
 
 struct TypeCheckerContext {

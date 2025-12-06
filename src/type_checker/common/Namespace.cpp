@@ -7,13 +7,13 @@
 Namespace::Namespace(std::string name)
 	: m_Name(name) {}
 
-void Namespace::addFunction(std::string name, Box<const type::FunctionType> func) {
+void Namespace::addFunction(U8String name, Box<const type::FunctionType> func) {
 	assert(m_Functions.find(name) == m_Functions.end());
 
 	m_Functions.emplace(std::move(name), std::move(func));
 }
 
-std::optional<Ref<const type::FunctionType>> Namespace::getFunction(const std::string &name) const {
+std::optional<Ref<const type::FunctionType>> Namespace::getFunction(const U8String &name) const {
 	auto it = m_Functions.find(name);
 
 	if (it != m_Functions.end())
