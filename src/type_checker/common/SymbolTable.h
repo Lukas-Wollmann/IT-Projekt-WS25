@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unordered_map>
 
+#include "core/U8String.h"
 #include "type/Type.h"
 
 struct SymbolInfo {
@@ -19,7 +20,7 @@ public:
 	}
 };
 
-using Scope = std::unordered_map<std::string, SymbolInfo>;
+using Scope = std::unordered_map<U8String, SymbolInfo>;
 
 std::ostream &operator<<(std::ostream &os, const Scope &scope);
 
@@ -38,9 +39,9 @@ public:
 	Scope &enterScope();
 	void exitScope();
 
-	void addSymbol(std::string name, SymbolInfo symbol);
-	std::optional<Ref<const SymbolInfo>> getSymbol(const std::string &name) const;
-	bool isSymbolDefinedInCurrentScope(const std::string &name) const;
+	void addSymbol(U8String name, SymbolInfo symbol);
+	std::optional<Ref<const SymbolInfo>> getSymbol(const U8String &name) const;
+	bool isSymbolDefinedInCurrentScope(const U8String &name) const;
 
 	friend std::ostream &operator<<(std::ostream &os, const SymbolTable &table);
 };

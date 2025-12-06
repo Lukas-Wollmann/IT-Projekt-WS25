@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 
+#include "core/U8String.h"
 #include "Declaration.h"
 
 using NamespacePtr = std::shared_ptr<struct Namespace>;
@@ -10,7 +11,7 @@ using NamespacePtr = std::shared_ptr<struct Namespace>;
 struct Namespace {
 private:
 	std::string m_Name;
-	std::unordered_map<std::string, Box<const type::FunctionType>> m_Functions;
+	std::unordered_map<U8String, Box<const type::FunctionType>> m_Functions;
 
 public:
 	Namespace(std::string name);
@@ -20,8 +21,8 @@ public:
 	Namespace &operator=(const Namespace &) = delete;
 	Namespace &operator=(Namespace &&) = delete;
 
-	void addFunction(std::string name, Box<const type::FunctionType> func);
-	std::optional<Ref<const type::FunctionType>> getFunction(const std::string &name) const;
+	void addFunction(U8String name, Box<const type::FunctionType> func);
+	std::optional<Ref<const type::FunctionType>> getFunction(const U8String &name) const;
 
 	friend std::ostream &operator<<(std::ostream &os, const Namespace &ns);
 };
