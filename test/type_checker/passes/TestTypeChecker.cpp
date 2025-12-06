@@ -111,7 +111,7 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<FloatLit>(10.0f)));
 
 	auto funcDecl =
-			std::make_unique<FuncDecl>("testFunction", Vec<Param>{},
+			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
 									   std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
 									   std::make_unique<BlockStmt>(std::move(stmts)));
 
