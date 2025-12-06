@@ -49,7 +49,13 @@ namespace ast {
 		, left(std::move(left))
 		, right(std::move(right)) {}
 
-	VarRef::VarRef(std::string ident)
+	Assignment::Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
+		: Expr(NodeKind::Assignment)
+		, assignmentKind(assignmentKind)
+		, left(std::move(left))
+		, right(std::move(right)) {}
+
+	VarRef::VarRef(U8String ident)
 		: Expr(NodeKind::VarRef)
 		, ident(std::move(ident)) {}
 
@@ -77,13 +83,13 @@ namespace ast {
 		: Stmt(NodeKind::ReturnStmt)
 		, expr(std::move(expr)) {}
 
-	VarDef::VarDef(std::string ident, Box<const type::Type> type, Box<Expr> value)
+	VarDef::VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value)
 		: Stmt(NodeKind::VarDef)
 		, ident(std::move(ident))
 		, type(std::move(type))
 		, value(std::move(value)) {}
 
-	FuncDecl::FuncDecl(std::string ident, Vec<Param> params, Box<const type::Type> returnType,
+	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
 					   Box<BlockStmt> body)
 		: Node(NodeKind::FuncDecl)
 		, ident(std::move(ident))
@@ -91,7 +97,7 @@ namespace ast {
 		, returnType(std::move(returnType))
 		, body(std::move(body)) {}
 
-	Module::Module(std::string name, Vec<Box<FuncDecl>> decls)
+	Module::Module(U8String name, Vec<Box<FuncDecl>> decls)
 		: Node(NodeKind::Module)
 		, name(std::move(name))
 		, decls(std::move(decls)) {}
@@ -134,6 +140,25 @@ std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
 	}
 }
 
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
+	using enum ast::AssignmentKind;
+
+	switch (op) {
+		case Simple:		 return os << "Assignment";
+		case Addition:		 return os << "AdditionAssignment";
+		case Subtraction:	 return os << "SubtractionAssignment";
+		case Multiplication: return os << "MultiplicationAssignment";
+		case Division:		 return os << "DivisionAssignment";
+		case Modulo:		 return os << "ModuloAssignment";
+		case BitwiseAnd:	 return os << "BitwiseAndAssignment";
+		case BitwiseOr:		 return os << "BitwiseOrAssignment";
+		case BitwiseXor:	 return os << "BitwiseXorAssignment";
+		case LeftShift:		 return os << "LeftShiftAssignment";
+		case RightShift:	 return os << "RightShiftAssignment";
+		default:			 UNREACHABLE();
+	}
+}
+
 std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 	using enum ast::BinaryOpKind;
 
@@ -156,17 +181,6 @@ std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 		case BitwiseXor:			   return os << "BitwiseXor";
 		case LeftShift:				   return os << "LeftShift";
 		case RightShift:			   return os << "RightShift";
-		case Assignment:			   return os << "Assignment";
-		case AdditionAssignment:	   return os << "AdditionAssignment";
-		case SubtractionAssignment:	   return os << "SubtractionAssignment";
-		case MultiplicationAssignment: return os << "MultiplicationAssignment";
-		case DivisionAssignment:	   return os << "DivisionAssignment";
-		case ModuloAssignment:		   return os << "ModuloAssignment";
-		case BitwiseAndAssignment:	   return os << "BitwiseAndAssignment";
-		case BitwiseOrAssignment:	   return os << "BitwiseOrAssignment";
-		case BitwiseXorAssignment:	   return os << "BitwiseXorAssignment";
-		case LeftShiftAssignment:	   return os << "LeftShiftAssignment";
-		case RightShiftAssignment:	   return os << "RightShiftAssignment";
 		default:					   UNREACHABLE();
 	}
 }
