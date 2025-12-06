@@ -1,0 +1,11 @@
+func main() {
+    arr: [5]i32; // Default initializiert: Stack
+    arr[0] = 1;
+    arr[1] = 2;
+    arr[2] = 3;
+    arr[3] = 4;
+    arr[4] = 5;
+    for (i: i32 = 0; i < arr.size; i++) {
+        println(arr[i]);
+    }
+}
