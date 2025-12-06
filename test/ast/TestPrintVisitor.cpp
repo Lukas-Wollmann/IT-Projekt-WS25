@@ -125,8 +125,8 @@ TEST_CASE("Assignment: toString works") {
 	// Arrange
 	auto left = std::make_unique<VarRef>(u8"x");
 	auto right = std::make_unique<IntLit>(3);
-	auto assign =
-			std::make_unique<Assignment>(AssignmentKind::Multiplication, std::move(left), std::move(right));
+	auto assign = std::make_unique<Assignment>(AssignmentKind::Multiplication, std::move(left),
+											   std::move(right));
 	std::stringstream ss;
 
 	// Act
