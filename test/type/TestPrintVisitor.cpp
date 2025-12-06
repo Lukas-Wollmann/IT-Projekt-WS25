@@ -5,9 +5,9 @@
 
 using namespace type;
 
-TEST_CASE("PrimitiveType: toString works") {
+TEST_CASE("Typename: toString works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto primitiveType = std::make_unique<Typename>(u8"i32");
 	std::stringstream ss;
 
 	// Act
@@ -20,7 +20,7 @@ TEST_CASE("PrimitiveType: toString works") {
 
 TEST_CASE("PointerType: toString works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto primitiveType = std::make_unique<Typename>(u8"i32");
 	auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
 	std::stringstream ss;
 
@@ -34,7 +34,7 @@ TEST_CASE("PointerType: toString works") {
 
 TEST_CASE("ArrayType: toString works for sized") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto primitiveType = std::make_unique<Typename>(u8"i32");
 	auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
 	std::stringstream ss;
 
@@ -48,7 +48,7 @@ TEST_CASE("ArrayType: toString works for sized") {
 
 TEST_CASE("ArrayType: toString works for unsized") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto primitiveType = std::make_unique<Typename>(u8"i32");
 	auto arrType = std::make_unique<ArrayType>(std::move(primitiveType));
 	std::stringstream ss;
 
@@ -63,11 +63,11 @@ TEST_CASE("ArrayType: toString works for unsized") {
 TEST_CASE("FunctionType: toString works") {
 	// Arrange
 	Vec<Box<const Type>> params;
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+	params.push_back(std::make_unique<Typename>(u8"i32"));
+	params.push_back(std::make_unique<Typename>(u8"f32"));
+	params.push_back(std::make_unique<Typename>(u8"char"));
 
-	auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	auto retType = std::make_unique<Typename>(u8"bool");
 	auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 	std::stringstream ss;
 

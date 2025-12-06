@@ -1,8 +1,8 @@
 #include "CloneVisitor.h"
 
 namespace type {
-	Box<Type> CloneVisitor::visit(const PrimitiveType &n) {
-		return std::make_unique<PrimitiveType>(n.primitiveKind);
+	Box<Type> CloneVisitor::visit(const Typename &n) {
+		return std::make_unique<Typename>(n.typename_);
 	}
 
 	Box<Type> CloneVisitor::visit(const PointerType &n) {

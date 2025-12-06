@@ -4,9 +4,10 @@
 #include <vector>
 
 #include "Typedef.h"
+#include "core/U8String.h"
 
 namespace type {
-	enum struct TypeKind : u8 { Primitive, Pointer, Array, Function, Error, Unit };
+	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
 
 	struct Type {
 	public:
@@ -18,13 +19,11 @@ namespace type {
 		explicit Type(const TypeKind kind);
 	};
 
-	enum struct PrimitiveTypeKind : u8 { I32, U32, F32, String, Char, Bool };
-
-	struct PrimitiveType : public Type {
+	struct Typename : public Type {
 	public:
-		const PrimitiveTypeKind primitiveKind;
+		const U8String typename_;
 
-		explicit PrimitiveType(PrimitiveTypeKind primitiveKind);
+		explicit Typename(U8String typename_);
 	};
 
 	struct PointerType : public Type {
@@ -63,4 +62,3 @@ namespace type {
 }
 
 std::ostream &operator<<(std::ostream &os, type::TypeKind kind);
-std::ostream &operator<<(std::ostream &os, type::PrimitiveTypeKind kind);

@@ -22,7 +22,7 @@ TypeCheckingPass::~TypeCheckingPass() {
 bool TypeCheckingPass::visit(IntLit &n) {
 	VERIFY(!n.inferredType);
 
-	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	n.inferredType = std::make_unique<Typename>(u8"i32");
 
 	return false;
 }
@@ -30,7 +30,7 @@ bool TypeCheckingPass::visit(IntLit &n) {
 bool TypeCheckingPass::visit(FloatLit &n) {
 	VERIFY(!n.inferredType);
 
-	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32);
+	n.inferredType = std::make_unique<Typename>(u8"f32");
 
 	return false;
 }
@@ -38,7 +38,7 @@ bool TypeCheckingPass::visit(FloatLit &n) {
 bool TypeCheckingPass::visit(CharLit &n) {
 	VERIFY(!n.inferredType);
 
-	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char);
+	n.inferredType = std::make_unique<Typename>(u8"char");
 
 	return false;
 }
@@ -46,14 +46,14 @@ bool TypeCheckingPass::visit(CharLit &n) {
 bool TypeCheckingPass::visit(BoolLit &n) {
 	VERIFY(!n.inferredType);
 
-	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	n.inferredType = std::make_unique<Typename>(u8"bool");
 	return false;
 }
 
 bool TypeCheckingPass::visit(StringLit &n) {
 	VERIFY(!n.inferredType);
 
-	n.inferredType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::String);
+	n.inferredType = std::make_unique<Typename>(u8"string");
 
 	return false;
 }
@@ -136,17 +136,17 @@ bool TypeCheckingPass::visit(BinaryExpr &n) {
 }
 
 bool TypeCheckingPass::visit(ast::Assignment &n) {
-    // Assignments dont return anything, we dont have references so we 
-    // would have to add a lot of special handling, its not worth for now
-    n.inferredType = std::make_unique<UnitType>();
-    
-    dispatch(*n.left);
+	// Assignments dont return anything, we dont have references so we
+	// would have to add a lot of special handling, its not worth for now
+	n.inferredType = std::make_unique<UnitType>();
+
+	dispatch(*n.left);
 	dispatch(*n.right);
 
 	VERIFY(n.left->inferredType);
 	VERIFY(n.right->inferredType);
 
-    if (!isAssignable(*n.left)) {
+	if (!isAssignable(*n.left)) {
 		std::stringstream ss;
 		ss << "Cannot assign to r-value.";
 
@@ -156,19 +156,19 @@ bool TypeCheckingPass::visit(ast::Assignment &n) {
 		return false;
 	}
 
-    auto &leftType = *n.left->inferredType;
+	auto &leftType = *n.left->inferredType;
 	auto &rightType = *n.right->inferredType;
-    
-    // If one of the two expressions is of type <error-type>,
+
+	// If one of the two expressions is of type <error-type>,
 	// the error did not really happen here, so dont add to m_Errors.
 	if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error)
 		return false;
-    
-    // If both types are equal, its okay
-    if (*leftType == *rightType)
+
+	// If both types are equal, its okay
+	if (*leftType == *rightType)
 		return false;
 
-    // Here an actual error happenes. Add the error and make the type of
+	// Here an actual error happenes. Add the error and make the type of
 	// the binary expression an <error-type> to mark the subtree as invalid.
 	std::stringstream ss;
 	ss << "Found illegal assignment expression: ";
@@ -292,7 +292,7 @@ bool TypeCheckingPass::visit(IfStmt &n) {
 	auto &type = **n.cond->inferredType;
 
 	// If the condition has type <error-type> fail silently
-	if (type.kind != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool)) {
+	if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
 		std::stringstream ss;
 		ss << "Cannot accept type " << type << " inside an if condition.";
 
@@ -312,7 +312,7 @@ bool TypeCheckingPass::visit(WhileStmt &n) {
 	auto &type = **n.cond->inferredType;
 
 	// If the condition has type <error-type> fail silently
-	if (type.kind != TypeKind::Error && type != PrimitiveType(PrimitiveTypeKind::Bool)) {
+	if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
 		std::stringstream ss;
 		ss << "Cannot accept type " << type << " inside a while condition.";
 

@@ -9,7 +9,7 @@ namespace type {
 	public:
 		explicit CompareVisitor(const Type &other);
 
-		bool visit(const PrimitiveType &n) override;
+		bool visit(const Typename &n) override;
 		bool visit(const PointerType &n) override;
 		bool visit(const ArrayType &n) override;
 		bool visit(const FunctionType &n) override;

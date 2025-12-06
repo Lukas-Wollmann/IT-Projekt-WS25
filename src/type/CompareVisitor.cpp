@@ -4,13 +4,13 @@ namespace type {
 	CompareVisitor::CompareVisitor(const Type &other)
 		: m_Other(other) {}
 
-	bool CompareVisitor::visit(const PrimitiveType &n) {
-		if (m_Other.kind != TypeKind::Primitive)
+	bool CompareVisitor::visit(const Typename &n) {
+		if (m_Other.kind != TypeKind::Typename)
 			return false;
 
-		auto &other = static_cast<const PrimitiveType &>(m_Other);
+		auto &other = static_cast<const Typename &>(m_Other);
 
-		return n.primitiveKind == other.primitiveKind;
+		return n.typename_ == other.typename_;
 	}
 
 	bool CompareVisitor::visit(const PointerType &n) {

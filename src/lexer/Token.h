@@ -10,11 +10,13 @@ enum class TokenType {
 	STRING_LITERAL,
 	NUMERIC_LITERAL,
 	CHAR_LITERAL,
+	BOOL_LITERAL,
 	KEYWORD,
 	OPERATOR,
 	SEPARATOR,
 	COMMENT,
-	ILLEGAL
+	ILLEGAL,
+	END_OF_FILE
 };
 
 enum class ErrorTypeToken {
@@ -38,11 +40,11 @@ std::ostream &operator<<(std::ostream &os, TokenType type);
 
 struct Token {
 public:
-	const TokenType type;
-	const U8String lexeme;
-	const SourceLoc loc;
+	TokenType type;
+	U8String lexeme;
+	SourceLoc loc;
 
-	const ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL;
+	ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL;
 
 	Token(TokenType type, U8String lexeme, SourceLoc loc)
 		: type(type)

@@ -6,7 +6,7 @@
 using namespace ast;
 using namespace type;
 
-TEST_CASE("TypeChecker: IntLit type will be infered as PrimitiveType::I32") {
+TEST_CASE("TypeChecker: IntLit type will be infered as i32") {
 	// Arrange
 	auto intLit = std::make_unique<IntLit>(67);
 	TypeCheckerContext ctx;
@@ -20,13 +20,13 @@ TEST_CASE("TypeChecker: IntLit type will be infered as PrimitiveType::I32") {
 	CHECK(intLit->inferredType);
 
 	auto &type = *intLit->inferredType.value();
-	CHECK(intLit->inferredType.value()->kind == TypeKind::Primitive);
+	CHECK(intLit->inferredType.value()->kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.primitiveKind == PrimitiveTypeKind::I32);
+	auto &primitive = static_cast<const Typename &>(type);
+	CHECK(primitive.typename_ == u8"i32");
 }
 
-TEST_CASE("TypeChecker: FloatLit type will be infered as PrimitiveType::F32") {
+TEST_CASE("TypeChecker: FloatLit type will be infered as f32") {
 	// Arrange
 	auto floatLit = std::make_unique<FloatLit>(187.0f);
 	TypeCheckerContext ctx;
@@ -40,13 +40,13 @@ TEST_CASE("TypeChecker: FloatLit type will be infered as PrimitiveType::F32") {
 	CHECK(floatLit->inferredType);
 
 	const Type &type = *floatLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.primitiveKind == PrimitiveTypeKind::F32);
+	auto &primitive = static_cast<const Typename &>(type);
+	CHECK(primitive.typename_ == u8"f32");
 }
 
-TEST_CASE("TypeChecker: CharLit type will be infered as PrimitiveType::Char") {
+TEST_CASE("TypeChecker: CharLit type will be infered as char") {
 	// Arrange
 	auto charLit = std::make_unique<CharLit>('X');
 	TypeCheckerContext ctx;
@@ -60,13 +60,13 @@ TEST_CASE("TypeChecker: CharLit type will be infered as PrimitiveType::Char") {
 	CHECK(charLit->inferredType);
 
 	const Type &type = *charLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.primitiveKind == PrimitiveTypeKind::Char);
+	auto &primitive = static_cast<const Typename &>(type);
+	CHECK(primitive.typename_ == u8"char");
 }
 
-TEST_CASE("TypeChecker: BoolLit type will be infered as PrimitiveType::Bool") {
+TEST_CASE("TypeChecker: BoolLit type will be infered as bool") {
 	// Arrange
 	auto boolLit = std::make_unique<BoolLit>(false);
 	TypeCheckerContext ctx;
@@ -80,13 +80,13 @@ TEST_CASE("TypeChecker: BoolLit type will be infered as PrimitiveType::Bool") {
 	CHECK(boolLit->inferredType);
 
 	const Type &type = *boolLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.primitiveKind == PrimitiveTypeKind::Bool);
+	auto &primitive = static_cast<const Typename &>(type);
+	CHECK(primitive.typename_ == u8"bool");
 }
 
-TEST_CASE("TypeChecker: StringLit type will be infered as PrimitiveType::String") {
+TEST_CASE("TypeChecker: StringLit type will be infered as string") {
 	// Arrange
 	auto strLit = std::make_unique<StringLit>(u8"UwU");
 	TypeCheckerContext ctx;
@@ -100,20 +100,19 @@ TEST_CASE("TypeChecker: StringLit type will be infered as PrimitiveType::String"
 	CHECK(strLit->inferredType);
 
 	const Type &type = *strLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Primitive);
+	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const PrimitiveType &>(type);
-	CHECK(primitive.primitiveKind == PrimitiveTypeKind::String);
+	auto &primitive = static_cast<const Typename &>(type);
+	CHECK(primitive.typename_ == u8"string");
 }
 
 TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type") {
 	Vec<Box<Stmt>> stmts;
 	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<FloatLit>(10.0f)));
 
-	auto funcDecl =
-			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
-									   std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
-									   std::make_unique<BlockStmt>(std::move(stmts)));
+	auto funcDecl = std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
+											   std::make_unique<Typename>(u8"f32"),
+											   std::make_unique<BlockStmt>(std::move(stmts)));
 
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
