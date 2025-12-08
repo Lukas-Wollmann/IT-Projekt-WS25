@@ -22,12 +22,7 @@ namespace type {
 	}
 
 	void PrintVisitor::visit(const FunctionType &n) {
-		m_OStream << "(";
-
-		for (size_t i = 0; i < n.paramTypes.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.paramTypes[i];
-
-		m_OStream << ")->(" << *n.returnType << ")";
+		m_OStream << "(" << n.paramTypes << ")->(" << *n.returnType << ")";
 	}
 
 	void PrintVisitor::visit(const ErrorType &) {
@@ -37,6 +32,13 @@ namespace type {
 	void PrintVisitor::visit(const UnitType &) {
 		m_OStream << "()";
 	}
+}
+
+std::ostream &operator<<(std::ostream &os, const type::Params &p) {
+    for (size_t i = 0; i < p.size(); ++i)
+        os << (i ? ", " : "") << *p[i];
+
+    return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const type::Type &n) {

@@ -18,5 +18,7 @@ namespace type {
 	};
 }
 
+bool operator==(const type::Params &left, const type::Params &right);
+bool operator!=(const type::Params &left, const type::Params &right);
 bool operator==(const type::Type &left, const type::Type &right);
 bool operator!=(const type::Type &left, const type::Type &right);

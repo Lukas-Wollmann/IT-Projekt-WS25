@@ -15,17 +15,13 @@ void Namespace::addFunction(U8String name, Box<const type::FunctionType> func) {
 	m_Functions.emplace(std::move(name), std::move(func));
 }
 
-Opt<Ref<const FunctionType>> Namespace::getFunction(const U8String &name, Vec<const Type> &params) const {
-	auto overloadedFuncIt = m_Functions.find(name);
+Opt<Ref<const FunctionType>> Namespace::getFunction(const U8String &name) const {
+	auto func = m_Functions.find(name);
 
-	if (overloadedFuncIt == m_Functions.end())
+	if (func == m_Functions.end())
 		return std::nullopt;
 	
-	auto &overloadedFunc = overloadedFuncIt->second;
-	
-	auto funcIt = std::find(overloadedFunc.begin(), overloadedFunc.end(), params);
-
-	return std::nullopt;
+	return *func->second;
 }
 
 std::ostream &operator<<(std::ostream &os, const Namespace &ns) {

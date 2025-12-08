@@ -60,6 +60,22 @@ namespace type {
 	}
 }
 
+bool operator==(const type::Params &left, const type::Params &right) {
+    if (left.size() != right.size())
+        return false;
+
+    for (size_t i = 0; i < left.size(); ++i) {
+        if (*left[i] != *right[i])
+            return false;
+    }
+    
+    return true;
+}
+
+bool operator!=(const type::Params &left, const type::Params &right) {
+    return !(left == right);
+}
+
 bool operator==(const type::Type &left, const type::Type &right) {
 	return type::CompareVisitor(right).dispatch(left);
 }

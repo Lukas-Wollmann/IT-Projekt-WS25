@@ -8,12 +8,11 @@
 #include "Declaration.h"
 
 using NamespacePtr = std::shared_ptr<struct Namespace>;
-using OverloadedFunction = std::vector<Box<const type::FunctionType>>;
 
 struct Namespace {
 private:
 	std::string m_Name;
-	std::unordered_map<U8String, OverloadedFunction> m_Functions;
+	std::unordered_map<U8String, Box<const type::FunctionType>> m_Functions;
 
 public:
 	Namespace(std::string name);
@@ -24,8 +23,7 @@ public:
 	Namespace &operator=(Namespace &&) = delete;
 
 	void addFunction(U8String name, Box<const type::FunctionType> func);
-	Opt<Ref<const OverloadedFunction>> getOverloadedFunction(const U8String &name) const;
-	Opt<Ref<const type::FunctionType>> getFunction(const U8String &name, Vec<const type::Type> &params) const;
+	Opt<Ref<const type::FunctionType>> getFunction(const U8String &name) const;
 	
 
 	friend std::ostream &operator<<(std::ostream &os, const Namespace &ns);

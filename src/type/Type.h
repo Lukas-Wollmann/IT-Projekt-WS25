@@ -18,6 +18,8 @@ namespace type {
 		explicit Type(const TypeKind kind);
 	};
 
+    using Params = std::vector<Box<const Type>>;
+
 	enum struct PrimitiveTypeKind : u8 { I32, U32, F32, String, Char, Bool };
 
 	struct PrimitiveType : public Type {
@@ -39,8 +41,7 @@ namespace type {
 		const Box<const Type> elementType;
 		const std::optional<size_t> arraySize;
 
-		explicit ArrayType(Box<const Type> elementType,
-						   std::optional<size_t> arraySize = std::nullopt);
+		explicit ArrayType(Box<const Type> elementType, Opt<size_t> arraySize = std::nullopt);
 	};
 
 	struct FunctionType : public Type {
@@ -48,7 +49,7 @@ namespace type {
 		const Vec<Box<const Type>> paramTypes;
 		const Box<const Type> returnType;
 
-		FunctionType(Vec<Box<const Type>> paramTypes, Box<const Type> returnType);
+		FunctionType(Params param, Box<const Type> returnType);
 	};
 
 	struct ErrorType : public Type {

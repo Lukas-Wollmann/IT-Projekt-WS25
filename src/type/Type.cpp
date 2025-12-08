@@ -14,12 +14,12 @@ namespace type {
 		: Type(TypeKind::Pointer)
 		, pointeeType(std::move(pointeeType)) {}
 
-	ArrayType::ArrayType(Box<const Type> elementType, std::optional<size_t> arraySize)
+	ArrayType::ArrayType(Box<const Type> elementType, Opt<size_t> arraySize)
 		: Type(TypeKind::Array)
 		, elementType(std::move(elementType))
 		, arraySize(arraySize) {}
 
-	FunctionType::FunctionType(Vec<Box<const Type>> paramTypes, Box<const Type> returnType)
+	FunctionType::FunctionType(Params paramTypes, Box<const Type> returnType)
 		: Type(TypeKind::Function)
 		, paramTypes(std::move(paramTypes))
 		, returnType(std::move(returnType)) {}
