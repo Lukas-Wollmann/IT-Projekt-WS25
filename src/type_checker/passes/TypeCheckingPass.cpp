@@ -82,13 +82,18 @@ bool TypeCheckingPass::visit(ArrayExpr &n) {
 	return false;
 }
 
+/// 
+/// While type checking, unary expressions try to call their respective
+/// operator as if it was a normal function. For example "1 + 2" would
+/// look for an overloaded function in the current namespace: "+(int, int)". 
+/// This makes it very easy to add operator overloading later.
+/// This is type checking only, so no extra function calls will be inserted
+/// for trivial addition overloads in the code generaition phase later on.
+///
 bool TypeCheckingPass::visit(UnaryExpr &n) {
-	// Infert the type of the operand expression
 	dispatch(*n.operand);
 	VERIFY(n.operand->inferredType);
 
-	// For now, the unary operation just yields the same result.
-	// If the result has type <error-type> just keep it as well.
 	n.inferredType = clone(**n.operand->inferredType);
 
 	return false;

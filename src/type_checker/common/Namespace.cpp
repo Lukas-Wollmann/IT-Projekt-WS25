@@ -4,6 +4,8 @@
 
 #include "type/PrintVisitor.h"
 
+using namespace type;
+
 Namespace::Namespace(std::string name)
 	: m_Name(name) {}
 
@@ -13,11 +15,15 @@ void Namespace::addFunction(U8String name, Box<const type::FunctionType> func) {
 	m_Functions.emplace(std::move(name), std::move(func));
 }
 
-std::optional<Ref<const type::FunctionType>> Namespace::getFunction(const U8String &name) const {
-	auto it = m_Functions.find(name);
+Opt<Ref<const FunctionType>> Namespace::getFunction(const U8String &name, Vec<const Type> &params) const {
+	auto overloadedFuncIt = m_Functions.find(name);
 
-	if (it != m_Functions.end())
-		return *it->second;
+	if (overloadedFuncIt == m_Functions.end())
+		return std::nullopt;
+	
+	auto &overloadedFunc = overloadedFuncIt->second;
+	
+	auto funcIt = std::find(overloadedFunc.begin(), overloadedFunc.end(), params);
 
 	return std::nullopt;
 }
