@@ -15,8 +15,9 @@ namespace ast {
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-		FuncCall,
+        Assignment,
 		VarRef,
+		FuncCall,
 		BlockStmt,
 		IfStmt,
 		WhileStmt,
@@ -120,18 +121,7 @@ namespace ast {
 		BitwiseOr,
 		BitwiseXor,
 		LeftShift,
-		RightShift,
-		Assignment,
-		AdditionAssignment,
-		SubtractionAssignment,
-		MultiplicationAssignment,
-		DivisionAssignment,
-		ModuloAssignment,
-		BitwiseAndAssignment,
-		BitwiseOrAssignment,
-		BitwiseXorAssignment,
-		LeftShiftAssignment,
-		RightShiftAssignment
+		RightShift
 	};
 
 	struct BinaryExpr : public Expr {
@@ -142,11 +132,33 @@ namespace ast {
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
 	};
 
+    enum struct AssignmentKind {
+		Simple,
+		Addition,
+		Subtraction,
+		Multiplication,
+		Division,
+		Modulo,
+		BitwiseAnd,
+		BitwiseOr,
+		BitwiseXor,
+		LeftShift,
+		RightShift,
+    };
+
+    struct Assignment : public Expr {
+    public:
+        const AssignmentKind assignmentKind;
+        const Box<Expr> left, right;
+
+        explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+    };
+
 	struct VarRef : public Expr {
 	public:
-		const std::string ident;
+		const U8String ident;
 
-		explicit VarRef(std::string ident);
+		explicit VarRef(U8String ident);
 	};
 
 	struct FuncCall : public Expr {
@@ -189,36 +201,37 @@ namespace ast {
 
 	struct VarDef : public Stmt {
 	public:
-		const std::string ident;
+		const U8String ident;
 		const Box<const type::Type> type;
 		const Box<Expr> value;
 
 	public:
-		VarDef(std::string ident, Box<const type::Type> type, Box<Expr> value);
+		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
 	};
 
-	using Param = Pair<std::string, Box<const type::Type>>;
+	using Param = Pair<U8String, Box<const type::Type>>;
 
 	struct FuncDecl : public Node {
 	public:
-		const std::string ident;
+		const U8String ident;
 		const Vec<Param> params;
 		const Box<const type::Type> returnType;
 		const Box<BlockStmt> body;
 
-		FuncDecl(std::string ident, Vec<Param> params, Box<const type::Type> returnType,
+		FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
 				 Box<BlockStmt> body);
 	};
 
 	struct Module : public Node {
 	public:
-		const std::string name;
+		const U8String name;
 		const Vec<Box<FuncDecl>> decls;
 
-		Module(std::string name, Vec<Box<FuncDecl>> decls);
+		Module(U8String name, Vec<Box<FuncDecl>> decls);
 	};
 }
 
 std::ostream &operator<<(std::ostream &os, ast::NodeKind kind);
 std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op);
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op);
 std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op);

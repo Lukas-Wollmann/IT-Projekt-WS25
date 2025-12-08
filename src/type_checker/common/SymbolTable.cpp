@@ -27,11 +27,11 @@ void SymbolTable::exitScope() {
 	m_Scopes.pop_back();
 }
 
-void SymbolTable::addSymbol(std::string name, SymbolInfo symbol) {
+void SymbolTable::addSymbol(U8String name, SymbolInfo symbol) {
 	m_Scopes.back().emplace(std::move(name), std::move(symbol));
 }
 
-std::optional<Ref<const SymbolInfo>> SymbolTable::getSymbol(const std::string &name) const {
+std::optional<Ref<const SymbolInfo>> SymbolTable::getSymbol(const U8String &name) const {
 	for (auto scope = m_Scopes.rbegin(); scope != m_Scopes.rend(); ++scope) {
 		auto it = scope->find(name);
 
@@ -42,7 +42,7 @@ std::optional<Ref<const SymbolInfo>> SymbolTable::getSymbol(const std::string &n
 	return std::nullopt;
 }
 
-bool SymbolTable::isSymbolDefinedInCurrentScope(const std::string &name) const {
+bool SymbolTable::isSymbolDefinedInCurrentScope(const U8String &name) const {
 	const Scope &scope = m_Scopes.back();
 
 	return scope.find(name) != scope.end();

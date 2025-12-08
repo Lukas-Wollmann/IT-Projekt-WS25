@@ -27,6 +27,7 @@ namespace ast {
 				case NodeKind::ArrayExpr:  return visit(static_cast<Constness<ArrayExpr> &>(node));
 				case NodeKind::UnaryExpr:  return visit(static_cast<Constness<UnaryExpr> &>(node));
 				case NodeKind::BinaryExpr: return visit(static_cast<Constness<BinaryExpr> &>(node));
+                case NodeKind::Assignment: return visit(static_cast<Constness<Assignment> &>(node));
 				case NodeKind::FuncCall:   return visit(static_cast<Constness<FuncCall> &>(node));
 				case NodeKind::VarRef:	   return visit(static_cast<Constness<VarRef> &>(node));
 				case NodeKind::BlockStmt:  return visit(static_cast<Constness<BlockStmt> &>(node));
@@ -71,6 +72,10 @@ namespace ast {
 		virtual T visit(Constness<BinaryExpr> &) {
 			UNREACHABLE();
 		}
+
+        virtual T visit(Constness<Assignment> &) {
+            UNREACHABLE();    
+        }
 
 		virtual T visit(Constness<FuncCall> &) {
 			UNREACHABLE();
