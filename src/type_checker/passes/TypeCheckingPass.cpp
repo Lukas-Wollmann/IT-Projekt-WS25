@@ -60,21 +60,17 @@ bool TypeCheckingPass::visit(StringLit &n) {
 
 bool TypeCheckingPass::visit(ArrayExpr &n) {
 	size_t arraySize = n.values.size();
-
 	n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), arraySize);
 
 	for (auto &expr : n.values) {
 		dispatch(*expr);
 		VERIFY(expr->inferredType);
-
 		auto &type = *expr->inferredType;
 
-		// Missmatch between array element type and array type
 		if (type->kind != TypeKind::Error && *type != *n.elementType) {
 			std::stringstream ss;
-			ss << "Expected type " << *n.elementType;
-			ss << " for array elements but found " << *type << " instead.";
-
+			ss << "Expected an object of type '" << *n.elementType << "'";
+			ss << " for an array - found an object of type '" << *type << "' instead.";
 			m_Context.addError(ss.str());
 		}
 	}
@@ -82,23 +78,47 @@ bool TypeCheckingPass::visit(ArrayExpr &n) {
 	return false;
 }
 
-/// 
-/// While type checking, unary expressions try to call their respective
-/// operator as if it was a normal function. For example "1 + 2" would
-/// look for an overloaded function in the current namespace: "+(int, int)". 
-/// This makes it very easy to add operator overloading later.
-/// This is type checking only, so no extra function calls will be inserted
-/// for trivial addition overloads in the code generaition phase later on.
-///
 bool TypeCheckingPass::visit(UnaryExpr &n) {
 	dispatch(*n.operand);
 	VERIFY(n.operand->inferredType);
 
-	n.inferredType = clone(**n.operand->inferredType);
+	auto &type = *n.operand->inferredType;
+
+	if (type->kind == TypeKind::Error) {
+		n.inferredType = std::make_unique<ErrorType>();
+
+		return false;
+	}
+
+	std::stringstream opIdent;
+	opIdent << "operator" << n.op << "<" << *type << ">";
+	
+	auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
+
+	if (!func) {
+		std::stringstream ss;
+		ss << "Found no binary operator with for ";
+		ss << n.op << " with types " << *type;
+
+		m_Context.addError(ss.str());
+		n.inferredType = std::make_unique<ErrorType>();
+
+		return false;
+	}
+
+	canArgsCallFunc({*type}, *func);
+	n.inferredType = clone(*func->get().returnType);
 
 	return false;
 }
 
+///
+/// While type checking, unary expressions try to call their respective operator as if it was a 
+/// normal function. For example "1 + 2" would look for an overloaded function in the current 
+/// namespace: "operator<int,int>+(int, int)". This makes it very easy to add operator 
+/// overloading later. This is type checking only, so no extra function calls will be inserted
+/// for trivial addition overloads in the code generaition phase later on.
+///
 bool TypeCheckingPass::visit(BinaryExpr &n) {
 	// Infer the type of the left and right operand expressions
 	dispatch(*n.left);
@@ -119,39 +139,41 @@ bool TypeCheckingPass::visit(BinaryExpr &n) {
 		return false;
 	}
 
-	// Both types are not <error-type> and they are the same.
-	// (Criteria for now, this will be changed.)
-	if (*leftType == *rightType) {
-		n.inferredType = clone(*leftType);
+	std::stringstream opIdent;
+	opIdent << "operator" << n.op << "<" << *leftType << "," << *rightType << ">";
+
+	auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
+
+	if (!func) {
+		std::stringstream ss;
+		ss << "Found no binary operator with for ";
+		ss << n.op << " with types ";
+		ss << *leftType << " and " << *rightType;
+
+		m_Context.addError(ss.str());
+		n.inferredType = std::make_unique<ErrorType>();
 
 		return false;
 	}
 
-	// Here an actual error happenes. Add the error and make the type of
-	// the binary expression an <error-type> to mark the subtree as invalid.
-	std::stringstream ss;
-	ss << "Found illegal binary expression: ";
-	ss << n.op << " cannot be called with ";
-	ss << *leftType << " and " << *rightType;
-
-	m_Context.addError(ss.str());
-	n.inferredType = std::make_unique<ErrorType>();
+	canArgsCallFunc({*leftType, *rightType}, *func);
+	n.inferredType = clone(*func->get().returnType);
 
 	return false;
 }
 
-bool TypeCheckingPass::visit(ast::Assignment &n) {
-    // Assignments dont return anything, we dont have references so we 
-    // would have to add a lot of special handling, its not worth for now
-    n.inferredType = std::make_unique<UnitType>();
-    
-    dispatch(*n.left);
+bool TypeCheckingPass::visit(Assignment &n) {
+	// Assignments dont return anything, we dont have references so we
+	// would have to add a lot of special handling, its not worth for now
+	n.inferredType = std::make_unique<UnitType>();
+
+	dispatch(*n.left);
 	dispatch(*n.right);
 
 	VERIFY(n.left->inferredType);
 	VERIFY(n.right->inferredType);
 
-    if (!isAssignable(*n.left)) {
+	if (!isAssignable(*n.left)) {
 		std::stringstream ss;
 		ss << "Cannot assign to r-value.";
 
@@ -161,19 +183,19 @@ bool TypeCheckingPass::visit(ast::Assignment &n) {
 		return false;
 	}
 
-    auto &leftType = *n.left->inferredType;
+	auto &leftType = *n.left->inferredType;
 	auto &rightType = *n.right->inferredType;
-    
-    // If one of the two expressions is of type <error-type>,
+
+	// If one of the two expressions is of type <error-type>,
 	// the error did not really happen here, so dont add to m_Errors.
 	if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error)
 		return false;
-    
-    // If both types are equal, its okay
-    if (*leftType == *rightType)
+
+	// If both types are equal, its okay
+	if (*leftType == *rightType)
 		return false;
 
-    // Here an actual error happenes. Add the error and make the type of
+	// Here an actual error happenes. Add the error and make the type of
 	// the binary expression an <error-type> to mark the subtree as invalid.
 	std::stringstream ss;
 	ss << "Found illegal assignment expression: ";
@@ -204,37 +226,17 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 	}
 
 	auto &funcType = static_cast<const FunctionType &>(type);
-	auto &paramTypes = funcType.paramTypes;
-	auto &args = n.args;
+	Vec<Ref<const Type>> args;
 
+	for (auto &expr : n.args) {
+		dispatch(*expr);
+		VERIFY(expr->inferredType);
+
+		args.push_back(**expr->inferredType);
+	}
+
+	canArgsCallFunc(args, funcType);
 	n.inferredType = clone(*funcType.returnType);
-
-	if (args.size() != paramTypes.size()) {
-		std::stringstream ss;
-		ss << "Provided wrong amount of args. Expected ";
-		ss << paramTypes.size() << " arguments but got " << args.size();
-
-		m_Context.addError(ss.str());
-
-		return false;
-	}
-
-	for (size_t i = 0; i < args.size(); ++i) {
-		dispatch(*args[i]);
-		VERIFY(args[i]->inferredType);
-
-		auto &argType = **args[i]->inferredType;
-		auto &paramType = *paramTypes[i];
-
-		if (argType.kind == TypeKind::Error || argType == paramType)
-			continue;
-
-		std::stringstream ss;
-		ss << "Cannot use type " << argType << " as parameter ";
-		ss << " for an argument of type " << paramType;
-
-		m_Context.addError(ss.str());
-	}
 
 	return false;
 }
@@ -430,4 +432,37 @@ bool TypeCheckingPass::isAssignable(Expr &e) const {
 	auto &unary = static_cast<const UnaryExpr &>(e);
 
 	return unary.op == UnaryOpKind::Dereference;
+}
+
+bool TypeCheckingPass::canArgsCallFunc(const Vec<Ref<const Type>> &args,
+									   const FunctionType &func) const {
+	auto &params = func.paramTypes;
+
+	if (args.size() != params.size()) {
+		std::stringstream ss;
+		ss << "Provided wrong amount of args. Expected ";
+		ss << params.size() << " arguments but got " << args.size();
+
+		m_Context.addError(ss.str());
+
+		return false;
+	}
+
+	for (size_t i = 0; i < args.size(); ++i) {
+		auto &argType = args[i].get();
+		auto &paramType = *params[i];
+
+		if (argType.kind == TypeKind::Error || argType == paramType)
+			continue;
+
+		std::stringstream ss;
+		ss << "Cannot use type " << argType << " as parameter ";
+		ss << " for an argument of type " << paramType;
+
+		m_Context.addError(ss.str());
+
+		return false;
+	}
+
+	return true;
 }

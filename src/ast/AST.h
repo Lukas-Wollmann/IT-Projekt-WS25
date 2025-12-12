@@ -93,7 +93,7 @@ namespace ast {
 		ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values);
 	};
 
-	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
+	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
 
 	struct UnaryExpr : public Expr {
 	public:

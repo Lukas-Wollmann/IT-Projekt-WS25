@@ -102,7 +102,7 @@ TEST_CASE("UnaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "UnaryExpr(Negative, IntLit(7))");
+	CHECK(result == "UnaryExpr(-, IntLit(7))");
 }
 
 TEST_CASE("BinaryExpr: toString works") {
@@ -118,7 +118,7 @@ TEST_CASE("BinaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "BinaryExpr(IntLit(2), Addition, IntLit(3))");
+	CHECK(result == "BinaryExpr(IntLit(2), +, IntLit(3))");
 }
 
 TEST_CASE("Assignment: toString works") {
@@ -134,7 +134,7 @@ TEST_CASE("Assignment: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "Assignment(VarRef(x), MultiplicationAssignment, IntLit(3))");
+	CHECK(result == "Assignment(VarRef(x), *=, IntLit(3))");
 }
 
 TEST_CASE("VarRef: toString works") {

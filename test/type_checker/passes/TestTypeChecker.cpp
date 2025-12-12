@@ -122,3 +122,26 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 	for (const auto &err : ctx.getErrors())
 		std::cout << err << std::endl;
 }
+
+TEST_CASE("TypeChecker: Playground") {
+	Vec<Box<Stmt>> stmts;
+	stmts.push_back(std::make_unique<BinaryExpr>(
+		BinaryOpKind::Multiplication, 
+		std::make_unique<StringLit>(u8"HI"), 
+		std::make_unique<StringLit>(u8"GRR")
+	));
+
+	auto funcDecl =
+			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
+									   std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
+									   std::make_unique<BlockStmt>(std::move(stmts)));
+
+	TypeCheckerContext ctx;
+	ExplorationPass ep(ctx);
+	ep.dispatch(*funcDecl);
+	TypeCheckingPass tc(ctx);
+	tc.dispatch(*funcDecl);
+
+	for (const auto &err : ctx.getErrors())
+		std::cout << err << std::endl;
+}

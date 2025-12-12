@@ -7,7 +7,9 @@
 using namespace type;
 
 ExplorationPass::ExplorationPass(TypeCheckerContext &context)
-	: m_Context(context) {}
+	: m_Context(context) {
+	m_Context.getGlobalNamespace().addInternalOperatorDecls();
+}
 
 void ExplorationPass::visit(const ast::Module &n) {
 	for (auto &d : n.decls)

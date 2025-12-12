@@ -41,6 +41,6 @@ private:
 	bool visit(ast::FuncDecl &n) override;
 
 private:
-	bool isAssignment(ast::BinaryOpKind op) const;
 	bool isAssignable(ast::Expr &e) const;
+	bool canArgsCallFunc(const Vec<Ref<const type::Type>> &args, const type::FunctionType &func) const;
 };
