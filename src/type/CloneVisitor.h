@@ -8,7 +8,7 @@ namespace type {
 	///
 	struct CloneVisitor : public ConstVisitor<Box<Type>> {
 	private:
-		Box<Type> visit(const PrimitiveType &n) override;
+		Box<Type> visit(const Typename &n) override;
 		Box<Type> visit(const PointerType &n) override;
 		Box<Type> visit(const ArrayType &n) override;
 		Box<Type> visit(const FunctionType &n) override;

@@ -21,8 +21,7 @@ namespace type {
 
 		T dispatch(Constness<Type> &type) {
 			switch (type.kind) {
-				case TypeKind::Primitive:
-					return visit(static_cast<Constness<PrimitiveType> &>(type));
+				case TypeKind::Typename: return visit(static_cast<Constness<Typename> &>(type));
 				case TypeKind::Pointer:	 return visit(static_cast<Constness<PointerType> &>(type));
 				case TypeKind::Array:	 return visit(static_cast<Constness<ArrayType> &>(type));
 				case TypeKind::Function: return visit(static_cast<Constness<FunctionType> &>(type));
@@ -32,7 +31,7 @@ namespace type {
 			}
 		}
 
-		virtual T visit(Constness<PrimitiveType> &) {
+		virtual T visit(Constness<Typename> &) {
 			UNREACHABLE();
 		}
 

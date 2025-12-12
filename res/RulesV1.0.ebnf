@@ -1,0 +1,61 @@
+S = File;
+File =;
+File = FunctionDeclaration, File;
+
+FunctionDeclaration = "func", id, "(", ")", CodeBlock;
+FunctionDeclaration = "func", id, "(", ")", "->", "(", ")", CodeBlock;
+FunctionDeclaration = "func", id, "(", ")", "->", Type, CodeBlock;
+FunctionDeclaration = "func", id, "(", ")", "->", "(", Type, ")", CodeBlock;
+FunctionDeclaration = "func", id, "(", ParamList, ")", CodeBlock;
+FunctionDeclaration = "func", id, "(", ParamList, ")", "->", "(", ")", CodeBlock;
+FunctionDeclaration = "func", id, "(", ParamList, ")", "->", Type, CodeBlock;
+FunctionDeclaration = "func", id, "(", ParamList, ")", "->", "(", Type, ")", CodeBlock;
+
+ParamList = id, ":", Type;
+ParamList = id, ":", Type, ParamList;
+
+Type = id;
+Type = "*", Type;
+Type = "[", "]", Type;
+Type = "[", int, "]", Type;
+
+CodeBlock = "{", StatementList, "}";
+
+StatementList =;
+StatementList = Statement, StatementList;
+
+Statement = ";";
+Statement = Expression, ";";
+Statement = Declaration, ";";
+Statement = "return", Expression, ";";
+Statement = CodeBlock;
+Statement = IfBlock;
+Statement = Loop;
+
+Loop = "while", "(", Expression, ")", CodeBlock;
+
+IfBlock = "if", "(", Expression, ")", CodeBlock;
+IfBlock = "if", "(", Expression, ")", CodeBlock, "else", IfBlock;
+IfBlock = "if", "(", Expression, ")", CodeBlock, "else", CodeBlock;
+
+Declaration = id, ":", Type, "=", Expression;
+
+Expression = id;
+Expression = FunctionCall;
+Expression = Literal;
+Expression = "[", "]", Type, "{", "}";
+Expression = "[", int, "]", Type, "{", "}";
+Expression = "[", "]", Type, "{", ExpressionList, "}";
+Expression = "[", int, "]", Type, "{", ExpressionList, "}";
+Expression = Expression, Operator, Expression;
+Expression = Operator, Expression;
+Expression = "(", Expression, ")";
+Expression = Expression, "[", Expression, "]";
+Expression = "new", Type, "(", ")";
+Expression = "new", Type, "(", Expression, ")";
+
+ExpressionList = Expression;
+ExpressionList = Expression, ",", ExpressionList;
+
+FunctionCall = id, "(", ")";
+FunctionCall = id, "(", ExpressionList, ")";

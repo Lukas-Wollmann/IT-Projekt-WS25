@@ -8,12 +8,11 @@
 
 class Lexer {
 private:
-	static constexpr std::array<char32_t, 9> s_Separators = {U';', U',', U'(', U')', U'{',
-															 U'}', U'[', U']', U':'};
-	static inline const std::array<U8String, 11> s_Keywords = {u8"if",	   u8"else", u8"while",
-															   u8"return", u8"func", u8"i32",
-															   u8"u32",	   u8"f32",	 u8"string",
-															   u8"char",   u8"bool"};
+	static constexpr std::array<char32_t, 10> s_Separators = {U';', U',', U'(', U')', U'{',
+															  U'}', U'[', U']', U':', U'.'};
+	static inline const std::array<U8String, 6> s_Keywords = {u8"if",	  u8"else", u8"while",
+															  u8"return", u8"func", u8"new"};
+	// u8"i32", u8"u32", u8"f32", u8"string", u8"char", u8"bool"
 	static inline const std::array<U8String, 13> s_SingleOps = {u8"+", u8"-", u8"*", u8"/", u8"=",
 																u8"!", u8"<", u8">", u8"&", u8"|",
 																u8"^", u8"%", u8"~"};

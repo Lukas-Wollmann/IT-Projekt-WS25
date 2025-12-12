@@ -71,7 +71,7 @@ TEST_CASE("StringLit: toString works") {
 
 TEST_CASE("ArrayExpr: toString works") {
 	// Arrange
-	auto arrayType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto arrayType = std::make_unique<Typename>(u8"i32");
 	auto value1 = std::make_unique<IntLit>(187);
 	auto value2 = std::make_unique<IntLit>(67);
 
@@ -237,7 +237,7 @@ TEST_CASE("ReturnStmt: toString works") {
 
 TEST_CASE("VarDef: toString works") {
 	// Arrange
-	auto type = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto type = std::make_unique<Typename>(u8"i32");
 	auto val = std::make_unique<IntLit>(99);
 	auto decl = std::make_unique<VarDef>(u8"myVar", std::move(type), std::move(val));
 	std::stringstream ss;
@@ -253,14 +253,14 @@ TEST_CASE("VarDef: toString works") {
 TEST_CASE("FuncDecl: toString works") {
 	// Arrange
 	Vec<Param> params;
-	params.push_back({u8"a", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32)});
-	params.push_back({u8"b", std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32)});
+	params.push_back({u8"a", std::make_unique<Typename>(u8"i32")});
+	params.push_back({u8"b", std::make_unique<Typename>(u8"f32")});
 
 	Vec<Box<Stmt>> stmts;
 	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<IntLit>(0)));
 
 	auto body = std::make_unique<BlockStmt>(std::move(stmts));
-	auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	auto retType = std::make_unique<Typename>(u8"bool");
 	auto func = std::make_unique<FuncDecl>(u8"foo", std::move(params), std::move(retType),
 										   std::move(body));
 	std::stringstream ss;

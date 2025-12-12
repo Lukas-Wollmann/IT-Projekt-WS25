@@ -4,23 +4,23 @@
 
 using namespace type;
 
-TEST_CASE("PrimitiveType: deep clone works") {
+TEST_CASE("Typename: deep clone works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto type = std::make_unique<Typename>(u8"i32");
 
 	// Act
-	auto copy = clone(*primitiveType);
+	auto copy = clone(*type);
 
 	// Assert
-	CHECK(copy.get() != primitiveType.get());
-	CHECK(copy->kind == TypeKind::Primitive);
-	CHECK(static_cast<const PrimitiveType &>(*copy).primitiveKind == primitiveType->primitiveKind);
+	CHECK(copy.get() != type.get());
+	CHECK(copy->kind == TypeKind::Typename);
+	CHECK(static_cast<const Typename &>(*copy).typename_ == type->typename_);
 }
 
 TEST_CASE("PointerType: deep clone works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
-	auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
+	auto type = std::make_unique<Typename>(u8"i32");
+	auto ptrType = std::make_unique<PointerType>(std::move(type));
 
 	// Act
 	auto copy = clone(*ptrType);
@@ -33,8 +33,8 @@ TEST_CASE("PointerType: deep clone works") {
 
 TEST_CASE("ArrayType: deep clone works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
-	auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
+	auto type = std::make_unique<Typename>(u8"i32");
+	auto arrType = std::make_unique<ArrayType>(std::move(type), 42);
 
 	// Act
 	auto copy = clone(*arrType);
@@ -48,11 +48,11 @@ TEST_CASE("ArrayType: deep clone works") {
 
 TEST_CASE("FunctionType: deep clone works") {
 	Vec<Box<const Type>> params;
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+	params.push_back(std::make_unique<Typename>(u8"i32"));
+	params.push_back(std::make_unique<Typename>(u8"f32"));
+	params.push_back(std::make_unique<Typename>(u8"char"));
 
-	auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	auto retType = std::make_unique<Typename>(u8"bool");
 	auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
 
 	// Act

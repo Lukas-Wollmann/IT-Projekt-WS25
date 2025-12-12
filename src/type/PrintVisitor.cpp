@@ -4,8 +4,8 @@ namespace type {
 	PrintVisitor::PrintVisitor(std::ostream &os)
 		: m_OStream(os) {}
 
-	void PrintVisitor::visit(const PrimitiveType &n) {
-		m_OStream << n.primitiveKind;
+	void PrintVisitor::visit(const Typename &n) {
+		m_OStream << n.typename_;
 	}
 
 	void PrintVisitor::visit(const PointerType &n) {
