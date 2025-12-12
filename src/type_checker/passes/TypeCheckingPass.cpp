@@ -92,7 +92,7 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 
 	std::stringstream opIdent;
 	opIdent << "operator" << n.op << "<" << *type << ">";
-	
+
 	auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
 
 	if (!func) {
@@ -113,9 +113,9 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 }
 
 ///
-/// While type checking, unary expressions try to call their respective operator as if it was a 
-/// normal function. For example "1 + 2" would look for an overloaded function in the current 
-/// namespace: "operator<int,int>+(int, int)". This makes it very easy to add operator 
+/// While type checking, unary expressions try to call their respective operator as if it was a
+/// normal function. For example "1 + 2" would look for an overloaded function in the current
+/// namespace: "operator<int,int>+(int, int)". This makes it very easy to add operator
 /// overloading later. This is type checking only, so no extra function calls will be inserted
 /// for trivial addition overloads in the code generaition phase later on.
 ///

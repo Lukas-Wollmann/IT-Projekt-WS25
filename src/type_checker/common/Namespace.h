@@ -1,12 +1,12 @@
 #pragma once
 #include <iostream>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
+#include "Declaration.h"
 #include "ast/AST.h"
 #include "core/U8String.h"
-#include "Declaration.h"
 
 struct Namespace {
 private:
@@ -23,7 +23,7 @@ public:
 
 	void addFunction(U8String name, Box<const type::FunctionType> func);
 	Opt<Ref<const type::FunctionType>> getFunction(const U8String &name) const;
-	
+
 	void addInternalOperatorDecls();
 
 private:

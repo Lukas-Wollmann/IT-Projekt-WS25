@@ -54,13 +54,13 @@ private:
 };
 
 namespace std {
-    template <>
-    struct hash<U8String> {
-        size_t operator()(const U8String &s) const noexcept {
-            const std::u8string& u8 = s.data();
-            const char* bytes = reinterpret_cast<const char*>(u8.data());
-            
-            return std::hash<std::string_view>{}(std::string_view(bytes, u8.size()));
-        }
-    };
+	template <>
+	struct hash<U8String> {
+		size_t operator()(const U8String &s) const noexcept {
+			const std::u8string &u8 = s.data();
+			const char *bytes = reinterpret_cast<const char *>(u8.data());
+
+			return std::hash<std::string_view>{}(std::string_view(bytes, u8.size()));
+		}
+	};
 }

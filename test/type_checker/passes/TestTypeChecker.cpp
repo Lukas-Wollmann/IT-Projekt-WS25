@@ -125,11 +125,9 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 
 TEST_CASE("TypeChecker: Playground") {
 	Vec<Box<Stmt>> stmts;
-	stmts.push_back(std::make_unique<BinaryExpr>(
-		BinaryOpKind::Multiplication, 
-		std::make_unique<StringLit>(u8"HI"), 
-		std::make_unique<StringLit>(u8"GRR")
-	));
+	stmts.push_back(std::make_unique<BinaryExpr>(BinaryOpKind::Multiplication,
+												 std::make_unique<StringLit>(u8"HI"),
+												 std::make_unique<StringLit>(u8"GRR")));
 
 	auto funcDecl =
 			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},

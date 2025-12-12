@@ -61,19 +61,19 @@ namespace type {
 }
 
 bool operator==(const type::Params &left, const type::Params &right) {
-    if (left.size() != right.size())
-        return false;
+	if (left.size() != right.size())
+		return false;
 
-    for (size_t i = 0; i < left.size(); ++i) {
-        if (*left[i] != *right[i])
-            return false;
-    }
-    
-    return true;
+	for (size_t i = 0; i < left.size(); ++i) {
+		if (*left[i] != *right[i])
+			return false;
+	}
+
+	return true;
 }
 
 bool operator!=(const type::Params &left, const type::Params &right) {
-    return !(left == right);
+	return !(left == right);
 }
 
 bool operator==(const type::Type &left, const type::Type &right) {

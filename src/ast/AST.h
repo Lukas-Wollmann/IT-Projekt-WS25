@@ -15,7 +15,7 @@ namespace ast {
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-        Assignment,
+		Assignment,
 		VarRef,
 		FuncCall,
 		BlockStmt,
@@ -132,7 +132,7 @@ namespace ast {
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
 	};
 
-    enum struct AssignmentKind {
+	enum struct AssignmentKind {
 		Simple,
 		Addition,
 		Subtraction,
@@ -144,15 +144,15 @@ namespace ast {
 		BitwiseXor,
 		LeftShift,
 		RightShift,
-    };
+	};
 
-    struct Assignment : public Expr {
-    public:
-        const AssignmentKind assignmentKind;
-        const Box<Expr> left, right;
+	struct Assignment : public Expr {
+	public:
+		const AssignmentKind assignmentKind;
+		const Box<Expr> left, right;
 
-        explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
-    };
+		explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+	};
 
 	struct VarRef : public Expr {
 	public:

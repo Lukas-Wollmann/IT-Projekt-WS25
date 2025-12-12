@@ -35,10 +35,10 @@ namespace type {
 }
 
 std::ostream &operator<<(std::ostream &os, const type::Params &p) {
-    for (size_t i = 0; i < p.size(); ++i)
-        os << (i ? ", " : "") << *p[i];
+	for (size_t i = 0; i < p.size(); ++i)
+		os << (i ? ", " : "") << *p[i];
 
-    return os;
+	return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const type::Type &n) {

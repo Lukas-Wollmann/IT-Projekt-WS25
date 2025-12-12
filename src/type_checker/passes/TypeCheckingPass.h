@@ -30,7 +30,7 @@ private:
 	bool visit(ast::ArrayExpr &n) override;
 	bool visit(ast::UnaryExpr &n) override;
 	bool visit(ast::BinaryExpr &n) override;
-    bool visit(ast::Assignment &n) override;
+	bool visit(ast::Assignment &n) override;
 	bool visit(ast::FuncCall &n) override;
 	bool visit(ast::VarRef &n) override;
 	bool visit(ast::BlockStmt &n) override;
@@ -42,5 +42,6 @@ private:
 
 private:
 	bool isAssignable(ast::Expr &e) const;
-	bool canArgsCallFunc(const Vec<Ref<const type::Type>> &args, const type::FunctionType &func) const;
+	bool canArgsCallFunc(const Vec<Ref<const type::Type>> &args,
+						 const type::FunctionType &func) const;
 };

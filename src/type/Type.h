@@ -18,7 +18,7 @@ namespace type {
 		explicit Type(const TypeKind kind);
 	};
 
-    using Params = std::vector<Box<const Type>>;
+	using Params = std::vector<Box<const Type>>;
 
 	enum struct PrimitiveTypeKind : u8 { I32, U32, F32, String, Char, Bool };
 

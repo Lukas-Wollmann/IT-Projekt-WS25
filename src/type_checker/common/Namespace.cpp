@@ -70,14 +70,12 @@ void Namespace::addInternalOperatorDecls() {
 	addInternalBinaryOperator(LessThan, Char);
 	addInternalBinaryOperator(LessThan, String);
 
-	
 	addInternalBinaryOperator(GreaterThan, I32);
 	addInternalBinaryOperator(GreaterThan, U32);
 	addInternalBinaryOperator(GreaterThan, F32);
 	addInternalBinaryOperator(GreaterThan, Char);
 	addInternalBinaryOperator(GreaterThan, String);
 
-	
 	addInternalBinaryOperator(GreaterThanOrEqual, I32);
 	addInternalBinaryOperator(GreaterThanOrEqual, U32);
 	addInternalBinaryOperator(GreaterThanOrEqual, F32);
@@ -110,8 +108,8 @@ void Namespace::addInternalBinaryOperator(ast::BinaryOpKind op, PrimitiveTypeKin
 	params.push_back(std::make_unique<PrimitiveType>(type));
 	params.push_back(std::make_unique<PrimitiveType>(type));
 
-	auto func =
-			std::make_unique<FunctionType>(std::move(params), std::make_unique<PrimitiveType>(type));
+	auto func = std::make_unique<FunctionType>(std::move(params),
+											   std::make_unique<PrimitiveType>(type));
 
 	std::stringstream ss;
 	ss << "operator" << op << "<" << type << "," << type << ">";
