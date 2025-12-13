@@ -49,7 +49,7 @@ graph TD
 ```
 
 ### Control Flow Checking
-As a part of the type checking pass, we also check the control flow. This is very simple logic so its also done while doing the rest of the type checking. Very visit function return a boolean, `true` if the node returned for sure and `false` otherwise. All expressions don't return. Some statments return: the `ReturnStmt` always returns, an `IfStmt` returns where the `then` and `else` branch return and a `BlockStmt` returns of it returns (WOW :D). These simple rules are enough to make a very simple control flow check, to ensure all paths inside a function return.
+As a part of the type checking pass, we also check the control flow. This is very simple logic so its also done while doing the rest of the type checking. Very visit function return a boolean, `true` if the node returned for sure and `false` otherwise. All expressions don't return. Some statments return: the `ReturnStmt` always returns, an `IfStmt` returns where the `then` and `else` branch return and a `BlockStmt` returns of it returns (WOW :D). Contructs like a `WhileStmt`, later maybe some sort of for-loop will be marked as non-returning. These simple rules are enough to make a very simple control flow check, to ensure all paths inside a function return.
 
 
 ## Future and TODOs
@@ -60,3 +60,12 @@ For the future we need to think about things like:
 - Some sort of generics (generics + traits = better overloading)
 - Implicit conversions, explicit conversions
 - Rules on r-value and l-value semantics
+- ErrorType propagation: Ensure that operations on ErrorType do not produce - Spurious cascading errors in large expressions, calling a function with an argument of `<error-type>` will produce a new error
+- Operators as functions, will maybe break in the future but also has some positive effects like writing `operator<int,int>+` could return a function pointer to a builtin. This can be usefull for things like
+```
+func reduce(arr: *[]int, f: (int, int)->int, start: int) -> int { ... }
+
+
+arr: *[]int = new []int{ 1, 2, 3, 4 };
+sum: int = reduce(arr, operator<int,int>+, 0);
+```
