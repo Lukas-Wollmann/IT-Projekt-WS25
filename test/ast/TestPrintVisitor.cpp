@@ -121,6 +121,20 @@ TEST_CASE("BinaryExpr: toString works") {
 	CHECK(result == "BinaryExpr(IntLit(2), +, IntLit(3))");
 }
 
+TEST_CASE("HeapAlloc: toString works") {
+	// Arrange
+	auto value = std::make_unique<IntLit>(2);
+	auto heapAlloc = std::make_unique<HeapAlloc>(std::move(value));
+	std::stringstream ss;
+
+	// Act
+	ss << *heapAlloc;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "HeapAlloc(IntLit(2))");
+}
+
 TEST_CASE("Assignment: toString works") {
 	// Arrange
 	auto left = std::make_unique<VarRef>(u8"x");

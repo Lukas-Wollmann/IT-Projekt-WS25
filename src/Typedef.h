@@ -1,10 +1,10 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <expected>
 
 typedef int8_t i8;
 typedef int16_t i16;

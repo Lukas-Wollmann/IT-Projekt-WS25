@@ -49,6 +49,11 @@ namespace ast {
 		, left(std::move(left))
 		, right(std::move(right)) {}
 
+    HeapAlloc::HeapAlloc(Box<Expr> value) 
+        : Expr(NodeKind::HeapAlloc)
+        , value(std::move(value))
+    {}
+
 	Assignment::Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
 		: Expr(NodeKind::Assignment)
 		, assignmentKind(assignmentKind)

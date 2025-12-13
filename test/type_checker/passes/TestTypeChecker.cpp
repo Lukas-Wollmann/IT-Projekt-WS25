@@ -1,10 +1,11 @@
 #include "Doctest.h"
 #include "ast/PrintVisitor.h"
-#include "type_checker/passes/ExplorationPass.h"
-#include "type_checker/passes/TypeCheckingPass.h"
+#include "semantic/passes/ExplorationPass.h"
+#include "semantic/passes/TypeCheckingPass.h"
 
 using namespace ast;
 using namespace type;
+using namespace semantic;
 
 TEST_CASE("TypeChecker: IntLit type will be infered as i32") {
 	// Arrange
@@ -124,14 +125,17 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 
 TEST_CASE("TypeChecker: Playground") {
 	Vec<Box<Stmt>> stmts;
-	stmts.push_back(std::make_unique<BinaryExpr>(BinaryOpKind::Multiplication,
-												 std::make_unique<StringLit>(u8"HI"),
-												 std::make_unique<StringLit>(u8"GRR")));
+	stmts.push_back(
+			std::make_unique<VarDef>(u8"foo",
+									 std::make_unique<PointerType>(
+											 std::make_unique<Typename>(u8"i32")),
+									 std::make_unique<HeapAlloc>(std::make_unique<IntLit>(5))));
+	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<VarRef>(u8"foo")));
 
-	auto funcDecl =
-			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
-									   std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32),
-									   std::make_unique<BlockStmt>(std::move(stmts)));
+	auto funcDecl = std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
+											   std::make_unique<PointerType>(
+													   std::make_unique<Typename>(u8"i32")),
+											   std::make_unique<BlockStmt>(std::move(stmts)));
 
 	TypeCheckerContext ctx;
 	ExplorationPass ep(ctx);

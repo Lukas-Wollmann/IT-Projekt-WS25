@@ -15,6 +15,7 @@ namespace ast {
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
+        HeapAlloc,
 		Assignment,
 		VarRef,
 		FuncCall,
@@ -146,12 +147,19 @@ namespace ast {
 		RightShift,
 	};
 
+    struct HeapAlloc : public Expr {
+    public:
+        const Box<Expr> value;
+
+        explicit HeapAlloc(Box<Expr> value);
+    };
+
 	struct Assignment : public Expr {
 	public:
 		const AssignmentKind assignmentKind;
 		const Box<Expr> left, right;
 
-		explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
 	};
 
 	struct VarRef : public Expr {
