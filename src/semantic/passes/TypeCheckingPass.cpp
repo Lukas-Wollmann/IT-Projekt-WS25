@@ -83,19 +83,19 @@ namespace semantic {
 		dispatch(*n.operand);
 		VERIFY(n.operand->inferredType);
 
-		auto &type = *n.operand->inferredType;
+		auto &type = **n.operand->inferredType;
 
-		if (type->kind == TypeKind::Error) {
-			n.inferredType = std::make_unique<ErrorType>();
+		if (type.kind == TypeKind::Error) {
+			n.inferredType = clone(type);
 
 			return false;
 		}
 
 		// Dereference needs special handling for now
 		if (n.op == UnaryOpKind::Dereference) {
-			if (type->kind != TypeKind::Pointer) {
+			if (type.kind != TypeKind::Pointer) {
 				std::stringstream ss;
-				ss << "Canno't dereference a value of type " << *type;
+				ss << "Canno't dereference a value of type " << type;
 				ss << " expected a some kind of pointer type.";
 
 				m_Context.addError(ss.str());
@@ -104,14 +104,14 @@ namespace semantic {
 				return false;
 			}
 
-			auto &ptrType = static_cast<const PointerType &>(*type);
+			auto &ptrType = static_cast<const PointerType &>(type);
 			n.inferredType = clone(*ptrType.pointeeType);
 
 			return false;
 		}
 
 		std::stringstream opIdent;
-		opIdent << "operator" << n.op << "<" << *type << ">";
+		opIdent << "operator" << n.op << "<" << type << ">";
 
 		auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
 
@@ -185,6 +185,14 @@ namespace semantic {
 	bool TypeCheckingPass::visit(ast::HeapAlloc &n) {
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
+
+        auto &type = **n.value->inferredType;
+
+        if (type.kind == TypeKind::Error) {
+            n.inferredType = std::make_unique<ErrorType>();
+
+            return false;
+        }
 
 		n.inferredType = std::make_unique<PointerType>(clone(**n.value->inferredType));
 
