@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "Macros.h"
+#include "semantic/common/Error.h"
 #include "type/CloneVisitor.h"
 #include "type/CompareVisitor.h"
 #include "type/PrintVisitor.h"
@@ -40,8 +41,8 @@ namespace semantic {
 		VERIFY(!n.inferredType);
 
 		n.inferredType = std::make_unique<Typename>(u8"char");
-		
-        return false;
+
+		return false;
 	}
 
 	bool TypeCheckingPass::visit(BoolLit &n) {
@@ -59,29 +60,27 @@ namespace semantic {
 		return false;
 	}
 
-    bool TypeCheckingPass::visit(ast::UnitLit &n) {
-        VERIFY(!n.inferredType);     
-    
-        n.inferredType = std::make_unique<UnitType>();
+	bool TypeCheckingPass::visit(UnitLit &n) {
+		VERIFY(!n.inferredType);
 
-        return false;
-    }
+		n.inferredType = std::make_unique<UnitType>();
 
-	bool TypeCheckingPass::visit(ArrayExpr &n) {     
-        for (auto &expr : n.values) {
-            dispatch(*expr);
+		return false;
+	}
+
+	bool TypeCheckingPass::visit(ArrayExpr &n) {
+		for (auto &expr : n.values) {
+			dispatch(*expr);
 			VERIFY(expr->inferredType);
 			auto &type = *expr->inferredType.value();
-            
+
 			if (type.kind != TypeKind::Error && type != *n.elementType) {
-                std::stringstream ss;
-				ss << "Expected an object of type '" << *n.elementType << "'";
-				ss << " for an array - found an object of type '" << type << "' instead.";
-				m_Context.addError(ss.str());
+                Error<ErrorKind::ARRAY_ELEMENT_TYPE_MISMATCH> err;
+                m_Context.addError(err.str(*n.elementType, type));
 			}
 		}
-        
-        n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), n.values.size());
+
+		n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), n.values.size());
 
 		return false;
 	}
@@ -97,16 +96,14 @@ namespace semantic {
 			return false;
 		}
 
-		// Dereference needs special handling for now, we need generics or something 
-        // like that to make this work with the normal functions and type system.
+		// Dereference needs special handling for now, we need generics or something
+		// like that to make this work with the normal functions and type system.
 		if (n.op == UnaryOpKind::Dereference) {
 			if (type.kind != TypeKind::Pointer) {
-				std::stringstream ss;
-				ss << "Canno't dereference a value of type " << type;
-				ss << " expected a some kind of pointer type.";
-
-				m_Context.addError(ss.str());
-				n.inferredType = std::make_unique<ErrorType>();
+                Error<ErrorKind::DEREFERENCE_NON_POINTER> err;
+                m_Context.addError(err.str(type));
+                
+                n.inferredType = std::make_unique<ErrorType>();
 
 				return false;
 			}
@@ -119,15 +116,13 @@ namespace semantic {
 
 		std::stringstream ss;
 		ss << "operator" << n.op << "<" << type << ">";
-        U8String ident(ss.str());
+		U8String ident(ss.str());
 		auto func = m_Context.getGlobalNamespace().getFunction(ident);
 
 		if (!func.has_value()) {
-			std::stringstream ss;
-			ss << "Found no binary operator with for ";
-			ss << n.op << " with types " << type;
+            Error<ErrorKind::UNARY_OPERATOR_NOT_FOUND> err;
+            m_Context.addError(err.str(type, n.op));
 
-			m_Context.addError(ss.str());
 			n.inferredType = std::make_unique<ErrorType>();
 
 			return false;
@@ -143,54 +138,25 @@ namespace semantic {
 		dispatch(*n.left);
 		VERIFY(n.left->inferredType);
 		auto &leftType = *n.left->inferredType.value();
-		
-        dispatch(*n.right);
+
+		dispatch(*n.right);
 		VERIFY(n.right->inferredType);
 		auto &rightType = *n.right->inferredType.value();
 
-		// If one of the two expressions is of type <error-type>
-		// then propagate the error upwards in the type tree.
-		// The error did not really happen here, so dont add to m_Errors.
-		if (leftType.kind == TypeKind::Error || rightType.kind == TypeKind::Error) {
-			n.inferredType = std::make_unique<ErrorType>();
-
-			return false;
-		}
-
-		std::stringstream ss;
-		ss << "operator" << n.op << "<" << leftType << "," << rightType << ">";
-        U8String ident(ss.str());
-
-		auto func = m_Context.getGlobalNamespace().getFunction(ident);
-
-		if (!func.has_value()) {
-			std::stringstream ss;
-			ss << "Found no binary operator with for ";
-			ss << n.op << " with types ";
-			ss << leftType << " and " << rightType;
-
-			m_Context.addError(ss.str());
-			n.inferredType = std::make_unique<ErrorType>();
-
-			return false;
-		}
-
-		canArgsCallFunc({leftType, rightType}, func.value());
-		n.inferredType = clone(*func.value().get().returnType);
-
+		n.inferredType = checkBinaryExpr(n.op, leftType, rightType);
 		return false;
 	}
 
-	bool TypeCheckingPass::visit(ast::HeapAlloc &n) {
+	bool TypeCheckingPass::visit(HeapAlloc &n) {
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
-        auto &type = *n.value->inferredType.value();
+		auto &type = *n.value->inferredType.value();
 
-        if (type.kind == TypeKind::Error) {
-            n.inferredType = std::make_unique<ErrorType>();
+		if (type.kind == TypeKind::Error) {
+			n.inferredType = std::make_unique<ErrorType>();
 
-            return false;
-        }
+			return false;
+		}
 
 		n.inferredType = std::make_unique<PointerType>(clone(**n.value->inferredType));
 
@@ -203,41 +169,37 @@ namespace semantic {
 		n.inferredType = std::make_unique<UnitType>();
 
 		dispatch(*n.left);
-		dispatch(*n.right);
-
 		VERIFY(n.left->inferredType);
+		dispatch(*n.right);
 		VERIFY(n.right->inferredType);
 
 		if (!isAssignable(*n.left)) {
-			std::stringstream ss;
-			ss << "Cannot assign to r-value.";
+            Error<ErrorKind::CANNOT_ASSIGN_TO_RVALUE> err;
+            m_Context.addError(err.str());
 
-			m_Context.addError(ss.str());
 			n.inferredType = std::make_unique<ErrorType>();
 
 			return false;
 		}
 
-		auto &leftType = *n.left->inferredType;
-		auto &rightType = *n.right->inferredType;
+		auto &leftType = *n.left->inferredType.value();
+		auto &rightType = *n.right->inferredType.value();
 
-		// If one of the two expressions is of type <error-type>,
-		// the error did not really happen here, so dont add to m_Errors.
-		if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error)
+		auto binOp = getBinaryOpFromAssignment(n.assignmentKind);
+		Box<const Type> typeAfterOp = binOp.has_value()
+											  ? checkBinaryExpr(binOp.value(), leftType, rightType)
+											  : clone(rightType);
+
+        if (typeAfterOp->kind == TypeKind::Error) {
+            n.inferredType = std::make_unique<ErrorType>();
+            return false;
+        }
+
+		if (leftType == *typeAfterOp)
 			return false;
 
-		// If both types are equal, its okay
-		if (*leftType == *rightType)
-			return false;
-
-		// Here an actual error happenes. Add the error and make the type of
-		// the binary expression an <error-type> to mark the subtree as invalid.
-		std::stringstream ss;
-		ss << "Found illegal assignment expression: ";
-		ss << n.assignmentKind << " cannot be used with ";
-		ss << *leftType << " and " << *rightType;
-
-		m_Context.addError(ss.str());
+		Error<ErrorKind::ASSIGNMENT_OPERATOR_INCOMPATIBLE_TYPES> err;
+		m_Context.addError(err.str(binOp.value(), leftType, rightType, *typeAfterOp));
 
 		return false;
 	}
@@ -250,9 +212,8 @@ namespace semantic {
 
 		if (type.kind != TypeKind::Function) {
 			if (type.kind != TypeKind::Error) {
-				std::stringstream ss;
-				ss << "Cannot call a non-function-type expression";
-				m_Context.addError(ss.str());
+                Error<ErrorKind::FUNC_CALL_NON_FUNCTION> err;
+		        m_Context.addError(err.str());
 			}
 
 			n.inferredType = std::make_unique<ErrorType>();
@@ -295,10 +256,9 @@ namespace semantic {
 			return false;
 		}
 
-		// The symbol is unknown, so throw an error
-		std::stringstream ss;
-		ss << "Undefined identifier: " << n.ident;
-		m_Context.addError(ss.str());
+        Error<ErrorKind::UNKNOWN_SYMBOL> err;
+        m_Context.addError(err.str(n.ident));
+
 		n.inferredType = std::make_unique<ErrorType>();
 
 		return false;
@@ -313,9 +273,8 @@ namespace semantic {
 			bool didReturn = dispatch(*n.stmts[i]);
 
 			if (foundReturn && didReturn) {
-				std::stringstream ss;
-				ss << "Unreachable statements detected after a return statement.";
-				m_Context.addError(ss.str());
+                Error<ErrorKind::UNREACHABLE_STATEMENT> err;
+                m_Context.addError(err.str());
 			}
 
 			foundReturn |= didReturn;
@@ -334,10 +293,8 @@ namespace semantic {
 
 		// If the condition has type <error-type> fail silently
 		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
-			std::stringstream ss;
-			ss << "Cannot accept type " << type << " inside an if condition.";
-
-			m_Context.addError(ss.str());
+            Error<ErrorKind::IF_CONDITION_INVALID_TYPE> err;
+			m_Context.addError(err.str(type));
 		}
 
 		bool thenReturns = dispatch(*n.then);
@@ -354,10 +311,8 @@ namespace semantic {
 
 		// If the condition has type <error-type> fail silently
 		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
-			std::stringstream ss;
-			ss << "Cannot accept type " << type << " inside a while condition.";
-
-			m_Context.addError(ss.str());
+            Error<ErrorKind::WHILE_CONDITION_INVALID_TYPE> err;
+			m_Context.addError(err.str(type));
 		}
 
 		dispatch(*n.body);
@@ -368,14 +323,14 @@ namespace semantic {
 	bool TypeCheckingPass::visit(ReturnStmt &n) {
 		VERIFY(m_CurrentFunctionReturnType);
 
-        // The function has a Unit return type and we returned with no value
-        if (m_CurrentFunctionReturnType->kind == TypeKind::Unit && !n.expr.has_value())
-            return true;
+		// The function has a Unit return type and we returned with no value
+		if (m_CurrentFunctionReturnType->kind == TypeKind::Unit && !n.expr.has_value())
+			return true;
 
-        auto &expr = *n.expr.value();
+		auto &expr = *n.expr.value();
 
-        dispatch(expr);
-        VERIFY(expr.inferredType);
+		dispatch(expr);
+		VERIFY(expr.inferredType);
 
 		auto &type = *expr.inferredType.value();
 
@@ -385,11 +340,8 @@ namespace semantic {
 			return true;
 
 		// The return type is not matching the function declaration
-		std::stringstream ss;
-		ss << "The type " << type << " does not match function declaration. ";
-		ss << "Expected type: " << *m_CurrentFunctionReturnType;
-
-		m_Context.addError(ss.str());
+        Error<ErrorKind::RETURN_TYPE_MISMATCH> err;
+		m_Context.addError(err.str(type, *m_CurrentFunctionReturnType));
 
 		return true;
 	}
@@ -404,19 +356,15 @@ namespace semantic {
 		// The expression is not of type <error-type> but does not match type
 		// type of the variable declaration - this is an actual error
 		if (type.kind != TypeKind::Error && type != *n.type) {
-			std::stringstream ss;
-			ss << "Missmatchting types at variable declaration: ";
-			ss << "Expected " << *n.type << " but got " << type;
-
-			m_Context.addError(ss.str());
+            Error<ErrorKind::VARIABLE_DECL_TYPE_MISMATCH> err;
+			m_Context.addError(err.str(*n.type, type));
 		}
 
 		// Does this symbol already exist in the current scope (shadowing possible)
 		if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {
-			std::stringstream ss;
-			ss << "Illegal redefinition of symbol: " << n.ident;
+            Error<ErrorKind::VARIABLE_REDEFINITION> err;
+            m_Context.addError(err.str(n.ident));
 
-			m_Context.addError(ss.str());
 			return false;
 		}
 
@@ -440,9 +388,8 @@ namespace semantic {
 		bool doesReturn = dispatch(*n.body);
 
 		if (!doesReturn && n.returnType->kind != TypeKind::Unit) {
-			std::stringstream ss;
-			ss << "Not all control flow paths in function '" << n.ident << "' return a value.";
-			m_Context.addError(ss.str());
+            Error<ErrorKind::MISSING_RETURN_PATH> err;
+			m_Context.addError(err.str(n.ident));
 		}
 
 		m_SymbolTable.exitScope();
@@ -502,5 +449,45 @@ namespace semantic {
 		}
 
 		return true;
+	}
+
+	Box<Type> TypeCheckingPass::checkBinaryExpr(BinaryOpKind op, const Type &left,
+												const Type &right) {
+		if (left.kind == TypeKind::Error || right.kind == TypeKind::Error)
+			return std::make_unique<ErrorType>();
+
+		std::stringstream ss;
+		ss << "operator" << op << "<" << left << "," << right << ">";
+		U8String ident(ss.str());
+
+		auto func = m_Context.getGlobalNamespace().getFunction(ident);
+
+		if (!func.has_value()) {
+            Error<ErrorKind::BINARY_OPERATOR_NOT_FOUND> err;
+			m_Context.addError(err.str(left, right, op));
+
+			return std::make_unique<ErrorType>();
+		}
+
+		canArgsCallFunc({left, right}, func.value());
+		return clone(*func.value().get().returnType);
+	}
+
+	Opt<BinaryOpKind> TypeCheckingPass::getBinaryOpFromAssignment(AssignmentKind kind) const {
+		using enum AssignmentKind;
+		switch (kind) {
+			case Simple:		 return std::nullopt;
+			case Addition:		 return BinaryOpKind::Addition;
+			case Subtraction:	 return BinaryOpKind::Subtraction;
+			case Multiplication: return BinaryOpKind::Multiplication;
+			case Division:		 return BinaryOpKind::Division;
+			case Modulo:		 return BinaryOpKind::Modulo;
+			case BitwiseAnd:	 return BinaryOpKind::BitwiseAnd;
+			case BitwiseOr:		 return BinaryOpKind::BitwiseOr;
+			case BitwiseXor:	 return BinaryOpKind::BitwiseXor;
+			case LeftShift:		 return BinaryOpKind::LeftShift;
+			case RightShift:	 return BinaryOpKind::RightShift;
+			default:			 UNREACHABLE();
+		}
 	}
 }

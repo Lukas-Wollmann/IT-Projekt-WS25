@@ -143,11 +143,20 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 TEST_CASE("TypeChecker: Playground") {
 	Vec<Box<Stmt>> stmts;
 	stmts.push_back(std::make_unique<UnitLit>());
-	stmts.push_back(
-			std::make_unique<VarDef>(u8"foo",
-									 std::make_unique<PointerType>(
-											 std::make_unique<Typename>(u8"i32")),
-									 std::make_unique<HeapAlloc>(std::make_unique<IntLit>(5))));
+	
+    // foo: i32 = 5
+    stmts.push_back(std::make_unique<VarDef>(
+        u8"foo",
+        std::make_unique<Typename>(u8"string"),
+		std::make_unique<StringLit>(u8"ni")
+    ));
+
+    // foo += 2
+    stmts.push_back(std::make_unique<Assignment>(
+        AssignmentKind::Addition, 
+        std::make_unique<VarRef>(u8"foo"),
+        std::make_unique<StringLit>(u8"no")
+    ));
 
 	auto funcDecl =
 			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{}, std::make_unique<UnitType>(),

@@ -8,7 +8,7 @@ namespace semantic {
 	struct TypeCheckerContext {
 	private:
 		Namespace m_GlobalNamespace;
-		std::vector<std::string> m_Errors;
+		std::vector<U8String> m_Errors;
 
 	public:
 		TypeCheckerContext();
@@ -18,8 +18,9 @@ namespace semantic {
 		TypeCheckerContext &operator=(TypeCheckerContext &&) = delete;
 
 		void addError(std::string msg);
+        void addError(U8String msg);
 		Namespace &getGlobalNamespace();
 
-		const std::vector<std::string> &getErrors() const;
+		const Vec<U8String> &getErrors() const;
 	};
 }

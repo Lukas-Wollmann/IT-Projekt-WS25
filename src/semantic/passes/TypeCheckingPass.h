@@ -47,5 +47,9 @@ namespace semantic {
 		bool isAssignable(ast::Expr &e) const;
 		bool canArgsCallFunc(const Vec<Ref<const type::Type>> &args,
 							 const type::FunctionType &func) const;
+
+		Box<type::Type> checkBinaryExpr(ast::BinaryOpKind op, const type::Type &left,
+											 const type::Type &right);
+		Opt<ast::BinaryOpKind> getBinaryOpFromAssignment(ast::AssignmentKind kind) const;
 	};
 }

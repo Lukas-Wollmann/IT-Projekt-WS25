@@ -130,5 +130,5 @@ namespace semantic {
 		addInternalUnaryOperator(ns, Not, u8"u32");
 
 		// Dereference is implemented separatly in the typechecker.
-	}
+    }
 }

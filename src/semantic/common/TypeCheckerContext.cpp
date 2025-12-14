@@ -5,6 +5,10 @@ namespace semantic {
 		: m_GlobalNamespace(u8"global") {}
 
 	void TypeCheckerContext::addError(std::string msg) {
+		m_Errors.push_back(U8String(msg));
+	}
+
+	void TypeCheckerContext::addError(U8String msg) {
 		m_Errors.push_back(std::move(msg));
 	}
 
@@ -12,7 +16,7 @@ namespace semantic {
 		return m_GlobalNamespace;
 	}
 
-	const std::vector<std::string> &TypeCheckerContext::getErrors() const {
+	const Vec<U8String> &TypeCheckerContext::getErrors() const {
 		return m_Errors;
 	}
 }
