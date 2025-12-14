@@ -69,6 +69,18 @@ TEST_CASE("StringLit: toString works") {
 	CHECK(result == "StringLit(\"burger king\")");
 }
 
+TEST_CASE("UnitLit: toString works") {
+	// Arrange
+	auto unitLit = std::make_unique<UnitLit>();
+	std::stringstream ss;
+
+	// Act
+	ss << *unitLit;
+	std::string result = ss.str();
+
+	CHECK(result == "UnitLit()");
+}
+
 TEST_CASE("ArrayExpr: toString works") {
 	// Arrange
 	auto arrayType = std::make_unique<Typename>(u8"i32");

@@ -40,8 +40,8 @@ namespace semantic {
 		VERIFY(!n.inferredType);
 
 		n.inferredType = std::make_unique<Typename>(u8"char");
-
-		return false;
+		
+        return false;
 	}
 
 	bool TypeCheckingPass::visit(BoolLit &n) {
@@ -59,22 +59,29 @@ namespace semantic {
 		return false;
 	}
 
-	bool TypeCheckingPass::visit(ArrayExpr &n) {
-		size_t arraySize = n.values.size();
-		n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), arraySize);
+    bool TypeCheckingPass::visit(ast::UnitLit &n) {
+        VERIFY(!n.inferredType);     
+    
+        n.inferredType = std::make_unique<UnitType>();
 
-		for (auto &expr : n.values) {
-			dispatch(*expr);
+        return false;
+    }
+
+	bool TypeCheckingPass::visit(ArrayExpr &n) {     
+        for (auto &expr : n.values) {
+            dispatch(*expr);
 			VERIFY(expr->inferredType);
-			auto &type = *expr->inferredType;
-
-			if (type->kind != TypeKind::Error && *type != *n.elementType) {
-				std::stringstream ss;
+			auto &type = *expr->inferredType.value();
+            
+			if (type.kind != TypeKind::Error && type != *n.elementType) {
+                std::stringstream ss;
 				ss << "Expected an object of type '" << *n.elementType << "'";
-				ss << " for an array - found an object of type '" << *type << "' instead.";
+				ss << " for an array - found an object of type '" << type << "' instead.";
 				m_Context.addError(ss.str());
 			}
 		}
+        
+        n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), n.values.size());
 
 		return false;
 	}
@@ -82,16 +89,16 @@ namespace semantic {
 	bool TypeCheckingPass::visit(UnaryExpr &n) {
 		dispatch(*n.operand);
 		VERIFY(n.operand->inferredType);
-
-		auto &type = **n.operand->inferredType;
+		auto &type = *n.operand->inferredType.value();
 
 		if (type.kind == TypeKind::Error) {
-			n.inferredType = clone(type);
+			n.inferredType = std::make_unique<ErrorType>();
 
 			return false;
 		}
 
-		// Dereference needs special handling for now
+		// Dereference needs special handling for now, we need generics or something 
+        // like that to make this work with the normal functions and type system.
 		if (n.op == UnaryOpKind::Dereference) {
 			if (type.kind != TypeKind::Pointer) {
 				std::stringstream ss;
@@ -110,15 +117,15 @@ namespace semantic {
 			return false;
 		}
 
-		std::stringstream opIdent;
-		opIdent << "operator" << n.op << "<" << type << ">";
+		std::stringstream ss;
+		ss << "operator" << n.op << "<" << type << ">";
+        U8String ident(ss.str());
+		auto func = m_Context.getGlobalNamespace().getFunction(ident);
 
-		auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
-
-		if (!func) {
+		if (!func.has_value()) {
 			std::stringstream ss;
 			ss << "Found no binary operator with for ";
-			ss << n.op << " with types " << *type;
+			ss << n.op << " with types " << type;
 
 			m_Context.addError(ss.str());
 			n.inferredType = std::make_unique<ErrorType>();
@@ -126,49 +133,41 @@ namespace semantic {
 			return false;
 		}
 
-		canArgsCallFunc({*type}, *func);
+		canArgsCallFunc({type}, func.value());
 		n.inferredType = clone(*func->get().returnType);
 
 		return false;
 	}
 
-	///
-	/// While type checking, unary expressions try to call their respective operator as if it was a
-	/// normal function. For example "1 + 2" would look for an overloaded function in the current
-	/// namespace: "operator<int,int>+(int, int)". This makes it very easy to add operator
-	/// overloading later. This is type checking only, so no extra function calls will be inserted
-	/// for trivial addition overloads in the code generaition phase later on.
-	///
 	bool TypeCheckingPass::visit(BinaryExpr &n) {
-		// Infer the type of the left and right operand expressions
 		dispatch(*n.left);
-		dispatch(*n.right);
-
 		VERIFY(n.left->inferredType);
+		auto &leftType = *n.left->inferredType.value();
+		
+        dispatch(*n.right);
 		VERIFY(n.right->inferredType);
-
-		auto &leftType = *n.left->inferredType;
-		auto &rightType = *n.right->inferredType;
+		auto &rightType = *n.right->inferredType.value();
 
 		// If one of the two expressions is of type <error-type>
 		// then propagate the error upwards in the type tree.
 		// The error did not really happen here, so dont add to m_Errors.
-		if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error) {
+		if (leftType.kind == TypeKind::Error || rightType.kind == TypeKind::Error) {
 			n.inferredType = std::make_unique<ErrorType>();
 
 			return false;
 		}
 
-		std::stringstream opIdent;
-		opIdent << "operator" << n.op << "<" << *leftType << "," << *rightType << ">";
+		std::stringstream ss;
+		ss << "operator" << n.op << "<" << leftType << "," << rightType << ">";
+        U8String ident(ss.str());
 
-		auto func = m_Context.getGlobalNamespace().getFunction(U8String(opIdent.str()));
+		auto func = m_Context.getGlobalNamespace().getFunction(ident);
 
-		if (!func) {
+		if (!func.has_value()) {
 			std::stringstream ss;
 			ss << "Found no binary operator with for ";
 			ss << n.op << " with types ";
-			ss << *leftType << " and " << *rightType;
+			ss << leftType << " and " << rightType;
 
 			m_Context.addError(ss.str());
 			n.inferredType = std::make_unique<ErrorType>();
@@ -176,8 +175,8 @@ namespace semantic {
 			return false;
 		}
 
-		canArgsCallFunc({*leftType, *rightType}, *func);
-		n.inferredType = clone(*func->get().returnType);
+		canArgsCallFunc({leftType, rightType}, func.value());
+		n.inferredType = clone(*func.value().get().returnType);
 
 		return false;
 	}
@@ -185,8 +184,7 @@ namespace semantic {
 	bool TypeCheckingPass::visit(ast::HeapAlloc &n) {
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
-
-        auto &type = **n.value->inferredType;
+        auto &type = *n.value->inferredType.value();
 
         if (type.kind == TypeKind::Error) {
             n.inferredType = std::make_unique<ErrorType>();
@@ -248,7 +246,7 @@ namespace semantic {
 		dispatch(*n.expr);
 		VERIFY(n.expr->inferredType);
 
-		auto &type = **n.expr->inferredType;
+		auto &type = *n.expr->inferredType.value();
 
 		if (type.kind != TypeKind::Function) {
 			if (type.kind != TypeKind::Error) {
@@ -282,7 +280,7 @@ namespace semantic {
 		auto symbol = m_SymbolTable.getSymbol(n.ident);
 
 		// The symbol is known, so take its type
-		if (symbol) {
+		if (symbol.has_value()) {
 			n.inferredType = clone(symbol->get().getType());
 
 			return false;
@@ -291,11 +289,10 @@ namespace semantic {
 		// If the symbol is not known, it maybe be a function
 		auto func = m_Context.getGlobalNamespace().getFunction(n.ident);
 
-		if (func) {
+		if (func.has_value()) {
 			n.inferredType = clone(func->get());
 
 			return false;
-			;
 		}
 
 		// The symbol is unknown, so throw an error
@@ -333,7 +330,7 @@ namespace semantic {
 		dispatch(*n.cond);
 		VERIFY(*n.cond->inferredType);
 
-		auto &type = **n.cond->inferredType;
+		auto &type = *n.cond->inferredType.value();
 
 		// If the condition has type <error-type> fail silently
 		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
@@ -353,7 +350,7 @@ namespace semantic {
 		dispatch(*n.cond);
 		VERIFY(*n.cond->inferredType);
 
-		auto &type = **n.cond->inferredType;
+		auto &type = *n.cond->inferredType.value();
 
 		// If the condition has type <error-type> fail silently
 		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
@@ -371,13 +368,16 @@ namespace semantic {
 	bool TypeCheckingPass::visit(ReturnStmt &n) {
 		VERIFY(m_CurrentFunctionReturnType);
 
-		// TODO: Add bool type and return types with no values
-		VERIFY(n.expr);
+        // The function has a Unit return type and we returned with no value
+        if (m_CurrentFunctionReturnType->kind == TypeKind::Unit && !n.expr.has_value())
+            return true;
 
-		dispatch(**n.expr);
-		VERIFY(n.expr->get()->inferredType);
+        auto &expr = *n.expr.value();
 
-		auto &type = **n.expr->get()->inferredType;
+        dispatch(expr);
+        VERIFY(expr.inferredType);
+
+		auto &type = *expr.inferredType.value();
 
 		// If the type is <error-type> or if the return type matches
 		// the function declaration, its okay and return
@@ -399,7 +399,7 @@ namespace semantic {
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
 
-		auto &type = **n.value->inferredType;
+		auto &type = *n.value->inferredType.value();
 
 		// The expression is not of type <error-type> but does not match type
 		// type of the variable declaration - this is an actual error
@@ -439,7 +439,7 @@ namespace semantic {
 		// Type check the function body (in a nested scope, allows param shadowing)
 		bool doesReturn = dispatch(*n.body);
 
-		if (!doesReturn) {
+		if (!doesReturn && n.returnType->kind != TypeKind::Unit) {
 			std::stringstream ss;
 			ss << "Not all control flow paths in function '" << n.ident << "' return a value.";
 			m_Context.addError(ss.str());

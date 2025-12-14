@@ -28,6 +28,7 @@ namespace semantic {
 		bool visit(ast::CharLit &n) override;
 		bool visit(ast::BoolLit &n) override;
 		bool visit(ast::StringLit &n) override;
+		bool visit(ast::UnitLit &n) override;
 		bool visit(ast::ArrayExpr &n) override;
 		bool visit(ast::UnaryExpr &n) override;
 		bool visit(ast::BinaryExpr &n) override;

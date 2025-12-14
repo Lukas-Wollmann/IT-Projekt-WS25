@@ -33,6 +33,10 @@ namespace ast {
 		: Expr(NodeKind::StringLit)
 		, value(std::move(value)) {}
 
+    UnitLit::UnitLit()
+        : Expr(NodeKind::UnitLit)
+    {}
+
 	ArrayExpr::ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values)
 		: Expr(NodeKind::ArrayExpr)
 		, elementType(std::move(elementType))

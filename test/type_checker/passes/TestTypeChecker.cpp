@@ -7,7 +7,7 @@ using namespace ast;
 using namespace type;
 using namespace semantic;
 
-TEST_CASE("TypeChecker: IntLit type will be infered as i32") {
+TEST_CASE("TypeChecker: IntLit type will be infered as Typename i32") {
 	// Arrange
 	auto intLit = std::make_unique<IntLit>(67);
 	TypeCheckerContext ctx;
@@ -23,11 +23,11 @@ TEST_CASE("TypeChecker: IntLit type will be infered as i32") {
 	auto &type = *intLit->inferredType.value();
 	CHECK(intLit->inferredType.value()->kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const Typename &>(type);
-	CHECK(primitive.typename_ == u8"i32");
+	auto &typename_ = static_cast<const Typename &>(type);
+	CHECK(typename_.typename_ == u8"i32");
 }
 
-TEST_CASE("TypeChecker: FloatLit type will be infered as f32") {
+TEST_CASE("TypeChecker: FloatLit type will be infered as Typename f32") {
 	// Arrange
 	auto floatLit = std::make_unique<FloatLit>(187.0f);
 	TypeCheckerContext ctx;
@@ -43,11 +43,11 @@ TEST_CASE("TypeChecker: FloatLit type will be infered as f32") {
 	const Type &type = *floatLit->inferredType.value();
 	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const Typename &>(type);
-	CHECK(primitive.typename_ == u8"f32");
+	auto &typename_ = static_cast<const Typename &>(type);
+	CHECK(typename_.typename_ == u8"f32");
 }
 
-TEST_CASE("TypeChecker: CharLit type will be infered as char") {
+TEST_CASE("TypeChecker: CharLit type will be infered as Typename char") {
 	// Arrange
 	auto charLit = std::make_unique<CharLit>('X');
 	TypeCheckerContext ctx;
@@ -63,11 +63,11 @@ TEST_CASE("TypeChecker: CharLit type will be infered as char") {
 	const Type &type = *charLit->inferredType.value();
 	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const Typename &>(type);
-	CHECK(primitive.typename_ == u8"char");
+	auto &typename_ = static_cast<const Typename &>(type);
+	CHECK(typename_.typename_ == u8"char");
 }
 
-TEST_CASE("TypeChecker: BoolLit type will be infered as bool") {
+TEST_CASE("TypeChecker: BoolLit type will be infered as Typename bool") {
 	// Arrange
 	auto boolLit = std::make_unique<BoolLit>(false);
 	TypeCheckerContext ctx;
@@ -83,11 +83,11 @@ TEST_CASE("TypeChecker: BoolLit type will be infered as bool") {
 	const Type &type = *boolLit->inferredType.value();
 	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const Typename &>(type);
-	CHECK(primitive.typename_ == u8"bool");
+	auto &typename_ = static_cast<const Typename &>(type);
+	CHECK(typename_.typename_ == u8"bool");
 }
 
-TEST_CASE("TypeChecker: StringLit type will be infered as string") {
+TEST_CASE("TypeChecker: StringLit type will be infered as Typename string") {
 	// Arrange
 	auto strLit = std::make_unique<StringLit>(u8"UwU");
 	TypeCheckerContext ctx;
@@ -103,8 +103,25 @@ TEST_CASE("TypeChecker: StringLit type will be infered as string") {
 	const Type &type = *strLit->inferredType.value();
 	CHECK(type.kind == TypeKind::Typename);
 
-	auto &primitive = static_cast<const Typename &>(type);
-	CHECK(primitive.typename_ == u8"string");
+	auto &typename_ = static_cast<const Typename &>(type);
+	CHECK(typename_.typename_ == u8"string");
+}
+
+TEST_CASE("TypeChecker: UnitLit type will be infered as UnitType") {
+	// Arrange
+	auto unitLit = std::make_unique<UnitLit>();
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
+
+	// Act
+	tc.dispatch(*unitLit);
+
+	// Assert
+	CHECK(ctx.getErrors().empty());
+	CHECK(unitLit->inferredType);
+
+	const Type &type = *unitLit->inferredType.value();
+	CHECK(type.kind == TypeKind::Unit);
 }
 
 TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type") {
@@ -125,17 +142,16 @@ TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type")
 
 TEST_CASE("TypeChecker: Playground") {
 	Vec<Box<Stmt>> stmts;
+	stmts.push_back(std::make_unique<UnitLit>());
 	stmts.push_back(
 			std::make_unique<VarDef>(u8"foo",
 									 std::make_unique<PointerType>(
 											 std::make_unique<Typename>(u8"i32")),
 									 std::make_unique<HeapAlloc>(std::make_unique<IntLit>(5))));
-	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<VarRef>(u8"foo")));
 
-	auto funcDecl = std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
-											   std::make_unique<PointerType>(
-													   std::make_unique<Typename>(u8"i32")),
-											   std::make_unique<BlockStmt>(std::move(stmts)));
+	auto funcDecl =
+			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{}, std::make_unique<UnitType>(),
+									   std::make_unique<BlockStmt>(std::move(stmts)));
 
 	TypeCheckerContext ctx;
 	ExplorationPass ep(ctx);

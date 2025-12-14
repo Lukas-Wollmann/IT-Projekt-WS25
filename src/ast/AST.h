@@ -12,6 +12,7 @@ namespace ast {
 		CharLit,
 		BoolLit,
 		StringLit,
+        UnitLit,
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
@@ -85,6 +86,11 @@ namespace ast {
 
 		explicit StringLit(U8String value);
 	};
+
+    struct UnitLit : public Expr {
+    public:
+        UnitLit();
+    };
 
 	struct ArrayExpr : public Expr {
 	public:

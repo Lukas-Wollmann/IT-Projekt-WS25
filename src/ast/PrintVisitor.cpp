@@ -24,6 +24,10 @@ namespace ast {
 		m_OStream << "StringLit(\"" << n.value << "\")";
 	}
 
+    void PrintVisitor::visit(const UnitLit &n) {
+        m_OStream << "UnitLit()";
+    }
+
 	void PrintVisitor::visit(const ArrayExpr &n) {
 		m_OStream << "ArrayExpr(" << *n.elementType << ", {";
 
