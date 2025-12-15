@@ -34,7 +34,7 @@ namespace type {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, const type::Params &p) {
+std::ostream &operator<<(std::ostream &os, const type::TypeList &p) {
 	for (size_t i = 0; i < p.size(); ++i)
 		os << (i ? ", " : "") << *p[i];
 

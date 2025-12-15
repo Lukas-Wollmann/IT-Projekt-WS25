@@ -6,29 +6,29 @@ namespace type {
 	Type::Type(TypeKind kind)
 		: kind(kind) {}
 
-	PointerType::PointerType(Box<const Type> pointeeType)
-		: Type(TypeKind::Pointer)
-		, pointeeType(std::move(pointeeType)) {}
+    Typename::Typename(U8String typename_)
+		: Type(TypeKind::Typename)
+		, typename_(std::move(typename_)) {}
 
-	ArrayType::ArrayType(Box<const Type> elementType, Opt<size_t> arraySize)
+	PointerType::PointerType(Ptr<const Type> pointeeType)
+		: Type(TypeKind::Pointer)
+		, pointeeType(pointeeType) {}
+
+	ArrayType::ArrayType(Ptr<const Type> elementType, Opt<size_t> arraySize)
 		: Type(TypeKind::Array)
-		, elementType(std::move(elementType))
+		, elementType(elementType)
 		, arraySize(arraySize) {}
 
-	FunctionType::FunctionType(Params paramTypes, Box<const Type> returnType)
+	FunctionType::FunctionType(TypeList paramTypes, Ptr<const Type> returnType)
 		: Type(TypeKind::Function)
-		, paramTypes(std::move(paramTypes))
-		, returnType(std::move(returnType)) {}
+		, paramTypes(paramTypes)
+		, returnType(returnType) {}
 
 	ErrorType::ErrorType()
 		: Type(TypeKind::Error) {}
 
 	UnitType::UnitType()
 		: Type(TypeKind::Unit) {}
-
-	Typename::Typename(U8String typename_)
-		: Type(TypeKind::Typename)
-		, typename_(std::move(typename_)) {}
 }
 
 std::ostream &operator<<(std::ostream &os, type::TypeKind kind) {

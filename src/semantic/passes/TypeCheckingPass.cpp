@@ -23,48 +23,37 @@ namespace semantic {
 
 	bool TypeCheckingPass::visit(IntLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<Typename>(u8"i32");
-
+		n.inferredType = std::make_shared<Typename>(u8"i32");
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(FloatLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<Typename>(u8"f32");
-
+		n.inferredType = std::make_shared<Typename>(u8"f32");
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(CharLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<Typename>(u8"char");
-
+		n.inferredType = std::make_shared<Typename>(u8"char");
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(BoolLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<Typename>(u8"bool");
+		n.inferredType = std::make_shared<Typename>(u8"bool");
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(StringLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<Typename>(u8"string");
-
+		n.inferredType = std::make_shared<Typename>(u8"string");
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(UnitLit &n) {
 		VERIFY(!n.inferredType);
-
-		n.inferredType = std::make_unique<UnitType>();
-
+		n.inferredType = std::make_shared<UnitType>();
 		return false;
 	}
 
@@ -72,134 +61,148 @@ namespace semantic {
 		for (auto &expr : n.values) {
 			dispatch(*expr);
 			VERIFY(expr->inferredType);
-			auto &type = *expr->inferredType.value();
+			auto type = expr->inferredType.value();
 
-			if (type.kind != TypeKind::Error && type != *n.elementType) {
-                Error<ErrorKind::ARRAY_ELEMENT_TYPE_MISMATCH> err;
-                m_Context.addError(err.str(*n.elementType, type));
+			if (type->kind != TypeKind::Error && *type != *n.elementType) {
+				Error<ErrorKind::ARRAY_ELEMENT_TYPE_MISMATCH> err;
+				m_Context.addError(err.str(n.elementType, type));
 			}
 		}
 
-		n.inferredType = std::make_unique<ArrayType>(clone(*n.elementType), n.values.size());
-
+		n.inferredType = std::make_shared<ArrayType>(n.elementType, n.values.size());
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(UnaryExpr &n) {
 		dispatch(*n.operand);
 		VERIFY(n.operand->inferredType);
-		auto &type = *n.operand->inferredType.value();
+		auto type = n.operand->inferredType.value();
 
-		if (type.kind == TypeKind::Error) {
-			n.inferredType = std::make_unique<ErrorType>();
-
+		if (type->kind == TypeKind::Error) {
+			n.inferredType = std::make_shared<ErrorType>();
 			return false;
 		}
 
-		// Dereference needs special handling for now, we need generics or something
-		// like that to make this work with the normal functions and type system.
 		if (n.op == UnaryOpKind::Dereference) {
-			if (type.kind != TypeKind::Pointer) {
-                Error<ErrorKind::DEREFERENCE_NON_POINTER> err;
-                m_Context.addError(err.str(type));
-                
-                n.inferredType = std::make_unique<ErrorType>();
+			if (type->kind != TypeKind::Pointer) {
+				Error<ErrorKind::DEREFERENCE_NON_POINTER> err;
+				m_Context.addError(err.str(type));
 
+				n.inferredType = std::make_shared<ErrorType>();
 				return false;
 			}
 
-			auto &ptrType = static_cast<const PointerType &>(type);
-			n.inferredType = clone(*ptrType.pointeeType);
-
+			auto ptrType = std::static_pointer_cast<const PointerType>(type);
+			n.inferredType = ptrType->pointeeType;
 			return false;
 		}
 
-		std::stringstream ss;
-		ss << "operator" << n.op << "<" << type << ">";
-		U8String ident(ss.str());
-		auto func = m_Context.getGlobalNamespace().getFunction(ident);
+		auto unaryOp = m_Context.getOperatorTable().getUnaryOperator(n.op, type);
 
-		if (!func.has_value()) {
-            Error<ErrorKind::UNARY_OPERATOR_NOT_FOUND> err;
-            m_Context.addError(err.str(type, n.op));
+		if (!unaryOp.has_value()) {
+			Error<ErrorKind::UNARY_OPERATOR_NOT_FOUND> err;
+			m_Context.addError(err.str(type, n.op));
 
-			n.inferredType = std::make_unique<ErrorType>();
-
+			n.inferredType = std::make_shared<ErrorType>();
 			return false;
 		}
 
-		canArgsCallFunc({type}, func.value());
-		n.inferredType = clone(*func->get().returnType);
-
+		n.inferredType = unaryOp.value().returnType;
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(BinaryExpr &n) {
 		dispatch(*n.left);
 		VERIFY(n.left->inferredType);
-		auto &leftType = *n.left->inferredType.value();
+		auto leftType = n.left->inferredType.value();
 
 		dispatch(*n.right);
 		VERIFY(n.right->inferredType);
-		auto &rightType = *n.right->inferredType.value();
+		auto rightType = n.right->inferredType.value();
 
-		n.inferredType = checkBinaryExpr(n.op, leftType, rightType);
+		if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error) {
+			n.inferredType = std::make_shared<ErrorType>();
+			return false;
+		}
+
+		auto binaryOp = m_Context.getOperatorTable().getBinaryOperator(n.op, leftType, rightType);
+
+		if (!binaryOp.has_value()) {
+			Error<ErrorKind::BINARY_OPERATOR_NOT_FOUND> err;
+			m_Context.addError(err.str(leftType, rightType, n.op));
+
+			n.inferredType = std::make_shared<ErrorType>();
+			return false;
+		}
+
+		n.inferredType = binaryOp.value().returnType;
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(HeapAlloc &n) {
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
-		auto &type = *n.value->inferredType.value();
+		auto type = n.value->inferredType.value();
 
-		if (type.kind == TypeKind::Error) {
-			n.inferredType = std::make_unique<ErrorType>();
-
+		if (type->kind == TypeKind::Error) {
+			n.inferredType = std::make_shared<ErrorType>();
 			return false;
 		}
 
-		n.inferredType = std::make_unique<PointerType>(clone(**n.value->inferredType));
-
+		n.inferredType = std::make_shared<PointerType>(n.value->inferredType.value());
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(Assignment &n) {
-		// Assignments dont return anything, we dont have references so we
-		// would have to add a lot of special handling, its not worth for now
-		n.inferredType = std::make_unique<UnitType>();
+		n.inferredType = std::make_shared<UnitType>();
 
 		dispatch(*n.left);
 		VERIFY(n.left->inferredType);
+		const auto &leftType = n.left->inferredType.value();
+
 		dispatch(*n.right);
 		VERIFY(n.right->inferredType);
+		const auto &rightType = n.right->inferredType.value();
 
 		if (!isAssignable(*n.left)) {
-            Error<ErrorKind::CANNOT_ASSIGN_TO_RVALUE> err;
-            m_Context.addError(err.str());
+			Error<ErrorKind::CANNOT_ASSIGN_TO_RVALUE> err;
+			m_Context.addError(err.str());
+			return false;
+		}
 
-			n.inferredType = std::make_unique<ErrorType>();
+		if (leftType->kind == TypeKind::Error || rightType->kind == TypeKind::Error)
+			return false;
+
+		auto op = getBinaryOpFromAssignment(n.assignmentKind);
+
+		// Normal assignment '=', no operator like '+='
+		if (!op.has_value()) {
+			if (*leftType != *rightType) {
+				Error<ErrorKind::ASSIGNMENT_INCOMPATIBLE_TYPES> err;
+				m_Context.addError(err.str(leftType, rightType));
+			}
 
 			return false;
 		}
 
-		auto &leftType = *n.left->inferredType.value();
-		auto &rightType = *n.right->inferredType.value();
+		auto binaryOp =
+				m_Context.getOperatorTable().getBinaryOperator(op.value(), leftType, rightType);
 
-		auto binOp = getBinaryOpFromAssignment(n.assignmentKind);
-		Box<const Type> typeAfterOp = binOp.has_value()
-											  ? checkBinaryExpr(binOp.value(), leftType, rightType)
-											  : clone(rightType);
+		if (!binaryOp.has_value()) {
+			Error<ErrorKind::BINARY_OPERATOR_NOT_FOUND> err;
+			m_Context.addError(err.str(leftType, rightType, op.value()));
 
-        if (typeAfterOp->kind == TypeKind::Error) {
-            n.inferredType = std::make_unique<ErrorType>();
-            return false;
-        }
+			n.inferredType = std::make_shared<ErrorType>();
+			return false;
+		}
 
-		if (leftType == *typeAfterOp)
+		auto resultType = binaryOp.value().returnType;
+
+		if (*leftType == *resultType)
 			return false;
 
 		Error<ErrorKind::ASSIGNMENT_OPERATOR_INCOMPATIBLE_TYPES> err;
-		m_Context.addError(err.str(binOp.value(), leftType, rightType, *typeAfterOp));
+		m_Context.addError(err.str(op.value(), leftType, rightType, resultType));
 
 		return false;
 	}
@@ -207,33 +210,30 @@ namespace semantic {
 	bool TypeCheckingPass::visit(FuncCall &n) {
 		dispatch(*n.expr);
 		VERIFY(n.expr->inferredType);
+		auto type = n.expr->inferredType.value();
 
-		auto &type = *n.expr->inferredType.value();
-
-		if (type.kind != TypeKind::Function) {
-			if (type.kind != TypeKind::Error) {
-                Error<ErrorKind::FUNC_CALL_NON_FUNCTION> err;
-		        m_Context.addError(err.str());
+		if (type->kind != TypeKind::Function) {
+			if (type->kind != TypeKind::Error) {
+				Error<ErrorKind::FUNC_CALL_NON_FUNCTION> err;
+				m_Context.addError(err.str());
 			}
 
-			n.inferredType = std::make_unique<ErrorType>();
-
+			n.inferredType = std::make_shared<ErrorType>();
 			return false;
 		}
 
-		auto &funcType = static_cast<const FunctionType &>(type);
-		Vec<Ref<const Type>> args;
+		auto funcType = std::static_pointer_cast<const FunctionType>(type);
+        TypeList argTypes;
 
 		for (auto &expr : n.args) {
 			dispatch(*expr);
 			VERIFY(expr->inferredType);
-
-			args.push_back(**expr->inferredType);
+			argTypes.push_back(expr->inferredType.value());
 		}
 
-		canArgsCallFunc(args, funcType);
-		n.inferredType = clone(*funcType.returnType);
+		canArgsCallFunc(argTypes, *funcType);
 
+		n.inferredType = funcType->returnType;
 		return false;
 	}
 
@@ -242,7 +242,7 @@ namespace semantic {
 
 		// The symbol is known, so take its type
 		if (symbol.has_value()) {
-			n.inferredType = clone(symbol->get().getType());
+			n.inferredType = clone(*symbol->get().getType());
 
 			return false;
 		}
@@ -256,10 +256,10 @@ namespace semantic {
 			return false;
 		}
 
-        Error<ErrorKind::UNKNOWN_SYMBOL> err;
-        m_Context.addError(err.str(n.ident));
+		Error<ErrorKind::UNKNOWN_SYMBOL> err;
+		m_Context.addError(err.str(n.ident));
 
-		n.inferredType = std::make_unique<ErrorType>();
+		n.inferredType = std::make_shared<ErrorType>();
 
 		return false;
 	}
@@ -273,8 +273,8 @@ namespace semantic {
 			bool didReturn = dispatch(*n.stmts[i]);
 
 			if (foundReturn && didReturn) {
-                Error<ErrorKind::UNREACHABLE_STATEMENT> err;
-                m_Context.addError(err.str());
+				Error<ErrorKind::UNREACHABLE_STATEMENT> err;
+				m_Context.addError(err.str());
 			}
 
 			foundReturn |= didReturn;
@@ -288,12 +288,11 @@ namespace semantic {
 	bool TypeCheckingPass::visit(IfStmt &n) {
 		dispatch(*n.cond);
 		VERIFY(*n.cond->inferredType);
-
-		auto &type = *n.cond->inferredType.value();
+		auto type = n.cond->inferredType.value();
 
 		// If the condition has type <error-type> fail silently
-		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
-            Error<ErrorKind::IF_CONDITION_INVALID_TYPE> err;
+		if (type->kind != TypeKind::Error && *type != Typename(u8"bool")) {
+			Error<ErrorKind::IF_CONDITION_INVALID_TYPE> err;
 			m_Context.addError(err.str(type));
 		}
 
@@ -306,12 +305,11 @@ namespace semantic {
 	bool TypeCheckingPass::visit(WhileStmt &n) {
 		dispatch(*n.cond);
 		VERIFY(*n.cond->inferredType);
-
-		auto &type = *n.cond->inferredType.value();
+		auto type = n.cond->inferredType.value();
 
 		// If the condition has type <error-type> fail silently
-		if (type.kind != TypeKind::Error && type != Typename(u8"bool")) {
-            Error<ErrorKind::WHILE_CONDITION_INVALID_TYPE> err;
+		if (type->kind != TypeKind::Error && *type != Typename(u8"bool")) {
+			Error<ErrorKind::WHILE_CONDITION_INVALID_TYPE> err;
 			m_Context.addError(err.str(type));
 		}
 
@@ -331,17 +329,16 @@ namespace semantic {
 
 		dispatch(expr);
 		VERIFY(expr.inferredType);
-
-		auto &type = *expr.inferredType.value();
+		auto type = expr.inferredType.value();
 
 		// If the type is <error-type> or if the return type matches
 		// the function declaration, its okay and return
-		if (type.kind == TypeKind::Error || type == *m_CurrentFunctionReturnType)
+		if (type->kind == TypeKind::Error || *type == *m_CurrentFunctionReturnType)
 			return true;
 
 		// The return type is not matching the function declaration
-        Error<ErrorKind::RETURN_TYPE_MISMATCH> err;
-		m_Context.addError(err.str(type, *m_CurrentFunctionReturnType));
+		Error<ErrorKind::RETURN_TYPE_MISMATCH> err;
+		m_Context.addError(err.str(type, m_CurrentFunctionReturnType));
 
 		return true;
 	}
@@ -350,20 +347,19 @@ namespace semantic {
 		// Infer the type of the assigned expression
 		dispatch(*n.value);
 		VERIFY(n.value->inferredType);
-
-		auto &type = *n.value->inferredType.value();
+		auto type = n.value->inferredType.value();
 
 		// The expression is not of type <error-type> but does not match type
 		// type of the variable declaration - this is an actual error
-		if (type.kind != TypeKind::Error && type != *n.type) {
-            Error<ErrorKind::VARIABLE_DECL_TYPE_MISMATCH> err;
-			m_Context.addError(err.str(*n.type, type));
+		if (type->kind != TypeKind::Error && *type != *n.type) {
+			Error<ErrorKind::VARIABLE_DECL_TYPE_MISMATCH> err;
+			m_Context.addError(err.str(n.type, type));
 		}
 
 		// Does this symbol already exist in the current scope (shadowing possible)
 		if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {
-            Error<ErrorKind::VARIABLE_REDEFINITION> err;
-            m_Context.addError(err.str(n.ident));
+			Error<ErrorKind::VARIABLE_REDEFINITION> err;
+			m_Context.addError(err.str(n.ident));
 
 			return false;
 		}
@@ -388,7 +384,7 @@ namespace semantic {
 		bool doesReturn = dispatch(*n.body);
 
 		if (!doesReturn && n.returnType->kind != TypeKind::Unit) {
-            Error<ErrorKind::MISSING_RETURN_PATH> err;
+			Error<ErrorKind::MISSING_RETURN_PATH> err;
 			m_Context.addError(err.str(n.ident));
 		}
 
@@ -418,59 +414,30 @@ namespace semantic {
 		return unary.op == UnaryOpKind::Dereference;
 	}
 
-	bool TypeCheckingPass::canArgsCallFunc(const Vec<Ref<const Type>> &args,
-										   const FunctionType &func) const {
+	bool TypeCheckingPass::canArgsCallFunc(const TypeList &args, const FunctionType &func) const {
 		auto &params = func.paramTypes;
 
 		if (args.size() != params.size()) {
-			std::stringstream ss;
-			ss << "Provided wrong amount of args. Expected ";
-			ss << params.size() << " arguments but got " << args.size();
-
-			m_Context.addError(ss.str());
-
-			return false;
+            Error<ErrorKind::FUNC_CALL_ARG_MISMATCH> err;
+			m_Context.addError(err.str(params.size(), args.size()));
+			
+            return false;
 		}
 
 		for (size_t i = 0; i < args.size(); ++i) {
-			auto &argType = args[i].get();
-			auto &paramType = *params[i];
+			auto argType = args[i];
+			auto paramType = params[i];
 
-			if (argType.kind == TypeKind::Error || argType == paramType)
+			if (argType->kind == TypeKind::Error || *argType == *paramType)
 				continue;
-
-			std::stringstream ss;
-			ss << "Cannot use type " << argType << " as parameter ";
-			ss << " for an argument of type " << paramType;
-
-			m_Context.addError(ss.str());
-
+            
+            Error<ErrorKind::ARG_TYPE_MISSMATCH_PARAM> err;
+			m_Context.addError(err.str(argType, paramType));
+            
 			return false;
 		}
 
 		return true;
-	}
-
-	Box<Type> TypeCheckingPass::checkBinaryExpr(BinaryOpKind op, const Type &left,
-												const Type &right) {
-		if (left.kind == TypeKind::Error || right.kind == TypeKind::Error)
-			return std::make_unique<ErrorType>();
-
-		std::stringstream ss;
-		ss << "operator" << op << "<" << left << "," << right << ">";
-		U8String ident(ss.str());
-
-		auto func = m_Context.getGlobalNamespace().getFunction(ident);
-
-		if (!func.has_value()) {
-            Error<ErrorKind::BINARY_OPERATOR_NOT_FOUND> err;
-			m_Context.addError(err.str(left, right, op));
-
-			return std::make_unique<ErrorType>();
-		}
-
-		canArgsCallFunc({left, right}, func.value());
-		return clone(*func.value().get().returnType);
 	}
 
 	Opt<BinaryOpKind> TypeCheckingPass::getBinaryOpFromAssignment(AssignmentKind kind) const {

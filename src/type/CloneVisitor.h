@@ -6,15 +6,15 @@ namespace type {
 	///
 	/// Deep clone a type with all its nested children
 	///
-	struct CloneVisitor : public ConstVisitor<Box<Type>> {
+	struct CloneVisitor : public ConstVisitor<TypePtr> {
 	private:
-		Box<Type> visit(const Typename &n) override;
-		Box<Type> visit(const PointerType &n) override;
-		Box<Type> visit(const ArrayType &n) override;
-		Box<Type> visit(const FunctionType &n) override;
-		Box<Type> visit(const ErrorType &n) override;
-		Box<Type> visit(const UnitType &n) override;
+		TypePtr visit(const Typename &n) override;
+		TypePtr visit(const PointerType &n) override;
+		TypePtr visit(const ArrayType &n) override;
+		TypePtr visit(const FunctionType &n) override;
+		TypePtr visit(const ErrorType &n) override;
+		TypePtr visit(const UnitType &n) override;
 	};
 
-	Box<Type> clone(const Type &type);
+	TypePtr clone(const Type &type);
 }

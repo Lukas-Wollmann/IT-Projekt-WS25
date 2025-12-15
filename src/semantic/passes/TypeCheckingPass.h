@@ -15,7 +15,7 @@ namespace semantic {
 	private:
 		TypeCheckerContext &m_Context;
 		SymbolTable m_SymbolTable;
-		Box<const type::Type> m_CurrentFunctionReturnType;
+		type::TypePtr m_CurrentFunctionReturnType;
 
 	public:
 		TypeCheckingPass(TypeCheckerContext &context);
@@ -45,11 +45,7 @@ namespace semantic {
 
 	private:
 		bool isAssignable(ast::Expr &e) const;
-		bool canArgsCallFunc(const Vec<Ref<const type::Type>> &args,
-							 const type::FunctionType &func) const;
-
-		Box<type::Type> checkBinaryExpr(ast::BinaryOpKind op, const type::Type &left,
-											 const type::Type &right);
+		bool canArgsCallFunc(const type::TypeList &args, const type::FunctionType &func) const;
 		Opt<ast::BinaryOpKind> getBinaryOpFromAssignment(ast::AssignmentKind kind) const;
 	};
 }

@@ -60,7 +60,7 @@ namespace type {
 	}
 }
 
-bool operator==(const type::Params &left, const type::Params &right) {
+bool operator==(const type::TypeList &left, const type::TypeList &right) {
 	if (left.size() != right.size())
 		return false;
 
@@ -72,7 +72,7 @@ bool operator==(const type::Params &left, const type::Params &right) {
 	return true;
 }
 
-bool operator!=(const type::Params &left, const type::Params &right) {
+bool operator!=(const type::TypeList &left, const type::TypeList &right) {
 	return !(left == right);
 }
 

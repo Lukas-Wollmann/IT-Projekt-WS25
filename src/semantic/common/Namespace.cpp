@@ -5,9 +5,9 @@
 namespace semantic {
 	using namespace type;
 
-	FunctionDeclInfo::FunctionDeclInfo(U8String name, Box<const FunctionType> func)
-		: m_Name(std::move(name))
-		, m_Type(std::move(func)) {
+	FunctionDeclInfo::FunctionDeclInfo(U8String name, Ptr<const FunctionType> func)
+		: m_Name(name)
+		, m_Type(func) {
 		VERIFY(m_Type);
 	}
 
@@ -22,7 +22,7 @@ namespace semantic {
 	Namespace::Namespace(U8String name)
 		: m_Name(std::move(name)) {}
 
-	void Namespace::addFunction(U8String name, Box<const type::FunctionType> func) {
+	void Namespace::addFunction(U8String name, Ptr<const type::FunctionType> func) {
 		VERIFY(m_Functions.find(name) == m_Functions.end());
 
 		m_Functions.emplace(std::move(name), std::move(func));

@@ -6,7 +6,7 @@ using namespace type;
 
 TEST_CASE("Typename: deep clone works") {
 	// Arrange
-	auto type = std::make_unique<Typename>(u8"i32");
+	auto type = std::make_shared<Typename>(u8"i32");
 
 	// Act
 	auto copy = clone(*type);
@@ -19,8 +19,8 @@ TEST_CASE("Typename: deep clone works") {
 
 TEST_CASE("PointerType: deep clone works") {
 	// Arrange
-	auto type = std::make_unique<Typename>(u8"i32");
-	auto ptrType = std::make_unique<PointerType>(std::move(type));
+	auto type = std::make_shared<Typename>(u8"i32");
+	auto ptrType = std::make_shared<PointerType>(std::move(type));
 
 	// Act
 	auto copy = clone(*ptrType);
@@ -33,8 +33,8 @@ TEST_CASE("PointerType: deep clone works") {
 
 TEST_CASE("ArrayType: deep clone works") {
 	// Arrange
-	auto type = std::make_unique<Typename>(u8"i32");
-	auto arrType = std::make_unique<ArrayType>(std::move(type), 42);
+	auto type = std::make_shared<Typename>(u8"i32");
+	auto arrType = std::make_shared<ArrayType>(std::move(type), 42);
 
 	// Act
 	auto copy = clone(*arrType);
@@ -47,13 +47,13 @@ TEST_CASE("ArrayType: deep clone works") {
 }
 
 TEST_CASE("FunctionType: deep clone works") {
-	Vec<Box<const Type>> params;
-	params.push_back(std::make_unique<Typename>(u8"i32"));
-	params.push_back(std::make_unique<Typename>(u8"f32"));
-	params.push_back(std::make_unique<Typename>(u8"char"));
+	TypeList params;
+	params.push_back(std::make_shared<Typename>(u8"i32"));
+	params.push_back(std::make_shared<Typename>(u8"f32"));
+	params.push_back(std::make_shared<Typename>(u8"char"));
 
-	auto retType = std::make_unique<Typename>(u8"bool");
-	auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
+	auto retType = std::make_shared<Typename>(u8"bool");
+	auto funcType = std::make_shared<FunctionType>(std::move(params), std::move(retType));
 
 	// Act
 	auto copy = clone(*funcType);
@@ -74,7 +74,7 @@ TEST_CASE("FunctionType: deep clone works") {
 
 TEST_CASE("ErrorType: deep clone works") {
 	// Arrange
-	auto errType = std::make_unique<ErrorType>();
+	auto errType = std::make_shared<ErrorType>();
 
 	// Act
 	auto copy = clone(*errType);
@@ -86,7 +86,7 @@ TEST_CASE("ErrorType: deep clone works") {
 
 TEST_CASE("UnitType: deep clone works") {
 	// Arrange
-	auto unitType = std::make_unique<UnitType>();
+	auto unitType = std::make_shared<UnitType>();
 
 	// Act
 	auto copy = clone(*unitType);

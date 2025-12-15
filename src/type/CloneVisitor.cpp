@@ -1,36 +1,36 @@
 #include "CloneVisitor.h"
 
 namespace type {
-	Box<Type> CloneVisitor::visit(const Typename &n) {
-		return std::make_unique<Typename>(n.typename_);
+	TypePtr CloneVisitor::visit(const Typename &n) {
+		return std::make_shared<Typename>(n.typename_);
 	}
 
-	Box<Type> CloneVisitor::visit(const PointerType &n) {
-		return std::make_unique<PointerType>(dispatch(*n.pointeeType));
+	TypePtr CloneVisitor::visit(const PointerType &n) {
+		return std::make_shared<PointerType>(dispatch(*n.pointeeType));
 	}
 
-	Box<Type> CloneVisitor::visit(const ArrayType &n) {
-		return std::make_unique<ArrayType>(dispatch(*n.elementType), n.arraySize);
+	TypePtr CloneVisitor::visit(const ArrayType &n) {
+		return std::make_shared<ArrayType>(dispatch(*n.elementType), n.arraySize);
 	}
 
-	Box<Type> CloneVisitor::visit(const FunctionType &n) {
-		Vec<Box<const Type>> paramTypes;
+	TypePtr CloneVisitor::visit(const FunctionType &n) {
+		TypeList paramTypes;
 
 		for (auto &paramType : n.paramTypes)
 			paramTypes.push_back(dispatch(*paramType));
 
-		return std::make_unique<FunctionType>(std::move(paramTypes), dispatch(*n.returnType));
+		return std::make_shared<FunctionType>(std::move(paramTypes), dispatch(*n.returnType));
 	}
 
-	Box<Type> CloneVisitor::visit(const ErrorType &) {
-		return std::make_unique<ErrorType>();
+	TypePtr CloneVisitor::visit(const ErrorType &) {
+		return std::make_shared<ErrorType>();
 	}
 
-	Box<Type> CloneVisitor::visit(const UnitType &) {
-		return std::make_unique<UnitType>();
+	TypePtr CloneVisitor::visit(const UnitType &) {
+		return std::make_shared<UnitType>();
 	}
 
-	Box<Type> clone(const Type &type) {
+	TypePtr clone(const Type &type) {
 		return CloneVisitor().dispatch(type);
 	}
 }

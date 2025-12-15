@@ -21,5 +21,5 @@ namespace type {
 	};
 }
 
-std::ostream &operator<<(std::ostream &os, const type::Params &p);
+std::ostream &operator<<(std::ostream &os, const type::TypeList &p);
 std::ostream &operator<<(std::ostream &os, const type::Type &n);

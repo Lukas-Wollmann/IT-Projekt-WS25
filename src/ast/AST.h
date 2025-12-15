@@ -46,7 +46,7 @@ namespace ast {
 
 	struct Expr : public Stmt {
 	public:
-		Opt<Box<const type::Type>> inferredType;
+		Opt<type::TypePtr> inferredType;
 
 	protected:
 		explicit Expr(NodeKind kind);
@@ -94,10 +94,10 @@ namespace ast {
 
 	struct ArrayExpr : public Expr {
 	public:
-		const Box<const type::Type> elementType;
+		const type::TypePtr elementType;
 		const Vec<Box<Expr>> values;
 
-		ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values);
+		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
 	};
 
 	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
@@ -216,7 +216,7 @@ namespace ast {
 	struct VarDef : public Stmt {
 	public:
 		const U8String ident;
-		const Box<const type::Type> type;
+		const type::TypePtr type;
 		const Box<Expr> value;
 
 	public:

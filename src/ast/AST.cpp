@@ -37,9 +37,9 @@ namespace ast {
         : Expr(NodeKind::UnitLit)
     {}
 
-	ArrayExpr::ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values)
+	ArrayExpr::ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values)
 		: Expr(NodeKind::ArrayExpr)
-		, elementType(std::move(elementType))
+		, elementType(elementType)
 		, values(std::move(values)) {}
 
 	UnaryExpr::UnaryExpr(UnaryOpKind op, Box<Expr> operand)

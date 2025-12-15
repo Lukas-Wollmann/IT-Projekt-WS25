@@ -24,7 +24,7 @@ namespace ast {
 		m_OStream << "StringLit(\"" << n.value << "\")";
 	}
 
-    void PrintVisitor::visit(const UnitLit &n) {
+    void PrintVisitor::visit(const UnitLit &) {
         m_OStream << "UnitLit()";
     }
 

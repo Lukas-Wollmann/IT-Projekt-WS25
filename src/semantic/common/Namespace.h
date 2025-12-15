@@ -17,10 +17,10 @@ namespace semantic {
 	struct FunctionDeclInfo {
 	private:
 		U8String m_Name;
-		Box<const type::FunctionType> m_Type;
+		Ptr<const type::FunctionType> m_Type;
 
 	public:
-		FunctionDeclInfo(U8String, Box<const type::FunctionType> func);
+		FunctionDeclInfo(U8String, Ptr<const type::FunctionType> func);
 		FunctionDeclInfo(const FunctionDeclInfo &) = delete;
 		FunctionDeclInfo(FunctionDeclInfo &&) = default;
 
@@ -34,7 +34,7 @@ namespace semantic {
 	struct Namespace {
 	private:
 		U8String m_Name;
-		std::unordered_map<U8String, Box<const type::FunctionType>> m_Functions;
+		std::unordered_map<U8String, Ptr<const type::FunctionType>> m_Functions;
 
 	public:
 		Namespace(U8String name);
@@ -44,7 +44,7 @@ namespace semantic {
 		Namespace &operator=(const Namespace &) = delete;
 		Namespace &operator=(Namespace &&) = delete;
 
-		void addFunction(U8String name, Box<const type::FunctionType> func);
+		void addFunction(U8String name, Ptr<const type::FunctionType> func);
 		Opt<Ref<const type::FunctionType>> getFunction(const U8String &name) const;
 
 		friend std::ostream & ::operator<<(std::ostream &os, const Namespace &ns);

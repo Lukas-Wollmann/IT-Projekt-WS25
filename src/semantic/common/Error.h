@@ -7,6 +7,7 @@
 
 namespace semantic {
 	enum struct ErrorKind {
+		ASSIGNMENT_INCOMPATIBLE_TYPES,
 		ASSIGNMENT_OPERATOR_INCOMPATIBLE_TYPES,
 		UNKNOWN_SYMBOL,
 		CANNOT_ASSIGN_TO_RVALUE,
@@ -22,20 +23,30 @@ namespace semantic {
 		DEREFERENCE_NON_POINTER,
 		FUNC_CALL_NON_FUNCTION,
 		FUNC_CALL_ARG_MISMATCH,
-		MISSING_RETURN_PATH
+		MISSING_RETURN_PATH,
+		ARG_TYPE_MISSMATCH_PARAM
 	};
 
 	template <ErrorKind E>
 	struct Error;
 
 	template <>
-	struct Error<ErrorKind::ASSIGNMENT_OPERATOR_INCOMPATIBLE_TYPES> {
-		U8String str(ast::BinaryOpKind kind, const type::Type &left, const type::Type &right,
-					 const type::Type &res) const {
+	struct Error<ErrorKind::ASSIGNMENT_INCOMPATIBLE_TYPES> {
+		U8String str(type::TypePtr left, type::TypePtr right) const {
 			std::stringstream ss;
-			ss << "Cannot assign using '" << kind << "=': left type is '" << left
-			   << "', right side ('" << left << " " << kind << " " << right << "') yields type '"
-			   << res << "'. Expected type '" << left << "'.";
+			ss << "Cannot assign using type '" << *right << " to type '" << *left << "'.";
+			return U8String(ss.str());
+		}
+	};
+
+	template <>
+	struct Error<ErrorKind::ASSIGNMENT_OPERATOR_INCOMPATIBLE_TYPES> {
+		U8String str(ast::BinaryOpKind kind, type::TypePtr left, type::TypePtr right,
+					 type::TypePtr res) const {
+			std::stringstream ss;
+			ss << "Cannot assign using '" << kind << "=': left type is '" << *left
+			   << "', right side ('" << *left << " " << kind << " " << *right << "') yields type '"
+			   << *res << "'. Expected type '" << *left << "'.";
 			return U8String(ss.str());
 		}
 	};
@@ -65,28 +76,28 @@ namespace semantic {
 
 	template <>
 	struct Error<ErrorKind::IF_CONDITION_INVALID_TYPE> {
-		U8String str(const type::Type &type) const {
+		U8String str(type::TypePtr type) const {
 			std::stringstream ss;
-			ss << "Cannot accept type " << type << " inside an if condition.";
+			ss << "Cannot accept type " << *type << " inside an if condition.";
 			return U8String(ss.str());
 		}
 	};
 
 	template <>
 	struct Error<ErrorKind::WHILE_CONDITION_INVALID_TYPE> {
-		U8String str(const type::Type &type) const {
+		U8String str(type::TypePtr type) const {
 			std::stringstream ss;
-			ss << "Cannot accept type " << type << " inside a while condition.";
+			ss << "Cannot accept type " << *type << " inside a while condition.";
 			return U8String(ss.str());
 		}
 	};
 
 	template <>
 	struct Error<ErrorKind::RETURN_TYPE_MISMATCH> {
-		U8String str(const type::Type &given, const type::Type &expected) const {
+		U8String str(type::TypePtr given, type::TypePtr expected) const {
 			std::stringstream ss;
-			ss << "The type " << given << " does not match function declaration. ";
-			ss << "Expected type: " << expected;
+			ss << "The type " << *given << " does not match function declaration. ";
+			ss << "Expected type: " << *expected;
 			return U8String(ss.str());
 		}
 	};
@@ -102,19 +113,19 @@ namespace semantic {
 
 	template <>
 	struct Error<ErrorKind::VARIABLE_DECL_TYPE_MISMATCH> {
-		U8String str(const type::Type &expected, const type::Type &given) const {
+		U8String str(type::TypePtr expected, type::TypePtr given) const {
 			std::stringstream ss;
 			ss << "Mismatching types at variable declaration: ";
-			ss << "Expected " << expected << " but got " << given;
+			ss << "Expected " << *expected << " but got " << *given;
 			return U8String(ss.str());
 		}
 	};
 
 	template <>
 	struct Error<ErrorKind::ARRAY_ELEMENT_TYPE_MISMATCH> {
-		U8String str(const type::Type &expected, const type::Type &found) const {
+		U8String str(type::TypePtr expected, type::TypePtr found) const {
 			std::stringstream ss;
-			ss << "Array element type mismatch: expected '" << expected << "', found '" << found
+			ss << "Array element type mismatch: expected '" << *expected << "', found '" << *found
 			   << "'.";
 			return U8String(ss.str());
 		}
@@ -122,27 +133,28 @@ namespace semantic {
 
 	template <>
 	struct Error<ErrorKind::BINARY_OPERATOR_NOT_FOUND> {
-		U8String str(const type::Type &left, const type::Type &right, const ast::BinaryOpKind op) const {
+		U8String str(type::TypePtr left, type::TypePtr right, ast::BinaryOpKind op) const {
 			std::stringstream ss;
-			ss << "Found no binary operator '" << op << "' for types " << left << " and " << right;
+			ss << "Found no binary operator '" << op << "' for types " << *left << " and "
+			   << *right;
 			return U8String(ss.str());
 		}
 	};
 
 	template <>
 	struct Error<ErrorKind::UNARY_OPERATOR_NOT_FOUND> {
-		U8String str(const type::Type &type, const ast::UnaryOpKind op) const {
+		U8String str(const type::TypePtr type, ast::UnaryOpKind op) const {
 			std::stringstream ss;
-			ss << "Found no unary operator '" << op << "' for type " << type;
+			ss << "Found no unary operator '" << op << "' for type " << *type;
 			return U8String(ss.str());
 		}
 	};
 
 	template <>
 	struct Error<ErrorKind::DEREFERENCE_NON_POINTER> {
-		U8String str(const type::Type &type) const {
+		U8String str(const type::TypePtr type) const {
 			std::stringstream ss;
-			ss << "Cannot dereference a value of type " << type << ", expected a pointer type.";
+			ss << "Cannot dereference a value of type " << *type << ", expected a pointer type.";
 			return U8String(ss.str());
 		}
 	};
@@ -169,6 +181,16 @@ namespace semantic {
 		U8String str(const U8String &funcName) const {
 			std::stringstream ss;
 			ss << "Not all control flow paths in function '" << funcName << "' return a value.";
+			return U8String(ss.str());
+		}
+	};
+
+	template <>
+	struct Error<ErrorKind::ARG_TYPE_MISSMATCH_PARAM> {
+		U8String str(type::TypePtr arg, type::TypePtr param) const {
+			std::stringstream ss;
+			ss << "Canno't use a value of type '" << *arg << "' for a paramteter of type '"
+			   << *param << "'.";
 			return U8String(ss.str());
 		}
 	};

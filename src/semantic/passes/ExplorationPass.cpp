@@ -2,16 +2,14 @@
 
 #include <sstream>
 
-#include "semantic/common/Operator.h"
+#include "semantic/common/OperatorTable.h"
 #include "type/CloneVisitor.h"
 
 namespace semantic {
 	using namespace type;
 
 	ExplorationPass::ExplorationPass(TypeCheckerContext &context)
-		: m_Context(context) {
-		semantic::addInternalOperatorDecls(m_Context.getGlobalNamespace());
-	}
+		: m_Context(context) {}
 
 	void ExplorationPass::visit(const ast::Module &n) {
 		for (auto &d : n.decls)
@@ -19,12 +17,12 @@ namespace semantic {
 	}
 
 	void ExplorationPass::visit(const ast::FuncDecl &n) {
-		Vec<Box<const Type>> params;
+		TypeList params;
 
 		for (auto &p : n.params)
 			params.push_back(clone(*p.second));
 
-		auto funcType = std::make_unique<FunctionType>(std::move(params), clone(*n.returnType));
+		auto funcType = std::make_shared<FunctionType>(std::move(params), clone(*n.returnType));
 
 		Namespace &gloabl = m_Context.getGlobalNamespace();
 
@@ -35,6 +33,6 @@ namespace semantic {
 			return;
 		}
 
-		gloabl.addFunction(n.ident, std::move(funcType));
+		gloabl.addFunction(n.ident, funcType);
 	}
 }

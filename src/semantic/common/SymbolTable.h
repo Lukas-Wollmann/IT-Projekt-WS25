@@ -15,14 +15,14 @@ std::ostream &operator<<(std::ostream &os, const semantic::SymbolTable &table);
 namespace semantic {
 	struct SymbolInfo {
 	private:
-		Box<const type::Type> m_Type;
+		type::TypePtr m_Type;
 
 	public:
-		SymbolInfo(Box<const type::Type> type);
+		SymbolInfo(type::TypePtr type);
 		SymbolInfo(const SymbolInfo &) = delete;
 		SymbolInfo(SymbolInfo &&) = default;
 
-		const type::Type &getType() const;
+		type::TypePtr getType() const;
 	};
 
 	using Scope = std::unordered_map<U8String, SymbolInfo>;

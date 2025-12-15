@@ -5,11 +5,11 @@
 namespace semantic {
     using namespace type;
 
-	SymbolInfo::SymbolInfo(Box<const Type> type)
+	SymbolInfo::SymbolInfo(TypePtr type)
 		: m_Type(std::move(type)) {}
 
-    const Type &SymbolInfo::getType() const {
-		return *m_Type;
+    TypePtr SymbolInfo::getType() const {
+		return m_Type;
 	}
 
 	Scope &SymbolTable::enterScope() {
