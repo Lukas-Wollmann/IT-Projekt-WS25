@@ -13,9 +13,6 @@ All passes share a mutable reference to a `TypeCheckerContext` object. This cont
 
 ## Exploration Pass
 
-### Builtin Operators
-The `Operator` file provides a way of adding all default operations to a `Namespace` object. This will make all the default operators like adding two integers or two strings legal. This is done by treating most operators as basic functions while type checking. This reduces repeated logic for all operators while still being very expandable especially if operator overloading is ever added. Lets look at an example `BinaryExpr(IntLit(1), +, IntLit(5))` describes a basic addition of two signed integers. Internally the type checker will see this binary expression and try to look for an operator. Because we dont support operator overloading, the type checker looks for a function with the name `operator<i32,i32>+`. If the function is found and matches the input arguments, its return type can be used as the return type for the binary expression. There are some exceptions, all `Assignment` operations are treated differently and also the `Dereference` unary operation is (for now) implemented with a different logic. All other operators use this function-like approach.
-
 ### Exploration
 While exploring we just loop through all declarations inside a `Module`. As of right now, there can only be `FuncDecl`s inside a `Module`. We can just add each one to the global `Namespace`, storing the function name and the `FunctionType`, that means information like parameter types and return type. If a function name is found twice, the second one will be ignored and an error will be appened to the `TypeCheckerContext` errror collection.
 
@@ -56,16 +53,7 @@ As a part of the type checking pass, we also check the control flow. This is ver
 There are probably still some small logic errors and bugs. Most things are subject to change and need to be adjusted once more AST node types exist and the language grows. If you have ideas to implement certain things better, feel free to change the code.
 
 For the future we need to think about things like:
-- Overloading and why its good, but also why its very bad
-- Some sort of generics (generics + traits = better overloading)
+- Function overloading and why its good, but also why its very bad
 - Implicit conversions, explicit conversions
 - Rules on r-value and l-value semantics
 - ErrorType propagation: Ensure that operations on ErrorType do not produce - Spurious cascading errors in large expressions, calling a function with an argument of `<error-type>` will produce a new error
-- Operators as functions, will maybe break in the future but also has some positive effects like writing `operator<int,int>+` could return a function pointer to a builtin. This can be usefull for things like
-```
-func reduce(arr: *[]int, f: (int, int)->int, start: int) -> int { ... }
-
-
-arr: *[]int = new []int{ 1, 2, 3, 4 };
-sum: int = reduce(arr, operator<int,int>+, 0);
-```
