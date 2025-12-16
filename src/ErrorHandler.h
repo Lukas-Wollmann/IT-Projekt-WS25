@@ -2,27 +2,21 @@
 
 #include <string>
 #include <vector>
+
 #include "core/U8String.h"
 #include "lexer/Token.h"
 
-enum class ErrorLevel
-{
-	ERROR,
-	WARNING,
-	NOTE
-};
+enum class ErrorLevel { ERROR, WARNING, NOTE };
 
-struct ErrorMessage
-{
+struct ErrorMessage {
 	ErrorLevel level;
 	U8String message;
 	SourceLoc location;
 	size_t highlightLength;
 };
 
-class ErrorHandler
-{
-  private:
+class ErrorHandler {
+private:
 	std::vector<ErrorMessage> errors;
 	U8String sourceCode;
 	U8String filename;
@@ -31,18 +25,20 @@ class ErrorHandler
 	U8String getLineFromSource(size_t lineNumber) const;
 	void printError(const ErrorMessage &error) const;
 
-  public:
+public:
 	ErrorHandler(U8String filename, U8String sourceCode);
 
-	void addError(ErrorLevel level, U8String message, SourceLoc location, 
-	              size_t highlightLength = 1);
+	void addError(ErrorLevel level, U8String message, SourceLoc location,
+				  size_t highlightLength = 1);
 
 	void addTokenError(const Token &token, U8String message);
 
 	void printErrors() const;
 
 	// Prüfen, ob Fehler vorhanden sind
-	bool hasError() const { return hasErrors; }
+	bool hasError() const {
+		return hasErrors;
+	}
 
 	size_t errorCount() const;
 	size_t warningCount() const;
