@@ -57,3 +57,15 @@ For the future we need to think about things like:
 - Implicit conversions, explicit conversions
 - Rules on r-value and l-value semantics
 - ErrorType propagation: Ensure that operations on ErrorType do not produce - Spurious cascading errors in large expressions, calling a function with an argument of `<error-type>` will produce a new error
+
+
+Problem:
+a: *[]i32 = ...
+
+aber:
+*a[5] = 5 geht auch ned
+=> (*a)[5] ist richtig, das ist doof :c
+
+das tut auch weh:
+a*[2] = 5
+a->[2] = 5
