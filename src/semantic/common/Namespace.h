@@ -34,7 +34,7 @@ namespace semantic {
 	struct Namespace {
 	private:
 		U8String m_Name;
-		std::unordered_map<U8String, Ptr<const type::FunctionType>> m_Functions;
+		std::unordered_map<U8String, type::FunctionTypePtr> m_Functions;
 
 	public:
 		Namespace(U8String name);
@@ -45,7 +45,7 @@ namespace semantic {
 		Namespace &operator=(Namespace &&) = delete;
 
 		void addFunction(U8String name, Ptr<const type::FunctionType> func);
-		Opt<Ref<const type::FunctionType>> getFunction(const U8String &name) const;
+		Opt<type::FunctionTypePtr> getFunction(const U8String &name) const;
 
 		friend std::ostream & ::operator<<(std::ostream &os, const Namespace &ns);
 	};

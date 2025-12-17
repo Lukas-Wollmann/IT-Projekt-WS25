@@ -12,6 +12,10 @@ namespace semantic {
 		return m_Type;
 	}
 
+    SymbolTable::SymbolTable() {
+        enterScope();
+    }
+
 	Scope &SymbolTable::enterScope() {
 		m_Scopes.push_back({});
 

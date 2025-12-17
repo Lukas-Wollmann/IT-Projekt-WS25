@@ -28,13 +28,13 @@ namespace semantic {
 		m_Functions.emplace(std::move(name), std::move(func));
 	}
 
-	Opt<Ref<const FunctionType>> Namespace::getFunction(const U8String &name) const {
+	Opt<FunctionTypePtr> Namespace::getFunction(const U8String &name) const {
 		auto func = m_Functions.find(name);
 
 		if (func == m_Functions.end())
 			return std::nullopt;
 
-		return *func->second;
+		return func->second;
 	}
 }
 

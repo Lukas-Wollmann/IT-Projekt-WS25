@@ -12,11 +12,11 @@ namespace ast {
 		CharLit,
 		BoolLit,
 		StringLit,
-        UnitLit,
+		UnitLit,
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-        HeapAlloc,
+		HeapAlloc,
 		Assignment,
 		VarRef,
 		FuncCall,
@@ -27,6 +27,11 @@ namespace ast {
 		VarDef,
 		FuncDecl,
 		Module
+	};
+
+	enum struct ValueCategory {
+		LValue,
+		RValue,
 	};
 
 	struct Node {
@@ -47,6 +52,10 @@ namespace ast {
 	struct Expr : public Stmt {
 	public:
 		Opt<type::TypePtr> inferredType;
+		Opt<ValueCategory> valueCategory;
+
+		void infer(type::TypePtr type, ValueCategory category);
+		bool isInferred() const;
 
 	protected:
 		explicit Expr(NodeKind kind);
@@ -87,10 +96,10 @@ namespace ast {
 		explicit StringLit(U8String value);
 	};
 
-    struct UnitLit : public Expr {
-    public:
-        UnitLit();
-    };
+	struct UnitLit : public Expr {
+	public:
+		UnitLit();
+	};
 
 	struct ArrayExpr : public Expr {
 	public:
@@ -153,12 +162,12 @@ namespace ast {
 		RightShift,
 	};
 
-    struct HeapAlloc : public Expr {
-    public:
-        const Box<Expr> value;
+	struct HeapAlloc : public Expr {
+	public:
+		const type::TypePtr type;
 
-        explicit HeapAlloc(Box<Expr> value);
-    };
+		explicit HeapAlloc(type::TypePtr type);
+	};
 
 	struct Assignment : public Expr {
 	public:
@@ -223,17 +232,16 @@ namespace ast {
 		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
 	};
 
-	using Param = Pair<U8String, Box<const type::Type>>;
+	using Param = Pair<U8String, type::TypePtr>;
 
 	struct FuncDecl : public Node {
 	public:
 		const U8String ident;
 		const Vec<Param> params;
-		const Box<const type::Type> returnType;
+		const type::TypePtr returnType;
 		const Box<BlockStmt> body;
 
-		FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
-				 Box<BlockStmt> body);
+		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
 	};
 
 	struct Module : public Node {

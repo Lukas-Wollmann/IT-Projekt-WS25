@@ -6,20 +6,19 @@
 
 namespace semantic {
 	///
-	/// Find all declaration that exist in a module. Only top level
-	/// declaration are supported as of right now. That means it is
-	/// not possible to nest a declaration inside another one. This
-	/// has to be ensured by using correct parsing rules.
-	///
+	/// Type check all nodes of the AST, we use a recursive, bottom up appreach to infer
+    /// all types and value categories. If a type error happenes, report it and propagate
+	/// it upwards inside the tree. Error messages are stored as template specializations
+    /// inside ErrorMessages.h.
+    ///
 	struct TypeCheckingPass : public ast::Visitor<bool> {
 	private:
 		TypeCheckerContext &m_Context;
 		SymbolTable m_SymbolTable;
-		type::TypePtr m_CurrentFunctionReturnType;
+		Opt<type::TypePtr> m_CurrentFunctionReturnType;
 
 	public:
 		TypeCheckingPass(TypeCheckerContext &context);
-		~TypeCheckingPass();
 
 	private:
 		bool visit(ast::Module &n) override;
@@ -44,8 +43,9 @@ namespace semantic {
 		bool visit(ast::FuncDecl &n) override;
 
 	private:
-		bool isAssignable(ast::Expr &e) const;
-		bool canArgsCallFunc(const type::TypeList &args, const type::FunctionType &func) const;
+        type::TypePtr checkExpression(ast::Expr &n);
+        bool typesMatch(type::TypePtr left, type::TypePtr right) const;
+		bool canArgsCallFunc(const type::TypeList &args, type::FunctionTypePtr func) const;
 		Opt<ast::BinaryOpKind> getBinaryOpFromAssignment(ast::AssignmentKind kind) const;
 	};
 }

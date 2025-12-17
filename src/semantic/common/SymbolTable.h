@@ -32,7 +32,7 @@ namespace semantic {
 		std::vector<Scope> m_Scopes;
 
 	public:
-		SymbolTable() = default;
+		SymbolTable();
 		SymbolTable(const SymbolTable &) = delete;
 		SymbolTable(SymbolTable &&) = delete;
 

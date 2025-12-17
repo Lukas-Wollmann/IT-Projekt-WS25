@@ -10,18 +10,19 @@ namespace type {
 	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
 
 	struct Type {
-        public:
+	public:
 		const TypeKind kind;
-        
+
 		virtual ~Type() = default;
-        
-        protected:
+        bool isTypeKind(TypeKind other) const;
+
+	protected:
 		explicit Type(const TypeKind kind);
 	};
 
-    using TypePtr = Ptr<const Type>;
+	using TypePtr = Ptr<const Type>;
     using TypeList = Vec<TypePtr>;
-    
+
 	struct Typename : public Type {
 	public:
 		const U8String typename_;
@@ -44,7 +45,6 @@ namespace type {
 		explicit ArrayType(Ptr<const Type> elementType, Opt<size_t> arraySize = std::nullopt);
 	};
 
-
 	struct FunctionType : public Type {
 	public:
 		const TypeList paramTypes;
@@ -52,6 +52,8 @@ namespace type {
 
 		FunctionType(TypeList paramTypes, Ptr<const Type> returnType);
 	};
+
+    using FunctionTypePtr = Ptr<const FunctionType>;
 
 	struct ErrorType : public Type {
 	public:

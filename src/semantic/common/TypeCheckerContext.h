@@ -20,7 +20,6 @@ namespace semantic {
         TypeCheckerContext &operator=(const TypeCheckerContext &) = delete;
 		TypeCheckerContext &operator=(TypeCheckerContext &&) = delete;
 
-		void addError(std::string msg);
         void addError(U8String msg);
 		Namespace &getGlobalNamespace();
         const OperatorTable &getOperatorTable() const;

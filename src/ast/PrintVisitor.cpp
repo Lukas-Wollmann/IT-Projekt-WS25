@@ -61,9 +61,7 @@ namespace ast {
 	}
 
     void PrintVisitor::visit(const HeapAlloc &n) {
-        m_OStream << "HeapAlloc(";
-        dispatch(*n.value);
-        m_OStream << ")";
+        m_OStream << "HeapAlloc(" << *n.type << ")";
     }
 
 	void PrintVisitor::visit(const FuncCall &n) {

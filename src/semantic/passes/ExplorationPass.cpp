@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "semantic/common/OperatorTable.h"
-#include "type/CloneVisitor.h"
 
 namespace semantic {
 	using namespace type;
@@ -20,16 +19,16 @@ namespace semantic {
 		TypeList params;
 
 		for (auto &p : n.params)
-			params.push_back(clone(*p.second));
+			params.push_back(p.second);
 
-		auto funcType = std::make_shared<FunctionType>(std::move(params), clone(*n.returnType));
+		auto funcType = std::make_shared<FunctionType>(std::move(params), n.returnType);
 
 		Namespace &gloabl = m_Context.getGlobalNamespace();
 
 		if (gloabl.getFunction(n.ident)) {
 			std::stringstream ss;
 			ss << "Illegal redeclaration of function '" << n.ident << "'.";
-			m_Context.addError(ss.str());
+			m_Context.addError(U8String(ss.str()));
 			return;
 		}
 

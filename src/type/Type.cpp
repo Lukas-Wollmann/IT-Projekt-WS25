@@ -6,6 +6,10 @@ namespace type {
 	Type::Type(TypeKind kind)
 		: kind(kind) {}
 
+    bool Type::isTypeKind(TypeKind other) const {
+        return kind == other;
+    }
+
     Typename::Typename(U8String typename_)
 		: Type(TypeKind::Typename)
 		, typename_(std::move(typename_)) {}

@@ -13,6 +13,15 @@ namespace ast {
 	Expr::Expr(NodeKind kind)
 		: Stmt(kind) {}
 
+	void Expr::infer(type::TypePtr type, ValueCategory category) {
+		inferredType = type;
+		valueCategory = category;
+	}
+
+	bool Expr::isInferred() const {
+		return inferredType.has_value() || valueCategory.has_value();
+	}
+
 	IntLit::IntLit(i32 value)
 		: Expr(NodeKind::IntLit)
 		, value(value) {}
@@ -33,9 +42,8 @@ namespace ast {
 		: Expr(NodeKind::StringLit)
 		, value(std::move(value)) {}
 
-    UnitLit::UnitLit()
-        : Expr(NodeKind::UnitLit)
-    {}
+	UnitLit::UnitLit()
+		: Expr(NodeKind::UnitLit) {}
 
 	ArrayExpr::ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values)
 		: Expr(NodeKind::ArrayExpr)
@@ -53,10 +61,9 @@ namespace ast {
 		, left(std::move(left))
 		, right(std::move(right)) {}
 
-    HeapAlloc::HeapAlloc(Box<Expr> value) 
-        : Expr(NodeKind::HeapAlloc)
-        , value(std::move(value))
-    {}
+	HeapAlloc::HeapAlloc(type::TypePtr type)
+		: Expr(NodeKind::HeapAlloc)
+		, type(type) {}
 
 	Assignment::Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
 		: Expr(NodeKind::Assignment)
@@ -98,12 +105,12 @@ namespace ast {
 		, type(std::move(type))
 		, value(std::move(value)) {}
 
-	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
+	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType,
 					   Box<BlockStmt> body)
 		: Node(NodeKind::FuncDecl)
 		, ident(std::move(ident))
 		, params(std::move(params))
-		, returnType(std::move(returnType))
+		, returnType(returnType)
 		, body(std::move(body)) {}
 
 	Module::Module(U8String name, Vec<Box<FuncDecl>> decls)
