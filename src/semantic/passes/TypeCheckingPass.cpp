@@ -151,7 +151,7 @@ namespace semantic {
 		auto right = checkExpression(*n.right);
 
 		if (n.left->valueCategory != ValueCategory::LValue) {
-			ErrorMessage<ErrorMessageKind::CANNOT_ASSIGN_TO_RVALUE> err;
+			ErrorMessage<ErrorMessageKind::ASSIGN_TO_RVALUE> err;
 			m_Context.addError(err.str());
             return false;
 		}
@@ -240,7 +240,7 @@ namespace semantic {
 			return false;
 		}
 
-		ErrorMessage<ErrorMessageKind::UNKNOWN_SYMBOL> err;
+		ErrorMessage<ErrorMessageKind::UNDEFINED_REFERENCE> err;
 		m_Context.addError(err.str(n.ident));
 
         n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
