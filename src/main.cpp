@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 
+
 int main() {
     llvm::LLVMContext context;
     auto module = std::make_unique<llvm::Module>("my_module", context);
@@ -27,8 +28,5 @@ int main() {
     }
 
     module->print(llvm::outs(), nullptr);
-    
-
-    std::cout << "fertig";
     return 0;
 }

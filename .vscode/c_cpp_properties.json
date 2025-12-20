@@ -13,12 +13,7 @@
             "defines": [],
             "cStandard": "c17",
             "cppStandard": "c++20",
-            "intelliSenseMode": "linux-clang-x64",
-            "compilerArgs": [
-                "-stdlib=libc++",
-                "-I/usr/include/llvm-18",
-                "/usr/include/llvm-c-18"
-            ]
+            "intelliSenseMode": "linux-clang-x64"
         }
     ],
     "version": 4

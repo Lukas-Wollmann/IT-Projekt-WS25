@@ -9,12 +9,12 @@ CXX := clang++
 CXXFLAGS := -O0 \
             $(LLVM_CXXFLAGS) \
             -Wall -Wextra -Werror \
+			-Wno-unused-parameter \
             -Wno-error=unused-parameter \
             -Wno-error=unused-variable \
             -Wno-error=deprecated-declarations \
             -std=c++20 \
-            -fexceptions \
-            -stdlib=libc++
+            -fexceptions
 
 
 SRC_DIR := src
@@ -44,11 +44,11 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS) -stdlib=libc++ -lc++ -lc++abi
+	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS)
 
 $(TEST_TARGET): $(TEST_OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS) -stdlib=libc++ -lc++ -lc++abi
+	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS)
 
 
 $(OBJ_DIR)/%.o: %.cpp
