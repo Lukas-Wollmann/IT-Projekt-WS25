@@ -12,7 +12,7 @@ namespace type {
 	public:
 		PrintVisitor(std::ostream &os);
 
-		void visit(const PrimitiveType &n) override;
+		void visit(const Typename &n) override;
 		void visit(const PointerType &n) override;
 		void visit(const ArrayType &n) override;
 		void visit(const FunctionType &n) override;
@@ -21,4 +21,5 @@ namespace type {
 	};
 }
 
+std::ostream &operator<<(std::ostream &os, const type::TypeList &p);
 std::ostream &operator<<(std::ostream &os, const type::Type &n);

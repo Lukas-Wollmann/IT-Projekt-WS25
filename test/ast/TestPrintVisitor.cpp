@@ -69,9 +69,21 @@ TEST_CASE("StringLit: toString works") {
 	CHECK(result == "StringLit(\"burger king\")");
 }
 
+TEST_CASE("UnitLit: toString works") {
+	// Arrange
+	auto unitLit = std::make_unique<UnitLit>();
+	std::stringstream ss;
+
+	// Act
+	ss << *unitLit;
+	std::string result = ss.str();
+
+	CHECK(result == "UnitLit()");
+}
+
 TEST_CASE("ArrayExpr: toString works") {
 	// Arrange
-	auto arrayType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto arrayType = std::make_unique<Typename>(u8"i32");
 	auto value1 = std::make_unique<IntLit>(187);
 	auto value2 = std::make_unique<IntLit>(67);
 
@@ -102,7 +114,7 @@ TEST_CASE("UnaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "UnaryExpr(Negative, IntLit(7))");
+	CHECK(result == "UnaryExpr(-, IntLit(7))");
 }
 
 TEST_CASE("BinaryExpr: toString works") {
@@ -118,7 +130,21 @@ TEST_CASE("BinaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "BinaryExpr(IntLit(2), Addition, IntLit(3))");
+	CHECK(result == "BinaryExpr(IntLit(2), +, IntLit(3))");
+}
+
+TEST_CASE("HeapAlloc: toString works") {
+	// Arrange
+	auto type = std::make_shared<Typename>(u8"i32");
+	auto heapAlloc = std::make_unique<HeapAlloc>(type);
+	std::stringstream ss;
+
+	// Act
+	ss << *heapAlloc;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "HeapAlloc(i32)");
 }
 
 TEST_CASE("Assignment: toString works") {
@@ -134,7 +160,7 @@ TEST_CASE("Assignment: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "Assignment(VarRef(x), MultiplicationAssignment, IntLit(3))");
+	CHECK(result == "Assignment(VarRef(x), *=, IntLit(3))");
 }
 
 TEST_CASE("VarRef: toString works") {
@@ -237,7 +263,7 @@ TEST_CASE("ReturnStmt: toString works") {
 
 TEST_CASE("VarDef: toString works") {
 	// Arrange
-	auto type = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto type = std::make_unique<Typename>(u8"i32");
 	auto val = std::make_unique<IntLit>(99);
 	auto decl = std::make_unique<VarDef>(u8"myVar", std::move(type), std::move(val));
 	std::stringstream ss;
@@ -253,14 +279,14 @@ TEST_CASE("VarDef: toString works") {
 TEST_CASE("FuncDecl: toString works") {
 	// Arrange
 	Vec<Param> params;
-	params.push_back({u8"a", std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32)});
-	params.push_back({u8"b", std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32)});
+	params.push_back({u8"a", std::make_unique<Typename>(u8"i32")});
+	params.push_back({u8"b", std::make_unique<Typename>(u8"f32")});
 
 	Vec<Box<Stmt>> stmts;
 	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<IntLit>(0)));
 
 	auto body = std::make_unique<BlockStmt>(std::move(stmts));
-	auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
+	auto retType = std::make_unique<Typename>(u8"bool");
 	auto func = std::make_unique<FuncDecl>(u8"foo", std::move(params), std::move(retType),
 										   std::move(body));
 	std::stringstream ss;

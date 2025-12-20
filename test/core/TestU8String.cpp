@@ -123,15 +123,14 @@ TEST_CASE("U8String: validateUTF8 throws if invalid utf8 sequence") {
 
 TEST_CASE("U8String: ptr returns u8string internal buffer pointer") {
 	// Arrange
-	std::u8string buffer = u8"The bunny likes 🌱.";
-	const char8_t *expected = buffer.data();
-	U8String str = std::move(buffer);
+    const char8_t *data = u8"The bunny likes 🌱.";
+	U8String str = data;
 
 	// Act
 	const char8_t *ptr = str.ptr();
 
 	// Assert
-	CHECK(ptr == expected);
+	CHECK(std::u8string_view(ptr) == u8"The bunny likes 🌱.");
 }
 
 TEST_CASE("U8String: data returns underlying u8string as reference") {

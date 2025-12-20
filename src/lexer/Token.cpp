@@ -8,11 +8,13 @@ std::ostream &operator<<(std::ostream &os, TokenType type) {
 		case TokenType::STRING_LITERAL:	 return os << "STRING_LITERAL";
 		case TokenType::NUMERIC_LITERAL: return os << "NUMERIC_LITERAL";
 		case TokenType::CHAR_LITERAL:	 return os << "CHAR_LITERAL";
+		case TokenType::BOOL_LITERAL:	 return os << "BOOL_LITERAL";
 		case TokenType::KEYWORD:		 return os << "KEYWORD";
 		case TokenType::OPERATOR:		 return os << "OPERATOR";
 		case TokenType::SEPARATOR:		 return os << "SEPARATOR";
 		case TokenType::COMMENT:		 return os << "COMMENT";
 		case TokenType::ILLEGAL:		 return os << "ILLEGAL";
+		case TokenType::END_OF_FILE:	 return os << "END_OF_FILE";
 	}
 
 	return os << "<UnknownTokenType>";

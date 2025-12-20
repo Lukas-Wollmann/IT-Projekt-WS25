@@ -4,8 +4,8 @@ namespace type {
 	PrintVisitor::PrintVisitor(std::ostream &os)
 		: m_OStream(os) {}
 
-	void PrintVisitor::visit(const PrimitiveType &n) {
-		m_OStream << n.primitiveKind;
+	void PrintVisitor::visit(const Typename &n) {
+		m_OStream << n.typename_;
 	}
 
 	void PrintVisitor::visit(const PointerType &n) {
@@ -22,12 +22,7 @@ namespace type {
 	}
 
 	void PrintVisitor::visit(const FunctionType &n) {
-		m_OStream << "(";
-
-		for (size_t i = 0; i < n.paramTypes.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.paramTypes[i];
-
-		m_OStream << ")->(" << *n.returnType << ")";
+		m_OStream << "(" << n.paramTypes << ")->(" << *n.returnType << ")";
 	}
 
 	void PrintVisitor::visit(const ErrorType &) {
@@ -37,6 +32,13 @@ namespace type {
 	void PrintVisitor::visit(const UnitType &) {
 		m_OStream << "()";
 	}
+}
+
+std::ostream &operator<<(std::ostream &os, const type::TypeList &p) {
+	for (size_t i = 0; i < p.size(); ++i)
+		os << (i ? ", " : "") << *p[i];
+
+	return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const type::Type &n) {
