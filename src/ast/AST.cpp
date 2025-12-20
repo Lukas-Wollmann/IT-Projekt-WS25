@@ -13,6 +13,15 @@ namespace ast {
 	Expr::Expr(NodeKind kind)
 		: Stmt(kind) {}
 
+	void Expr::infer(type::TypePtr type, ValueCategory category) {
+		inferredType = type;
+		valueCategory = category;
+	}
+
+	bool Expr::isInferred() const {
+		return inferredType.has_value() || valueCategory.has_value();
+	}
+
 	IntLit::IntLit(i32 value)
 		: Expr(NodeKind::IntLit)
 		, value(value) {}
@@ -33,9 +42,12 @@ namespace ast {
 		: Expr(NodeKind::StringLit)
 		, value(std::move(value)) {}
 
-	ArrayExpr::ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values)
+	UnitLit::UnitLit()
+		: Expr(NodeKind::UnitLit) {}
+
+	ArrayExpr::ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values)
 		: Expr(NodeKind::ArrayExpr)
-		, elementType(std::move(elementType))
+		, elementType(elementType)
 		, values(std::move(values)) {}
 
 	UnaryExpr::UnaryExpr(UnaryOpKind op, Box<Expr> operand)
@@ -48,6 +60,10 @@ namespace ast {
 		, op(op)
 		, left(std::move(left))
 		, right(std::move(right)) {}
+
+	HeapAlloc::HeapAlloc(type::TypePtr type)
+		: Expr(NodeKind::HeapAlloc)
+		, type(type) {}
 
 	Assignment::Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
 		: Expr(NodeKind::Assignment)
@@ -89,12 +105,12 @@ namespace ast {
 		, type(std::move(type))
 		, value(std::move(value)) {}
 
-	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
+	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType,
 					   Box<BlockStmt> body)
 		: Node(NodeKind::FuncDecl)
 		, ident(std::move(ident))
 		, params(std::move(params))
-		, returnType(std::move(returnType))
+		, returnType(returnType)
 		, body(std::move(body)) {}
 
 	Module::Module(U8String name, Vec<Box<FuncDecl>> decls)
@@ -132,11 +148,11 @@ std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
 	using enum ast::UnaryOpKind;
 
 	switch (op) {
-		case LogicalNot: return os << "LogicalNot";
-		case BitwiseNot: return os << "BitwiseNot";
-		case Positive:	 return os << "Positive";
-		case Negative:	 return os << "Negative";
-		default:		 UNREACHABLE();
+		case Not:		  return os << "!";
+		case Positive:	  return os << "+";
+		case Negative:	  return os << "-";
+		case Dereference: return os << "*";
+		default:		  UNREACHABLE();
 	}
 }
 
@@ -144,17 +160,17 @@ std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
 	using enum ast::AssignmentKind;
 
 	switch (op) {
-		case Simple:		 return os << "Assignment";
-		case Addition:		 return os << "AdditionAssignment";
-		case Subtraction:	 return os << "SubtractionAssignment";
-		case Multiplication: return os << "MultiplicationAssignment";
-		case Division:		 return os << "DivisionAssignment";
-		case Modulo:		 return os << "ModuloAssignment";
-		case BitwiseAnd:	 return os << "BitwiseAndAssignment";
-		case BitwiseOr:		 return os << "BitwiseOrAssignment";
-		case BitwiseXor:	 return os << "BitwiseXorAssignment";
-		case LeftShift:		 return os << "LeftShiftAssignment";
-		case RightShift:	 return os << "RightShiftAssignment";
+		case Simple:		 return os << "=";
+		case Addition:		 return os << "+=";
+		case Subtraction:	 return os << "-=";
+		case Multiplication: return os << "*=";
+		case Division:		 return os << "/=";
+		case Modulo:		 return os << "%=";
+		case BitwiseAnd:	 return os << "&=";
+		case BitwiseOr:		 return os << "|=";
+		case BitwiseXor:	 return os << "^=";
+		case LeftShift:		 return os << "<<=";
+		case RightShift:	 return os << ">>=";
 		default:			 UNREACHABLE();
 	}
 }
@@ -163,24 +179,24 @@ std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 	using enum ast::BinaryOpKind;
 
 	switch (op) {
-		case Addition:				   return os << "Addition";
-		case Subtraction:			   return os << "Subtraction";
-		case Multiplication:		   return os << "Multiplication";
-		case Division:				   return os << "Division";
-		case Modulo:				   return os << "Modulo";
-		case Equality:				   return os << "Equality";
-		case Inequality:			   return os << "Inequality";
-		case LessThan:				   return os << "LessThan";
-		case GreaterThan:			   return os << "GreaterThan";
-		case LessThanOrEqual:		   return os << "LessThanOrEqual";
-		case GreaterThanOrEqual:	   return os << "GreaterThanOrEqual";
-		case LogicalAnd:			   return os << "LogicalAnd";
-		case LogicalOr:				   return os << "LogicalOr";
-		case BitwiseAnd:			   return os << "BitwiseAnd";
-		case BitwiseOr:				   return os << "BitwiseOr";
-		case BitwiseXor:			   return os << "BitwiseXor";
-		case LeftShift:				   return os << "LeftShift";
-		case RightShift:			   return os << "RightShift";
-		default:					   UNREACHABLE();
+		case Addition:			 return os << "+";
+		case Subtraction:		 return os << "-";
+		case Multiplication:	 return os << "*";
+		case Division:			 return os << "/";
+		case Modulo:			 return os << "%";
+		case Equality:			 return os << "==";
+		case Inequality:		 return os << "!=";
+		case LessThan:			 return os << "<";
+		case GreaterThan:		 return os << ">";
+		case LessThanOrEqual:	 return os << "<=";
+		case GreaterThanOrEqual: return os << ">=";
+		case LogicalAnd:		 return os << "&&";
+		case LogicalOr:			 return os << "||";
+		case BitwiseAnd:		 return os << "&";
+		case BitwiseOr:			 return os << "|";
+		case BitwiseXor:		 return os << "^";
+		case LeftShift:			 return os << "<<";
+		case RightShift:		 return os << ">>";
+		default:				 UNREACHABLE();
 	}
 }

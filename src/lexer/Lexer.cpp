@@ -44,6 +44,7 @@ std::vector<Token> Lexer::tokenize() {
 			tokens.push_back(lexIllegal(startLoc));
 		}
 	}
+	tokens.push_back(Token(TokenType::END_OF_FILE, u8"", m_Loc));
 	return tokens;
 }
 
