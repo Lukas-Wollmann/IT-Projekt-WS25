@@ -21,7 +21,7 @@ namespace semantic {
 												  const type::TypePtr &t2) const;
 
 	private:
-		void addBinaryOperator(ast::BinaryOpKind op, const U8String &typename_);
-		void addUnaryOperator(ast::UnaryOpKind op, const U8String &typename_);
+		void addBinaryOperator(U8String left, ast::BinaryOpKind op, U8String right, U8String ret);
+		void addUnaryOperator(ast::UnaryOpKind op, U8String operand, U8String ret);
 	};
 }

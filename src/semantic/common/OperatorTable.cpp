@@ -15,96 +15,99 @@ namespace semantic {
 		using enum UnaryOpKind;
 		using enum BinaryOpKind;
 
-		// Arithmetic
-		addBinaryOperator(Addition, u8"i32");
-		addBinaryOperator(Addition, u8"u32");
-		addBinaryOperator(Addition, u8"f32");
-		addBinaryOperator(Addition, u8"string");
+		// ARITHMETIC BINARY OPERATORS
+		addBinaryOperator(u8"i32", Addition, u8"i32", u8"i32");
+		addBinaryOperator(u8"u32", Addition, u8"u32", u8"u32");
+		addBinaryOperator(u8"f32", Addition, u8"f32", u8"f32");
+		addBinaryOperator(u8"string", Addition, u8"string", u8"string");
 
-		addBinaryOperator(Subtraction, u8"i32");
-		addBinaryOperator(Subtraction, u8"u32");
-		addBinaryOperator(Subtraction, u8"f32");
+		addBinaryOperator(u8"i32", Subtraction, u8"i32", u8"i32");
+		addBinaryOperator(u8"u32", Subtraction, u8"u32", u8"u32");
+		addBinaryOperator(u8"f32", Subtraction, u8"f32", u8"f32");
 
-		addBinaryOperator(Multiplication, u8"i32");
-		addBinaryOperator(Multiplication, u8"u32");
-		addBinaryOperator(Multiplication, u8"f32");
+		addBinaryOperator(u8"i32", Multiplication, u8"i32", u8"i32");
+		addBinaryOperator(u8"u32", Multiplication, u8"u32", u8"u32");
+		addBinaryOperator(u8"f32", Multiplication, u8"f32", u8"f32");
 
-		addBinaryOperator(Division, u8"i32");
-		addBinaryOperator(Division, u8"u32");
-		addBinaryOperator(Division, u8"f32");
+		addBinaryOperator(u8"i32", Division, u8"i32", u8"i32");
+		addBinaryOperator(u8"u32", Division, u8"u32", u8"u32");
+		addBinaryOperator(u8"f32", Division, u8"f32", u8"f32");
 
-		addBinaryOperator(Modulo, u8"i32");
-		addBinaryOperator(Modulo, u8"u32");
+		addBinaryOperator(u8"i32", Modulo, u8"i32", u8"i32");
+		addBinaryOperator(u8"u32", Modulo, u8"u32", u8"u32");
 
-		// Comparison
-		addBinaryOperator(Equality, u8"i32");
-		addBinaryOperator(Equality, u8"u32");
-		addBinaryOperator(Equality, u8"f32");
-		addBinaryOperator(Equality, u8"bool");
-		addBinaryOperator(Equality, u8"char");
-		addBinaryOperator(Equality, u8"string");
+		// COMPARISON BINARY OPERATORS
+		addBinaryOperator(u8"i32", Equality, u8"i32", u8"bool");
+		addBinaryOperator(u8"i32", Inequality, u8"i32", u8"bool");
+		addBinaryOperator(u8"i32", LessThan, u8"i32", u8"bool");
+		addBinaryOperator(u8"i32", GreaterThan, u8"i32", u8"bool");
+		addBinaryOperator(u8"i32", GreaterThanOrEqual, u8"i32", u8"bool");
 
-		addBinaryOperator(Inequality, u8"i32");
-		addBinaryOperator(Inequality, u8"u32");
-		addBinaryOperator(Inequality, u8"f32");
-		addBinaryOperator(Inequality, u8"bool");
-		addBinaryOperator(Inequality, u8"char");
-		addBinaryOperator(Inequality, u8"string");
+		// u32
+		addBinaryOperator(u8"u32", Equality, u8"u32", u8"bool");
+		addBinaryOperator(u8"u32", Inequality, u8"u32", u8"bool");
+		addBinaryOperator(u8"u32", LessThan, u8"u32", u8"bool");
+		addBinaryOperator(u8"u32", GreaterThan, u8"u32", u8"bool");
+		addBinaryOperator(u8"u32", GreaterThanOrEqual, u8"u32", u8"bool");
 
-		addBinaryOperator(LessThan, u8"i32");
-		addBinaryOperator(LessThan, u8"u32");
-		addBinaryOperator(LessThan, u8"f32");
-		addBinaryOperator(LessThan, u8"char");
-		addBinaryOperator(LessThan, u8"string");
+		// f32
+		addBinaryOperator(u8"f32", Equality, u8"f32", u8"bool");
+		addBinaryOperator(u8"f32", Inequality, u8"f32", u8"bool");
+		addBinaryOperator(u8"f32", LessThan, u8"f32", u8"bool");
+		addBinaryOperator(u8"f32", GreaterThan, u8"f32", u8"bool");
+		addBinaryOperator(u8"f32", GreaterThanOrEqual, u8"f32", u8"bool");
 
-		addBinaryOperator(GreaterThan, u8"i32");
-		addBinaryOperator(GreaterThan, u8"u32");
-		addBinaryOperator(GreaterThan, u8"f32");
-		addBinaryOperator(GreaterThan, u8"char");
-		addBinaryOperator(GreaterThan, u8"string");
+		// bool
+		addBinaryOperator(u8"bool", Equality, u8"bool", u8"bool");
+		addBinaryOperator(u8"bool", Inequality, u8"bool", u8"bool");
 
-		addBinaryOperator(GreaterThanOrEqual, u8"i32");
-		addBinaryOperator(GreaterThanOrEqual, u8"u32");
-		addBinaryOperator(GreaterThanOrEqual, u8"f32");
-		addBinaryOperator(GreaterThanOrEqual, u8"char");
-		addBinaryOperator(GreaterThanOrEqual, u8"string");
+		// char
+		addBinaryOperator(u8"char", Equality, u8"char", u8"bool");
+		addBinaryOperator(u8"char", Inequality, u8"char", u8"bool");
+		addBinaryOperator(u8"char", LessThan, u8"char", u8"bool");
+		addBinaryOperator(u8"char", GreaterThan, u8"char", u8"bool");
+		addBinaryOperator(u8"char", GreaterThanOrEqual, u8"char", u8"bool");
 
-		// Logical
-		addBinaryOperator(LogicalAnd, u8"bool");
-		addBinaryOperator(LogicalOr, u8"bool");
+		// string
+		addBinaryOperator(u8"string", Equality, u8"string", u8"bool");
+		addBinaryOperator(u8"string", Inequality, u8"string", u8"bool");
+		addBinaryOperator(u8"string", LessThan, u8"string", u8"bool");
+		addBinaryOperator(u8"string", GreaterThan, u8"string", u8"bool");
+		addBinaryOperator(u8"string", GreaterThanOrEqual, u8"string", u8"bool");
 
-		// Bitwise
-		addBinaryOperator(BitwiseAnd, u8"i32");
-		addBinaryOperator(BitwiseAnd, u8"u32");
+		// LOGICAL BINARY OPERATORS
+		addBinaryOperator(u8"bool", LogicalAnd, u8"bool", u8"bool");
+		addBinaryOperator(u8"bool", LogicalOr, u8"bool", u8"bool");
 
-		addBinaryOperator(BitwiseOr, u8"i32");
-		addBinaryOperator(BitwiseOr, u8"u32");
+		// BITWISE BINARY OPERATORS (i32 and u32)
+		addBinaryOperator(u8"i32", BitwiseAnd, u8"i32", u8"i32");
+		addBinaryOperator(u8"i32", BitwiseOr, u8"i32", u8"i32");
+		addBinaryOperator(u8"i32", BitwiseXor, u8"i32", u8"i32");
+		addBinaryOperator(u8"i32", LeftShift, u8"i32", u8"i32");
+		addBinaryOperator(u8"i32", RightShift, u8"i32", u8"i32");
 
-		addBinaryOperator(BitwiseXor, u8"i32");
-		addBinaryOperator(BitwiseXor, u8"u32");
+		addBinaryOperator(u8"u32", BitwiseAnd, u8"u32", u8"u32");
+		addBinaryOperator(u8"u32", BitwiseOr, u8"u32", u8"u32");
+		addBinaryOperator(u8"u32", BitwiseXor, u8"u32", u8"u32");
+		addBinaryOperator(u8"u32", LeftShift, u8"u32", u8"u32");
+		addBinaryOperator(u8"u32", RightShift, u8"u32", u8"u32");
 
-		addBinaryOperator(LeftShift, u8"i32");
-		addBinaryOperator(LeftShift, u8"u32");
+		// UNARY ARITHMETIC
+		addUnaryOperator(Positive, u8"i32", u8"i32");
+		addUnaryOperator(Positive, u8"u32", u8"u32");
+		addUnaryOperator(Positive, u8"f32", u8"f32");
 
-		addBinaryOperator(RightShift, u8"i32");
-		addBinaryOperator(RightShift, u8"u32");
+		addUnaryOperator(Negative, u8"i32", u8"i32");
+		addUnaryOperator(Negative, u8"f32", u8"f32");
 
-		// Arithmetic
-		addUnaryOperator(Positive, u8"i32");
-		addUnaryOperator(Positive, u8"u32");
-		addUnaryOperator(Positive, u8"f32");
+		// UNARY LOGICAL
+		addUnaryOperator(Not, u8"bool", u8"bool");
 
-		addUnaryOperator(Negative, u8"i32");
-		addUnaryOperator(Negative, u8"f32");
+		// UNARY BITWISE
+		addUnaryOperator(Not, u8"i32", u8"i32");
+		addUnaryOperator(Not, u8"u32", u8"u32");
 
-		// Logical
-		addUnaryOperator(Not, u8"bool");
-
-		// Bitwise
-		addUnaryOperator(Not, u8"i32");
-		addUnaryOperator(Not, u8"u32");
-
-		// Dereference is handled separately in the typechecker
+		// Dereference handled in type-checker explicitly
 	}
 
 	Opt<FunctionType> OperatorTable::getUnaryOperator(UnaryOpKind op, const TypePtr &t) const {
@@ -138,15 +141,19 @@ namespace semantic {
 		return std::nullopt;
 	}
 
-	void OperatorTable::addBinaryOperator(BinaryOpKind op, const U8String &typename_) {
-		TypePtr type = std::make_shared<Typename>(typename_);
+	void OperatorTable::addBinaryOperator(U8String left, BinaryOpKind op, U8String right,
+										  U8String ret) {
+		TypePtr leftType = std::make_shared<Typename>(left);
+		TypePtr rightType = std::make_shared<Typename>(right);
+		TypePtr retType = std::make_shared<Typename>(ret);
 
-		m_BinaryOps.push_back({op, FunctionType({type, type}, type)});
+		m_BinaryOps.push_back({op, FunctionType({leftType, rightType}, retType)});
 	}
 
-	void OperatorTable::addUnaryOperator(UnaryOpKind op, const U8String &typename_) {
-		TypePtr type = std::make_shared<Typename>(typename_);
+	void OperatorTable::addUnaryOperator(ast::UnaryOpKind op, U8String operand, U8String ret) {
+		TypePtr operandType = std::make_shared<Typename>(operand);
+		TypePtr retType = std::make_shared<Typename>(ret);
 
-		m_UnaryOps.push_back({op, FunctionType({type}, type)});
+		m_UnaryOps.push_back({op, FunctionType({operandType}, retType)});
 	}
 }
