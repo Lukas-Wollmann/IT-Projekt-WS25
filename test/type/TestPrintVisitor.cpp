@@ -5,9 +5,9 @@
 
 using namespace type;
 
-TEST_CASE("PrimitiveType: toString works") {
+TEST_CASE("Typename: toString works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
+	auto primitiveType = std::make_shared<Typename>(u8"i32");
 	std::stringstream ss;
 
 	// Act
@@ -20,8 +20,8 @@ TEST_CASE("PrimitiveType: toString works") {
 
 TEST_CASE("PointerType: toString works") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
-	auto ptrType = std::make_unique<PointerType>(std::move(primitiveType));
+	auto primitiveType = std::make_shared<Typename>(u8"i32");
+	auto ptrType = std::make_shared<PointerType>(std::move(primitiveType));
 	std::stringstream ss;
 
 	// Act
@@ -34,8 +34,8 @@ TEST_CASE("PointerType: toString works") {
 
 TEST_CASE("ArrayType: toString works for sized") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
-	auto arrType = std::make_unique<ArrayType>(std::move(primitiveType), 42);
+	auto primitiveType = std::make_shared<Typename>(u8"i32");
+	auto arrType = std::make_shared<ArrayType>(std::move(primitiveType), 42);
 	std::stringstream ss;
 
 	// Act
@@ -48,8 +48,8 @@ TEST_CASE("ArrayType: toString works for sized") {
 
 TEST_CASE("ArrayType: toString works for unsized") {
 	// Arrange
-	auto primitiveType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32);
-	auto arrType = std::make_unique<ArrayType>(std::move(primitiveType));
+	auto primitiveType = std::make_shared<Typename>(u8"i32");
+	auto arrType = std::make_shared<ArrayType>(std::move(primitiveType));
 	std::stringstream ss;
 
 	// Act
@@ -62,13 +62,13 @@ TEST_CASE("ArrayType: toString works for unsized") {
 
 TEST_CASE("FunctionType: toString works") {
 	// Arrange
-	Vec<Box<const Type>> params;
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::I32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::F32));
-	params.push_back(std::make_unique<PrimitiveType>(PrimitiveTypeKind::Char));
+	TypeList params;
+	params.push_back(std::make_shared<Typename>(u8"i32"));
+	params.push_back(std::make_shared<Typename>(u8"f32"));
+	params.push_back(std::make_shared<Typename>(u8"char"));
 
-	auto retType = std::make_unique<PrimitiveType>(PrimitiveTypeKind::Bool);
-	auto funcType = std::make_unique<FunctionType>(std::move(params), std::move(retType));
+	auto retType = std::make_shared<Typename>(u8"bool");
+	auto funcType = std::make_shared<FunctionType>(std::move(params), std::move(retType));
 	std::stringstream ss;
 
 	// Act
@@ -81,7 +81,7 @@ TEST_CASE("FunctionType: toString works") {
 
 TEST_CASE("ErrorType: toString works") {
 	// Arrange
-	auto errorType = std::make_unique<ErrorType>();
+	auto errorType = std::make_shared<ErrorType>();
 	std::stringstream ss;
 
 	// Act
@@ -94,7 +94,7 @@ TEST_CASE("ErrorType: toString works") {
 
 TEST_CASE("UnitType: toString works") {
 	// Arrange
-	auto unitType = std::make_unique<UnitType>();
+	auto unitType = std::make_shared<UnitType>();
 	std::stringstream ss;
 
 	// Act

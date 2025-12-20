@@ -12,10 +12,12 @@ namespace ast {
 		CharLit,
 		BoolLit,
 		StringLit,
+		UnitLit,
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-        Assignment,
+		HeapAlloc,
+		Assignment,
 		VarRef,
 		FuncCall,
 		BlockStmt,
@@ -25,6 +27,11 @@ namespace ast {
 		VarDef,
 		FuncDecl,
 		Module
+	};
+
+	enum struct ValueCategory {
+		LValue,
+		RValue,
 	};
 
 	struct Node {
@@ -44,7 +51,11 @@ namespace ast {
 
 	struct Expr : public Stmt {
 	public:
-		Opt<Box<const type::Type>> inferredType;
+		Opt<type::TypePtr> inferredType;
+		Opt<ValueCategory> valueCategory;
+
+		void infer(type::TypePtr type, ValueCategory category);
+		bool isInferred() const;
 
 	protected:
 		explicit Expr(NodeKind kind);
@@ -85,15 +96,20 @@ namespace ast {
 		explicit StringLit(U8String value);
 	};
 
-	struct ArrayExpr : public Expr {
+	struct UnitLit : public Expr {
 	public:
-		const Box<const type::Type> elementType;
-		const Vec<Box<Expr>> values;
-
-		ArrayExpr(Box<const type::Type> elementType, Vec<Box<Expr>> values);
+		UnitLit();
 	};
 
-	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
+	struct ArrayExpr : public Expr {
+	public:
+		const type::TypePtr elementType;
+		const Vec<Box<Expr>> values;
+
+		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
+	};
+
+	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
 
 	struct UnaryExpr : public Expr {
 	public:
@@ -132,7 +148,7 @@ namespace ast {
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
 	};
 
-    enum struct AssignmentKind {
+	enum struct AssignmentKind {
 		Simple,
 		Addition,
 		Subtraction,
@@ -144,15 +160,22 @@ namespace ast {
 		BitwiseXor,
 		LeftShift,
 		RightShift,
-    };
+	};
 
-    struct Assignment : public Expr {
-    public:
-        const AssignmentKind assignmentKind;
-        const Box<Expr> left, right;
+	struct HeapAlloc : public Expr {
+	public:
+		const type::TypePtr type;
 
-        explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
-    };
+		explicit HeapAlloc(type::TypePtr type);
+	};
+
+	struct Assignment : public Expr {
+	public:
+		const AssignmentKind assignmentKind;
+		const Box<Expr> left, right;
+
+		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+	};
 
 	struct VarRef : public Expr {
 	public:
@@ -202,24 +225,23 @@ namespace ast {
 	struct VarDef : public Stmt {
 	public:
 		const U8String ident;
-		const Box<const type::Type> type;
+		const type::TypePtr type;
 		const Box<Expr> value;
 
 	public:
 		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
 	};
 
-	using Param = Pair<U8String, Box<const type::Type>>;
+	using Param = Pair<U8String, type::TypePtr>;
 
 	struct FuncDecl : public Node {
 	public:
 		const U8String ident;
 		const Vec<Param> params;
-		const Box<const type::Type> returnType;
+		const type::TypePtr returnType;
 		const Box<BlockStmt> body;
 
-		FuncDecl(U8String ident, Vec<Param> params, Box<const type::Type> returnType,
-				 Box<BlockStmt> body);
+		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
 	};
 
 	struct Module : public Node {

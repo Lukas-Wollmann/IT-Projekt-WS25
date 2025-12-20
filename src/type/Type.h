@@ -4,52 +4,56 @@
 #include <vector>
 
 #include "Typedef.h"
+#include "core/U8String.h"
 
 namespace type {
-	enum struct TypeKind : u8 { Primitive, Pointer, Array, Function, Error, Unit };
+	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
 
 	struct Type {
 	public:
 		const TypeKind kind;
 
 		virtual ~Type() = default;
+        bool isTypeKind(TypeKind other) const;
 
 	protected:
 		explicit Type(const TypeKind kind);
 	};
 
-	enum struct PrimitiveTypeKind : u8 { I32, U32, F32, String, Char, Bool };
+	using TypePtr = Ptr<const Type>;
+    using TypeList = Vec<TypePtr>;
 
-	struct PrimitiveType : public Type {
+	struct Typename : public Type {
 	public:
-		const PrimitiveTypeKind primitiveKind;
+		const U8String typename_;
 
-		explicit PrimitiveType(PrimitiveTypeKind primitiveKind);
+		explicit Typename(U8String typename_);
 	};
 
 	struct PointerType : public Type {
 	public:
-		const Box<const Type> pointeeType;
+		const Ptr<const Type> pointeeType;
 
-		explicit PointerType(Box<const Type> pointeeType);
+		explicit PointerType(Ptr<const Type> pointeeType);
 	};
 
 	struct ArrayType : public Type {
 	public:
-		const Box<const Type> elementType;
-		const std::optional<size_t> arraySize;
+		const Ptr<const Type> elementType;
+		const Opt<size_t> arraySize;
 
-		explicit ArrayType(Box<const Type> elementType,
-						   std::optional<size_t> arraySize = std::nullopt);
+		explicit ArrayType(Ptr<const Type> elementType, Opt<size_t> arraySize = std::nullopt);
 	};
 
 	struct FunctionType : public Type {
 	public:
-		const Vec<Box<const Type>> paramTypes;
-		const Box<const Type> returnType;
+		const TypeList paramTypes;
+		const Ptr<const Type> returnType;
 
-		FunctionType(Vec<Box<const Type>> paramTypes, Box<const Type> returnType);
+		FunctionType(TypeList paramTypes, Ptr<const Type> returnType);
 	};
+
+    using FunctionTypePtr = Ptr<const FunctionType>;
 
 	struct ErrorType : public Type {
 	public:
@@ -63,4 +67,3 @@ namespace type {
 }
 
 std::ostream &operator<<(std::ostream &os, type::TypeKind kind);
-std::ostream &operator<<(std::ostream &os, type::PrimitiveTypeKind kind);

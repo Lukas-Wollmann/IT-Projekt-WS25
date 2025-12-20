@@ -22,13 +22,3 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
 
 	return os << " }";
 }
-
-std::ostream &operator<<(std::ostream &os, const char8_t *str) {
-	while (*str) {
-		os.put(static_cast<char>(*str));
-
-		++str;
-	}
-
-	return os;
-}

@@ -14,7 +14,7 @@ TEST_CASE("LexNumber: simple integer") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -30,7 +30,7 @@ TEST_CASE("LexNumber: integer with trailing characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 2);
+	CHECK(tokens.size() == 3);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 }
@@ -49,7 +49,7 @@ TEST_CASE("LexNumber: multiple integers separated by spaces") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 4);
+	CHECK(tokens.size() == 5);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -68,7 +68,7 @@ TEST_CASE("LexString: simple string literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -83,7 +83,7 @@ TEST_CASE("LexString: string with escaped characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -99,7 +99,7 @@ TEST_CASE("LexString: unterminated string literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -114,7 +114,7 @@ TEST_CASE("LexString: empty string literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -130,7 +130,7 @@ TEST_CASE("LexString: string with unicode characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -145,7 +145,7 @@ TEST_CASE("LexString: string with internal quotes") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -160,7 +160,7 @@ TEST_CASE("LexString: string with escaped backslash") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -177,7 +177,7 @@ TEST_CASE("LexString: string with various escaped characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -192,7 +192,7 @@ TEST_CASE("LexString: string with only escaped characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -208,7 +208,7 @@ TEST_CASE("LexString: string with spaces and tabs") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -226,7 +226,7 @@ TEST_CASE("LexString: multiple string literals separated by spaces") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 4);
+	CHECK(tokens.size() == 5);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -245,7 +245,7 @@ TEST_CASE("LexChar: simple char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -260,7 +260,7 @@ TEST_CASE("LexChar: escaped char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -276,7 +276,7 @@ TEST_CASE("LexChar: unterminated char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -292,7 +292,7 @@ TEST_CASE("LexChar: empty char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -308,7 +308,7 @@ TEST_CASE("LexChar: char literal with multiple characters") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -323,7 +323,7 @@ TEST_CASE("LexChar: char literal with unicode character") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -338,7 +338,7 @@ TEST_CASE("LexChar: char literal with escaped single quote") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -354,7 +354,7 @@ TEST_CASE("LexChar: multiple char literals separated by spaces") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 3);
+	CHECK(tokens.size() == 4);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -372,7 +372,7 @@ TEST_CASE("LexChar: multiple chars in multiple lines") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 3);
+	CHECK(tokens.size() == 4);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -389,7 +389,7 @@ TEST_CASE("LexChar: char literal with escaped backslash") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -404,7 +404,7 @@ TEST_CASE("LexChar: char literal with space character") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -431,8 +431,8 @@ TEST_CASE("LexChar: whole sentence in char literals") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -449,7 +449,7 @@ TEST_CASE("LexChar: whole sentence in one char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -465,7 +465,7 @@ TEST_CASE("LexChar: illegal escape sequence in char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -481,7 +481,7 @@ TEST_CASE("LexChar: missing closing quote in char literal and other tokens after
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -497,7 +497,7 @@ TEST_CASE("LexChar: missing opening quote in char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 2);
+	CHECK(tokens.size() == 3);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 }
@@ -513,7 +513,7 @@ TEST_CASE("LexChar: missing both quotes in char literal") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -529,7 +529,7 @@ TEST_CASE("LexChar: missing closing quote and char literal in next line") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 2);
+	CHECK(tokens.size() == 3);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 }
@@ -548,7 +548,7 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 3);
+	CHECK(tokens.size() == 4);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -565,7 +565,7 @@ TEST_CASE("LexChar: char literal with japanese character") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -581,7 +581,7 @@ TEST_CASE("LexChar: char literal with solo backslash") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -597,7 +597,7 @@ TEST_CASE("LexChar: char literal with solo backslash and unterminated") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -612,7 +612,7 @@ TEST_CASE("LexChar: char literal with qotation mark") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -627,7 +627,7 @@ TEST_CASE("LexChar: char literal with quotation mark (escaped)") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -643,7 +643,7 @@ TEST_CASE("LexSeparator: single separator") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -665,8 +665,8 @@ TEST_CASE("LexSeparator: single separator tokens") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -689,8 +689,8 @@ TEST_CASE("LexSeparator: separators with whitespace") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -713,8 +713,8 @@ TEST_CASE("LexSeparator: separators across multiple lines") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -731,7 +731,7 @@ TEST_CASE("LexOperator: single operator") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -759,8 +759,8 @@ TEST_CASE("LexOperator: multiple operators") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -786,8 +786,8 @@ TEST_CASE("LexOperator: operators with whitespace") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens_recalc.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens_recalc.size() + 1);
+	for (size_t i = 0; i < expectedTokens_recalc.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens_recalc[i]);
 	}
 }
@@ -809,8 +809,8 @@ TEST_CASE("LexOperator: multi operators without spaces") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -826,7 +826,7 @@ TEST_CASE("LexOperator: lex triple character operators") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 }
@@ -842,7 +842,7 @@ TEST_CASE("LexOperator: lex triple operators without spaces") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 }
@@ -870,9 +870,9 @@ TEST_CASE("LexOperator: mixed with other tokens") {
 										 Token(TokenType::IDENTIFIER, U8String("e"), {1, 26, 25}),
 										 Token(TokenType::SEPARATOR, U8String(";"), {1, 27, 26})};
 
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -891,8 +891,8 @@ TEST_CASE("LexOperator: operators across multiple lines") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -909,7 +909,7 @@ TEST_CASE("LexIdentifierOrKeyword: single Identifier") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -924,7 +924,7 @@ TEST_CASE("LexIdentifierOrKeyword: single Keyword") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -940,7 +940,7 @@ TEST_CASE("LexSeparator: mixed with other tokens") {
 	std::vector<Token> expectedTokens =
 			{Token(TokenType::IDENTIFIER, U8String("x"), {1, 1, 0}),
 			 Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
-			 Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+			 Token(TokenType::IDENTIFIER, U8String("i32"), {1, 4, 3}),
 			 Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
 			 Token(TokenType::NUMERIC_LITERAL, U8String("10"), {1, 10, 9}),
 			 Token(TokenType::SEPARATOR, U8String(";"), {1, 12, 11}),
@@ -959,8 +959,8 @@ TEST_CASE("LexSeparator: mixed with other tokens") {
 			 Token(TokenType::SEPARATOR, U8String(";"), {3, 12, 37}),
 			 Token(TokenType::SEPARATOR, U8String("}"), {4, 1, 39})};
 
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -978,8 +978,8 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers with underscores and digits") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -997,8 +997,8 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers and keywords with whitespace") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -1016,8 +1016,8 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers and keywords across multiple line
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	CHECK(tokens.size() == expectedTokens.size() + 1);
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -1038,7 +1038,7 @@ TEST_CASE("LexIdentifierOrKeyword: identifiers starting with digits (illegal)") 
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 	CHECK(tokens[0] == expectedTokens[0]);
 	CHECK(tokens[1] == expectedTokens[1]);
 	CHECK(tokens[2] == expectedTokens[2]);
@@ -1059,7 +1059,7 @@ TEST_CASE("LexComments: single-line comment") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -1075,7 +1075,7 @@ TEST_CASE("LexComments: multi-line comment") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -1091,7 +1091,7 @@ TEST_CASE("LexComments: unclosed multi-line comment") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -1108,7 +1108,7 @@ TEST_CASE("LexIllegal: single legal utf8-character") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == 1);
+	CHECK(tokens.size() == 2);
 	CHECK(tokens[0] == expectedToken);
 }
 
@@ -1124,7 +1124,7 @@ TEST_CASE("LexGeneral: correct simple token sequence") {
 	// Assert
 	std::vector<Token> expectedTokens = {Token(TokenType::IDENTIFIER, U8String("x"), {1, 1, 0}),
 										 Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
-										 Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+										 Token(TokenType::IDENTIFIER, U8String("i32"), {1, 4, 3}),
 										 Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
 										 Token(TokenType::NUMERIC_LITERAL, U8String("42"),
 											   {1, 10, 9}),
@@ -1132,9 +1132,9 @@ TEST_CASE("LexGeneral: correct simple token sequence") {
 										 Token(TokenType::COMMENT,
 											   U8String(" variable declaration"), {1, 14, 13})};
 
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -1173,9 +1173,9 @@ TEST_CASE("LexGeneral: correct complex token sequence") {
 			 Token(TokenType::SEPARATOR, U8String(";"), {4, 12, 48}),
 			 Token(TokenType::SEPARATOR, U8String("}"), {5, 1, 50})};
 
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
@@ -1189,7 +1189,7 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
 	std::vector<Token> expectedTokens =
 			{Token(TokenType::IDENTIFIER, U8String("ch"), {1, 1, 0}),
 			 Token(TokenType::SEPARATOR, U8String(":"), {1, 3, 2}),
-			 Token(TokenType::KEYWORD, U8String("char"), {1, 5, 4}),
+			 Token(TokenType::IDENTIFIER, U8String("char"), {1, 5, 4}),
 			 Token(TokenType::OPERATOR, U8String("="), {1, 10, 9}),
 			 Token(TokenType::CHAR_LITERAL, U8String("a"), {1, 12, 11}),
 			 Token(TokenType::SEPARATOR, U8String(";"), {1, 15, 14}),
@@ -1212,7 +1212,7 @@ TEST_CASE("LexGeneral: correct complex token sequence featuring all token types"
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
 	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		// This check now compares the full Token (type, lexeme, and loc)
@@ -1229,7 +1229,7 @@ TEST_CASE("LexGeneral: very long correct token sequence over multiple lines") {
 	std::vector<Token> expectedTokens =
 			{Token(TokenType::IDENTIFIER, U8String("total"), {1, 1, 0}),
 			 Token(TokenType::SEPARATOR, U8String(":"), {1, 6, 5}),
-			 Token(TokenType::KEYWORD, U8String("i32"), {1, 8, 7}),
+			 Token(TokenType::IDENTIFIER, U8String("i32"), {1, 8, 7}),
 			 Token(TokenType::OPERATOR, U8String("="), {1, 12, 11}),
 			 Token(TokenType::NUMERIC_LITERAL, U8String("0"), {1, 14, 13}),
 			 Token(TokenType::SEPARATOR, U8String(";"), {1, 15, 14}),
@@ -1253,7 +1253,7 @@ TEST_CASE("LexGeneral: very long correct token sequence over multiple lines") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
 	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		// This check now compares the full Token (type, lexeme, and loc)
@@ -1268,7 +1268,7 @@ TEST_CASE("LexGeneral: incorrect simple token sequence") {
 
 	std::vector<Token> expectedTokens = {Token(TokenType::IDENTIFIER, U8String("a"), {1, 1, 0}),
 										 Token(TokenType::SEPARATOR, U8String(":"), {1, 2, 1}),
-										 Token(TokenType::KEYWORD, U8String("i32"), {1, 4, 3}),
+										 Token(TokenType::IDENTIFIER, U8String("i32"), {1, 4, 3}),
 										 Token(TokenType::OPERATOR, U8String("="), {1, 8, 7}),
 										 Token(TokenType::NUMERIC_LITERAL, U8String("10"),
 											   {1, 10, 9}),
@@ -1279,7 +1279,7 @@ TEST_CASE("LexGeneral: incorrect simple token sequence") {
 	std::vector<Token> tokens = lexer.tokenize();
 
 	// Assert
-	CHECK(tokens.size() == expectedTokens.size());
+	CHECK(tokens.size() == expectedTokens.size() + 1);
 
 	for (size_t i = 0; i < expectedTokens.size(); ++i) {
 		// This check now compares the full Token (type, lexeme, and loc)

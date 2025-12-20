@@ -9,7 +9,7 @@ namespace type {
 	public:
 		explicit CompareVisitor(const Type &other);
 
-		bool visit(const PrimitiveType &n) override;
+		bool visit(const Typename &n) override;
 		bool visit(const PointerType &n) override;
 		bool visit(const ArrayType &n) override;
 		bool visit(const FunctionType &n) override;
@@ -18,5 +18,7 @@ namespace type {
 	};
 }
 
+bool operator==(const type::TypeList &left, const type::TypeList &right);
+bool operator!=(const type::TypeList &left, const type::TypeList &right);
 bool operator==(const type::Type &left, const type::Type &right);
 bool operator!=(const type::Type &left, const type::Type &right);

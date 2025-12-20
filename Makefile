@@ -1,5 +1,5 @@
 CXX := clang++
-CXXFLAGS := -std=c++23 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0
+CXXFLAGS := -std=c++23 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0 -stdlib=libc++
 
 SRC_DIR := src
 TEST_DIR := test
