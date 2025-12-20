@@ -5,12 +5,20 @@
             "includePath": [
                 "${workspaceFolder}/lib",
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/test"
+                "${workspaceFolder}/test",
+                "/usr/include/llvm-18",
+                "/usr/include/llvm-c-18",
+                "/usr/include/c++/v1"
             ],
             "defines": [],
             "cStandard": "c17",
-            "cppStandard": "c++23",
-            "intelliSenseMode": "linux-clang-x64"
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-clang-x64",
+            "compilerArgs": [
+                "-stdlib=libc++",
+                "-I/usr/include/llvm-18",
+                "/usr/include/llvm-c-18"
+            ]
         }
     ],
     "version": 4

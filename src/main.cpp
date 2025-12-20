@@ -1,23 +1,34 @@
-#include <fstream>
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
 
-#include "ast/PrintVisitor.h"
-#include "core/U8String.h"
-#include "lexer/Lexer.h"
-#include "parser/Parser.h"
-#include "utf8cpp/utf8.h"
-
-using it = utf8::iterator<std::u8string::const_iterator>;
+#include <iostream>
+#include <memory>
 
 int main() {
-	U8String s = u8"func add(i: i32) -> i32 { return true;}";
-	Lexer lexer(std::move(s));
+    llvm::LLVMContext context;
+    auto module = std::make_unique<llvm::Module>("my_module", context);
 
-	std::vector<Token> tokens = lexer.tokenize();
-	for (Token t : tokens) {
-		std::cout << t << "\n";
-	}
-	Parser p(tokens, "Test");
-	auto tree = p.parse();
-	std::cout << *tree << std::endl;
-	return 0;
+    llvm::IRBuilder<> builder(context);
+
+    // int foo() { return 42; }
+    auto funcType = llvm::FunctionType::get(builder.getInt32Ty(), false);
+    auto fooFunc = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "foo", module.get());
+
+    auto entry = llvm::BasicBlock::Create(context, "entry", fooFunc);
+    builder.SetInsertPoint(entry);
+    builder.CreateRet(builder.getInt32(42));
+
+    // Optional: verify module
+    if (llvm::verifyModule(*module, &llvm::errs())) {
+        std::cerr << "Module verification failed!\n";
+        return 1;
+    }
+
+    module->print(llvm::outs(), nullptr);
+    
+
+    std::cout << "fertig";
+    return 0;
 }

@@ -25,9 +25,6 @@ using Ref = std::reference_wrapper<T>;
 template <typename T>
 using Opt = std::optional<T>;
 
-template <typename R, typename E>
-using Result = std::expected<R, E>;
-
 template <typename T>
 using Ptr = std::shared_ptr<T>;
 
