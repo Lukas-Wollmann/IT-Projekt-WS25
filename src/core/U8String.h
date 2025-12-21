@@ -29,6 +29,7 @@ public:
 	explicit U8String(const char *str);
 	explicit U8String(const std::string &str);
 
+    std::string str() const;
 	const char8_t *ptr() const;
 	const std::u8string &data() const;
 	size_t length() const;

@@ -1,32 +1,63 @@
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Verifier.h"
-
 #include <iostream>
 #include <memory>
+#include <fstream>
+#include "codegen/CodeGen.h"
+#include "semantic/passes/ExplorationPass.h"
+#include "semantic/passes/TypeCheckingPass.h"
 
+using namespace ast;
+using namespace type;
 
 int main() {
-    llvm::LLVMContext context;
-    auto module = std::make_unique<llvm::Module>("my_module", context);
 
-    llvm::IRBuilder<> builder(context);
+    Vec<Box<Stmt>> stmts;
+	
+    // foo: i32 = 5
+    stmts.push_back(std::make_unique<VarDef>(
+        u8"foo",
+        std::make_unique<Typename>(u8"i32"),
+		std::make_unique<IntLit>(3)
+    ));
 
-    // int foo() { return 42; }
-    auto funcType = llvm::FunctionType::get(builder.getInt32Ty(), false);
-    auto fooFunc = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "foo", module.get());
+    stmts.push_back(
+        std::make_unique<ReturnStmt>(
+            std::make_unique<BinaryExpr>(
+                BinaryOpKind::Addition,
+                std::make_unique<VarRef>(u8"foo"),
+                std::make_unique<IntLit>(10)
+            )
+        )
+    );
 
-    auto entry = llvm::BasicBlock::Create(context, "entry", fooFunc);
-    builder.SetInsertPoint(entry);
-    builder.CreateRet(builder.getInt32(42));
+	auto funcDecl = std::make_unique<FuncDecl>(
+        u8"main",
+        Vec<Param>{}, 
+        std::make_shared<Typename>(u8"i32"),
+        std::make_unique<BlockStmt>(std::move(stmts))
+    );
 
-    // Optional: verify module
-    if (llvm::verifyModule(*module, &llvm::errs())) {
-        std::cerr << "Module verification failed!\n";
-        return 1;
+    Vec<Box<FuncDecl>> funcs;
+    funcs.push_back(std::move(funcDecl));
+
+    auto module = std::make_unique<Module>(u8"test", std::move(funcs));
+    
+    semantic::TypeCheckerContext ctx;
+    semantic::ExplorationPass ep(ctx);
+    semantic::TypeCheckingPass tc(ctx);
+    
+    ep.dispatch(*module);
+    tc.dispatch(*module);
+
+    if (!ctx.getErrors().empty()) {        
+        for (auto &err : ctx.getErrors())
+            std::cout << err << std::endl;
+
+        return 0;
     }
 
-    module->print(llvm::outs(), nullptr);
+    std::ofstream file("output.ll");
+    codegen::CodeGen cg(file);
+    cg.dispatch(*module);
+
     return 0;
 }

@@ -1,4 +1,5 @@
 #include "U8String.h"
+#include "Macros.h"
 
 std::ostream &operator<<(std::ostream &os, const char8_t *str) {
 	if (!str)
@@ -50,6 +51,18 @@ U8String::U8String(const char *str) {
 
 U8String::U8String(const std::string &str)
 	: U8String(str.data()) {}
+
+std::string U8String::str() const {
+	std::string result;
+	result.reserve(m_Data.size());
+
+	for (char8_t c : m_Data) {
+        VERIFY(static_cast<unsigned char>(c) <= 0x7F);
+		result.push_back(static_cast<char>(c));
+	}
+
+	return result;
+}
 
 const char8_t *U8String::ptr() const {
 	return m_Data.data();
