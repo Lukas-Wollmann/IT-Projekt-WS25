@@ -19,19 +19,19 @@ public:
 
 private:
 	Opt<Token> consume(TokenType type, Opt<U8String> string = std::nullopt);
-	void advance();
+	void advanceTo(TokenType type, Opt<U8String> string = std::nullopt);
 	Token peek() const;
 
-	Box<ast::Module> File();
+	Box<ast::Module> Module();
 	Opt<Box<ast::FuncDecl>> FunctionDeclaration();
 	Opt<Vec<ast::Param>> ParamList();
 	Opt<Box<type::Type>> Type();
 	Opt<Box<ast::BlockStmt>> CodeBlock();
-	Box<ast::Node> Statement();
+	Opt<Box<ast::Stmt>> Statement();
 	Box<ast::Node> Loop();
 	Box<ast::Node> IfBlock();
 	Box<ast::Node> Declaration();
-	Box<ast::Node> Expression();
+	Opt<Box<ast::Expr>> Expression();
 	Box<ast::Node> ExpressionList();
 	Box<ast::Node> FunctionCall();
 };

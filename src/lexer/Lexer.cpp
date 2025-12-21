@@ -4,11 +4,12 @@
 #include <cctype>
 #include <sstream>
 
-Lexer::Lexer(U8String &&source)
+Lexer::Lexer(U8String &&source, bool includeComments)
 	: m_Src(std::move(source))
 	, m_Iter(m_Src.begin())
 	, m_CurentChar(m_Src.empty() ? '\0' : m_Src[0])
-	, m_Loc{1, 1, 0} {
+	, m_Loc{1, 1, 0}
+	, m_includeComments(includeComments) {
 	// Initialize sets for keywords, operators, and separators
 }
 
@@ -27,9 +28,13 @@ std::vector<Token> Lexer::tokenize() {
 		} else if (currentChar == U'"') {
 			tokens.push_back(lexString(startLoc));
 		} else if (isCurrentComment()) {
-			tokens.push_back(lexComment(startLoc));
+			auto t = lexComment(startLoc);
+			if (m_includeComments)
+				tokens.push_back(t);
 		} else if (isStartBlockComment()) {
-			tokens.push_back(lexBlockComment(startLoc));
+			auto t = lexBlockComment(startLoc);
+			if (m_includeComments)
+				tokens.push_back(t);
 		} else if (currentChar == U'\'') {
 			tokens.push_back(lexChar(startLoc));
 		} else if (isCurrentSeparator()) {
