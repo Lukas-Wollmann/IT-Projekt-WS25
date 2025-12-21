@@ -150,19 +150,18 @@ Opt<Box<Type>> Parser::Type() {
 	}
 	if (peek() == Token(TokenType::SEPARATOR, u8"[")) {
 		consume(TokenType::SEPARATOR, u8"[");
-		Opt<size_t> size = std::nullopt; // TODO
-		if (peek().type == TokenType::NUMERIC_LITERAL) {
-			auto t = consume(TokenType::NUMERIC_LITERAL);
-			if (size.has_value())
-				size = std::strtoull(reinterpret_cast<const char *>(t->lexeme.ptr()), nullptr, 10);
-		}
+		Opt<size_t> size = std::nullopt;
+		if (peek().type == TokenType::NUMERIC_LITERAL)
+			size = std::stoi(reinterpret_cast<const char *>(
+					consume(TokenType::NUMERIC_LITERAL)->lexeme.ptr()));
+		if (peek() != Token(TokenType::SEPARATOR, u8"]"))
+			return std::nullopt;
 		if (!consume(TokenType::SEPARATOR, u8"]").has_value())
 			return std::nullopt;
 		auto t = Type();
 		if (!t.has_value())
 			return std::nullopt;
-		Opt<size_t> size = std::nullopt;
-		return make_unique<ArrayType>(std::move(*t), size);
+		return make_unique<ArrayType>(std::move(t.value()), size);
 	}
 	return std::nullopt;
 }
@@ -174,14 +173,14 @@ Opt<Box<BlockStmt>> Parser::CodeBlock() {
 	while (peek().lexeme != u8"}") {
 		auto statement = Statement();
 		if (statement.has_value())
-			statements.push_back(std::move(*statement));
+			statements.push_back(std::move(statement.value()));
 	}
 	if (!consume(TokenType::SEPARATOR, u8"}").has_value())
 		return std::nullopt;
 	return make_unique<BlockStmt>(std::move(statements));
 }
 
-Opt<Box<ast::Stmt>> Parser::Statement() {
+Opt<Box<ast::Stmt>> Parser::Statement() { // TODO
 	if (peek().lexeme == u8";") {
 		consume(TokenType::SEPARATOR, u8";");
 		return std::nullopt;
