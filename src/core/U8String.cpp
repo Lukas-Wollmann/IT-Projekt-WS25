@@ -52,12 +52,12 @@ U8String::U8String(const char *str) {
 U8String::U8String(const std::string &str)
 	: U8String(str.data()) {}
 
-std::string U8String::str() const {
+std::string U8String::asAscii() const {
 	std::string result;
 	result.reserve(m_Data.size());
 
 	for (char8_t c : m_Data) {
-        VERIFY(static_cast<unsigned char>(c) <= 0x7F);
+        VERIFY(static_cast<unsigned char>(c) <= 0x80);
 		result.push_back(static_cast<char>(c));
 	}
 

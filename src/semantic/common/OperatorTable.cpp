@@ -40,6 +40,7 @@ namespace semantic {
 		addBinaryOperator(u8"i32", Equality, u8"i32", u8"bool");
 		addBinaryOperator(u8"i32", Inequality, u8"i32", u8"bool");
 		addBinaryOperator(u8"i32", LessThan, u8"i32", u8"bool");
+		addBinaryOperator(u8"i32", LessThanOrEqual, u8"i32", u8"bool");
 		addBinaryOperator(u8"i32", GreaterThan, u8"i32", u8"bool");
 		addBinaryOperator(u8"i32", GreaterThanOrEqual, u8"i32", u8"bool");
 
@@ -47,6 +48,7 @@ namespace semantic {
 		addBinaryOperator(u8"u32", Equality, u8"u32", u8"bool");
 		addBinaryOperator(u8"u32", Inequality, u8"u32", u8"bool");
 		addBinaryOperator(u8"u32", LessThan, u8"u32", u8"bool");
+		addBinaryOperator(u8"u32", LessThanOrEqual, u8"u32", u8"bool");
 		addBinaryOperator(u8"u32", GreaterThan, u8"u32", u8"bool");
 		addBinaryOperator(u8"u32", GreaterThanOrEqual, u8"u32", u8"bool");
 
@@ -54,6 +56,7 @@ namespace semantic {
 		addBinaryOperator(u8"f32", Equality, u8"f32", u8"bool");
 		addBinaryOperator(u8"f32", Inequality, u8"f32", u8"bool");
 		addBinaryOperator(u8"f32", LessThan, u8"f32", u8"bool");
+		addBinaryOperator(u8"f32", LessThanOrEqual, u8"f32", u8"bool");
 		addBinaryOperator(u8"f32", GreaterThan, u8"f32", u8"bool");
 		addBinaryOperator(u8"f32", GreaterThanOrEqual, u8"f32", u8"bool");
 
@@ -65,15 +68,13 @@ namespace semantic {
 		addBinaryOperator(u8"char", Equality, u8"char", u8"bool");
 		addBinaryOperator(u8"char", Inequality, u8"char", u8"bool");
 		addBinaryOperator(u8"char", LessThan, u8"char", u8"bool");
+		addBinaryOperator(u8"char", LessThanOrEqual, u8"char", u8"bool");
 		addBinaryOperator(u8"char", GreaterThan, u8"char", u8"bool");
 		addBinaryOperator(u8"char", GreaterThanOrEqual, u8"char", u8"bool");
 
 		// string
 		addBinaryOperator(u8"string", Equality, u8"string", u8"bool");
 		addBinaryOperator(u8"string", Inequality, u8"string", u8"bool");
-		addBinaryOperator(u8"string", LessThan, u8"string", u8"bool");
-		addBinaryOperator(u8"string", GreaterThan, u8"string", u8"bool");
-		addBinaryOperator(u8"string", GreaterThanOrEqual, u8"string", u8"bool");
 
 		// LOGICAL BINARY OPERATORS
 		addBinaryOperator(u8"bool", LogicalAnd, u8"bool", u8"bool");
@@ -93,8 +94,8 @@ namespace semantic {
 		addBinaryOperator(u8"u32", RightShift, u8"u32", u8"u32");
 
 		// UNARY ARITHMETIC
-		addUnaryOperator(Positive, u8"i32", u8"i32");
 		addUnaryOperator(Positive, u8"u32", u8"u32");
+		addUnaryOperator(Positive, u8"i32", u8"i32");
 		addUnaryOperator(Positive, u8"f32", u8"f32");
 
 		addUnaryOperator(Negative, u8"i32", u8"i32");

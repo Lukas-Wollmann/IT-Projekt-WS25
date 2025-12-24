@@ -229,7 +229,7 @@ namespace ast {
 		const Box<Expr> value;
 
 	public:
-		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
+		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
 	};
 
 	using Param = Pair<U8String, type::TypePtr>;

@@ -99,10 +99,10 @@ namespace ast {
 		: Stmt(NodeKind::ReturnStmt)
 		, expr(std::move(expr)) {}
 
-	VarDef::VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value)
+	VarDef::VarDef(U8String ident, type::TypePtr type, Box<Expr> value)
 		: Stmt(NodeKind::VarDef)
 		, ident(std::move(ident))
-		, type(std::move(type))
+		, type(type)
 		, value(std::move(value)) {}
 
 	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType,

@@ -16,7 +16,7 @@ namespace ast {
 
 		template <typename U>
 		using Constness = std::conditional_t<IsConst, const U, U>;
-
+        
 		T dispatch(Constness<Node> &node) {
 			switch (node.kind) {
 				case NodeKind::IntLit:	   return visit(static_cast<Constness<IntLit> &>(node));
