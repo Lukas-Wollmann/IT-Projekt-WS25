@@ -64,15 +64,28 @@ namespace ast {
 		, expr(std::move(expr))
 		, args(std::move(args)) {}
 
+	Instantiation::Instantiation(Box<type::Type>, Vec<Box<Expr>> args)
+		: Expr(NodeKind::Instantiation)
+		, type(std::move(type))
+		, args(std::move(args)) {}
+
 	BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
 		: Stmt(NodeKind::BlockStmt)
 		, stmts(std::move(stmts)) {}
 
-	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_)
+	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock)
 		: Stmt(NodeKind::IfStmt)
 		, cond(std::move(cond))
 		, then(std::move(then))
-		, else_(std::move(else_)) {}
+		, elseBlock(std::move(elseBlock))
+		, elseIfBlock(std::nullopt) {}
+
+	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock)
+		: Stmt(NodeKind::IfStmt)
+		, cond(std::move(cond))
+		, then(std::move(then))
+		, elseBlock(std::nullopt)
+		, elseIfBlock(std::move(elseIfBlock)) {}
 
 	WhileStmt::WhileStmt(Box<Expr> cond, Box<BlockStmt> body)
 		: Stmt(NodeKind::WhileStmt)
@@ -163,24 +176,24 @@ std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 	using enum ast::BinaryOpKind;
 
 	switch (op) {
-		case Addition:				   return os << "Addition";
-		case Subtraction:			   return os << "Subtraction";
-		case Multiplication:		   return os << "Multiplication";
-		case Division:				   return os << "Division";
-		case Modulo:				   return os << "Modulo";
-		case Equality:				   return os << "Equality";
-		case Inequality:			   return os << "Inequality";
-		case LessThan:				   return os << "LessThan";
-		case GreaterThan:			   return os << "GreaterThan";
-		case LessThanOrEqual:		   return os << "LessThanOrEqual";
-		case GreaterThanOrEqual:	   return os << "GreaterThanOrEqual";
-		case LogicalAnd:			   return os << "LogicalAnd";
-		case LogicalOr:				   return os << "LogicalOr";
-		case BitwiseAnd:			   return os << "BitwiseAnd";
-		case BitwiseOr:				   return os << "BitwiseOr";
-		case BitwiseXor:			   return os << "BitwiseXor";
-		case LeftShift:				   return os << "LeftShift";
-		case RightShift:			   return os << "RightShift";
-		default:					   UNREACHABLE();
+		case Addition:			 return os << "Addition";
+		case Subtraction:		 return os << "Subtraction";
+		case Multiplication:	 return os << "Multiplication";
+		case Division:			 return os << "Division";
+		case Modulo:			 return os << "Modulo";
+		case Equality:			 return os << "Equality";
+		case Inequality:		 return os << "Inequality";
+		case LessThan:			 return os << "LessThan";
+		case GreaterThan:		 return os << "GreaterThan";
+		case LessThanOrEqual:	 return os << "LessThanOrEqual";
+		case GreaterThanOrEqual: return os << "GreaterThanOrEqual";
+		case LogicalAnd:		 return os << "LogicalAnd";
+		case LogicalOr:			 return os << "LogicalOr";
+		case BitwiseAnd:		 return os << "BitwiseAnd";
+		case BitwiseOr:			 return os << "BitwiseOr";
+		case BitwiseXor:		 return os << "BitwiseXor";
+		case LeftShift:			 return os << "LeftShift";
+		case RightShift:		 return os << "RightShift";
+		default:				 UNREACHABLE();
 	}
 }

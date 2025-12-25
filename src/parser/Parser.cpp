@@ -1,6 +1,7 @@
 #include "Parser.h"
 
 #include <sstream>
+#include <string>
 
 #include "Macros.h"
 #include "SyntaxError.h"
@@ -46,9 +47,9 @@ void Parser::advanceTo(TokenType type, Opt<U8String> string) {
 	}
 }
 
-Token Parser::peek() const {
-	if (index < tokens.size()) {
-		Token t = tokens.at(index);
+Token Parser::peek(u8 look_ahead) const {
+	if (index + look_ahead < tokens.size()) {
+		Token t = tokens.at(index + look_ahead);
 		VERIFY(t.type != TokenType::COMMENT);
 		return t;
 	}
@@ -180,39 +181,175 @@ Opt<Box<BlockStmt>> Parser::CodeBlock() {
 	return make_unique<BlockStmt>(std::move(statements));
 }
 
-Opt<Box<ast::Stmt>> Parser::Statement() { // TODO
+Opt<Box<ast::Stmt>> Parser::Statement() {
 	if (peek().lexeme == u8";") {
 		consume(TokenType::SEPARATOR, u8";");
 		return std::nullopt;
 	} else if (peek().lexeme == u8"return") {
 		if (!consume(TokenType::KEYWORD, u8"return").has_value())
 			return std::nullopt;
-		if (peek().lexeme == u8";") {
-			if (!consume(TokenType::SEPARATOR, u8";").has_value())
-				return std::nullopt;
-			else
-				return make_unique<ReturnStmt>();
+		if (peek() == Token(TokenType::SEPARATOR, u8";")) {
+			consume(TokenType::SEPARATOR, u8";");
+			return make_unique<ReturnStmt>();
 		} else {
 			auto expr = Expression();
 			if (!expr.has_value())
 				return std::nullopt;
-			else
-				return make_unique<ReturnStmt>(std::move(*expr));
+			return make_unique<ReturnStmt>(std::move(expr.value()));
 		}
 	} else if (peek().lexeme == u8"{") {
 		return CodeBlock();
 	} else if (peek().lexeme == u8"if") {
-		return std::nullopt;
+		return IfBlock();
 	} else if (peek().lexeme == u8"while") {
-		return std::nullopt;
-	} else if (peek().type == TokenType::IDENTIFIER) { // Expression OR Declaration
-		return std::nullopt;
-	} else
-		return std::nullopt;
+		return Loop();
+	} else {
+		if (peek().type == TokenType::IDENTIFIER)
+			if (peek(1) == Token(TokenType::SEPARATOR, u8":"))
+				return Declaration();
+		return Expression();
+	}
 }
 
-Opt<Box<Expr>> Parser::Expression() { // TODO
-	if (consume(TokenType::NUMERIC_LITERAL).has_value())
-		return make_unique<IntLit>(42);
-	return std::nullopt;
+Opt<Box<ast::WhileStmt>> Parser::Loop() {
+	consume(TokenType::KEYWORD, u8"while");
+	consume(TokenType::SEPARATOR, u8"(");
+	auto cond = Expression();
+	if (!cond.has_value())
+		return std::nullopt;
+	consume(TokenType::SEPARATOR, u8")");
+	auto body = CodeBlock();
+	if (!body.has_value())
+		return std::nullopt;
+	return make_unique<WhileStmt>(std::move(cond.value()), std::move(body.value()));
+}
+
+Opt<Box<ast::IfStmt>> Parser::IfBlock() {
+	consume(TokenType::KEYWORD, u8"if");
+	consume(TokenType::SEPARATOR, u8"(");
+	auto cond = Expression();
+	if (!cond.has_value())
+		return std::nullopt;
+	consume(TokenType::SEPARATOR, u8")");
+	auto body = CodeBlock();
+	if (!body.has_value())
+		return std::nullopt;
+	if (peek() == Token(TokenType::KEYWORD, u8"else"))
+		consume(TokenType::KEYWORD, u8"else");
+	Opt<Box<Stmt>> elseBody;
+	if (peek() == Token(TokenType::KEYWORD, u8"if"))
+		elseBody = IfBlock();
+	else
+		elseBody = CodeBlock();
+	return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
+							   std::move(elseBody.value()));
+}
+
+Opt<Box<ast::VarDef>> Parser::Declaration() {
+	auto id = consume(TokenType::IDENTIFIER);
+	if (!id.has_value())
+		return std::nullopt;
+	consume(TokenType::SEPARATOR, u8":");
+	auto type = Type();
+	if (!type.has_value())
+		return std::nullopt;
+	consume(TokenType::OPERATOR, u8"=");
+	auto expr = Expression();
+	if (!expr.has_value())
+		return std::nullopt;
+	consume(TokenType::SEPARATOR, u8";");
+	return make_unique<VarDef>(id.value().lexeme, type, expr);
+}
+
+Opt<Box<ast::Expr>> Parser::Expression() {
+	if (peek().type == TokenType::IDENTIFIER) {
+		auto id = consume(TokenType::IDENTIFIER);
+		return make_unique<VarRef>(id.value().lexeme);
+	} else if (peek().type == TokenType::BOOL_LITERAL) {
+		auto lit = consume(TokenType::BOOL_LITERAL);
+		return make_unique<BoolLit>(lit.value().lexeme == u8"true");
+	} else if (peek().type == TokenType::CHAR_LITERAL) {
+		auto lit = consume(TokenType::CHAR_LITERAL);
+		return make_unique<CharLit>(lit.value().lexeme[0]); // TODO Test
+	} else if (peek().type == TokenType::NUMERIC_LITERAL) { // TODO add support for floating point
+															// numbers. Needs Issue #43
+		auto lit = consume(TokenType::NUMERIC_LITERAL);
+		return make_unique<IntLit>(
+				std::stoi(reinterpret_cast<const char *>(lit.value().lexeme.ptr())));
+	} else if (peek().type == TokenType::STRING_LITERAL) {
+		auto lit = consume(TokenType::STRING_LITERAL);
+		return make_unique<StringLit>(lit.value().lexeme);
+	} else if (peek() == Token(TokenType::SEPARATOR, u8"(")) {
+		consume(TokenType::SEPARATOR, u8"(");
+		auto expr = Expression();
+		if (!expr.has_value())
+			return std::nullopt;
+		consume(TokenType::SEPARATOR, u8")");
+		return std::move(expr);
+	} else if (peek() == Token(TokenType::KEYWORD, u8"new")) {
+		consume(TokenType::KEYWORD, u8"new");
+		auto type = Type();
+		if (!type.has_value())
+			return std::nullopt;
+		consume(TokenType::SEPARATOR, u8"(");
+		Vec<Box<Expr>> args;
+		if (peek() == Token(TokenType::SEPARATOR, u8")"))
+			consume(TokenType::SEPARATOR, u8")");
+		else {
+			args = ExpressionList();
+			consume(TokenType::SEPARATOR, u8")");
+		}
+		return make_unique<Instantiation>(std::move(type), std::move(args));
+	} else if (peek() == Token(TokenType::SEPARATOR, u8"[")) {
+		auto type = Type();
+		if (!type.has_value())
+			return std::nullopt;
+		consume(TokenType::SEPARATOR, u8"{");
+		auto exprs = ExpressionList();
+		consume(TokenType::SEPARATOR, u8"}");
+		return make_unique<ArrayExpr>(std::move(type), std::move(exprs));
+	} else if (peek().type == TokenType::OPERATOR) {
+		auto op = consume(TokenType::OPERATOR);
+		UnaryOpKind opKind;
+		if (op.value().lexeme == u8"!")
+			opKind = UnaryOpKind::LogicalNot;
+		else if (op.value().lexeme == u8"~")
+			opKind = UnaryOpKind::BitwiseNot;
+		else if (op.value().lexeme == u8"+")
+			opKind = UnaryOpKind::Positive;
+		else if (op.value().lexeme == u8"-")
+			opKind = UnaryOpKind::Negative;
+		else if (op.value().lexeme == u8"*")
+			opKind = UnaryOpKind::Dereference;
+		else
+			return std::nullopt;
+		auto expr = Expression();
+		if (!expr.has_value())
+			return std::nullopt;
+		return make_unique<UnaryExpr>(opKind, std::move(expr));
+	}
+}
+
+Vec<Box<Expr>> Parser::ExpressionList() {
+	Vec<Box<Expr>> exprs;
+	while (true) {
+		if (peek() == Token(TokenType::SEPARATOR, u8")") ||
+			peek() == Token(TokenType::SEPARATOR, u8"}"))
+			break;
+		auto expr = Expression();
+		if (!expr.has_value())
+			break;
+		exprs.push_back(std::move(expr.value()));
+	}
+	return std::move(exprs);
+}
+
+Opt<Box<FuncCall>> Parser::FunctionCall() {
+	auto expr = Expression();
+	if (!expr.has_value())
+		return std::nullopt;
+	consume(TokenType::SEPARATOR, u8"(");
+	auto args = ExpressionList();
+	consume(TokenType::SEPARATOR, u8")");
+	return make_unique<FuncCall>(std::move(expr.value()), std::move(args));
 }

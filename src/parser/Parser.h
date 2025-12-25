@@ -20,7 +20,7 @@ public:
 private:
 	Opt<Token> consume(TokenType type, Opt<U8String> string = std::nullopt);
 	void advanceTo(TokenType type, Opt<U8String> string = std::nullopt);
-	Token peek() const;
+	Token peek(u8 look_ahead = 0) const;
 
 	Box<ast::Module> Module();
 	Opt<Box<ast::FuncDecl>> FunctionDeclaration();
@@ -28,10 +28,10 @@ private:
 	Opt<Box<type::Type>> Type();
 	Opt<Box<ast::BlockStmt>> CodeBlock();
 	Opt<Box<ast::Stmt>> Statement();
-	Box<ast::Node> Loop();
-	Box<ast::Node> IfBlock();
-	Box<ast::Node> Declaration();
+	Opt<Box<ast::WhileStmt>> Loop();
+	Opt<Box<ast::IfStmt>> IfBlock();
+	Opt<Box<ast::VarDef>> Declaration();
 	Opt<Box<ast::Expr>> Expression();
-	Box<ast::Node> ExpressionList();
-	Box<ast::Node> FunctionCall();
+	Vec<Box<ast::Expr>> ExpressionList();
+	Opt<Box<ast::FuncCall>> FunctionCall();
 };

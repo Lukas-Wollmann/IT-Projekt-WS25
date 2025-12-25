@@ -27,6 +27,7 @@ StatementList = Statement, StatementList;
 Statement = ";";
 Statement = Expression, ";";
 Statement = Declaration, ";";
+Statement = "return", ";";
 Statement = "return", Expression, ";";
 Statement = CodeBlock;
 Statement = IfBlock;
@@ -43,8 +44,6 @@ Declaration = id, ":", Type, "=", Expression;
 Expression = id;
 Expression = FunctionCall;
 Expression = Literal;
-Expression = "[", "]", Type, "{", "}";
-Expression = "[", int, "]", Type, "{", "}";
 Expression = "[", "]", Type, "{", ExpressionList, "}";
 Expression = "[", int, "]", Type, "{", ExpressionList, "}";
 Expression = Expression, Operator, Expression;
@@ -54,8 +53,8 @@ Expression = Expression, "[", Expression, "]";
 Expression = "new", Type, "(", ")";
 Expression = "new", Type, "(", Expression, ")";
 
+ExpressionList = ;
 ExpressionList = Expression;
 ExpressionList = Expression, ",", ExpressionList;
 
-FunctionCall = id, "(", ")";
-FunctionCall = id, "(", ExpressionList, ")";
+FunctionCall = Expression, "(", ExpressionList, ")";

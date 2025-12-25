@@ -15,9 +15,10 @@ namespace ast {
 		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-        Assignment,
+		Assignment,
 		VarRef,
 		FuncCall,
+		Instantiation,
 		BlockStmt,
 		IfStmt,
 		WhileStmt,
@@ -132,7 +133,7 @@ namespace ast {
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
 	};
 
-    enum struct AssignmentKind {
+	enum struct AssignmentKind {
 		Simple,
 		Addition,
 		Subtraction,
@@ -144,15 +145,15 @@ namespace ast {
 		BitwiseXor,
 		LeftShift,
 		RightShift,
-    };
+	};
 
-    struct Assignment : public Expr {
-    public:
-        const AssignmentKind assignmentKind;
-        const Box<Expr> left, right;
+	struct Assignment : public Expr {
+	public:
+		const AssignmentKind assignmentKind;
+		const Box<Expr> left, right;
 
-        explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
-    };
+		explicit Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+	};
 
 	struct VarRef : public Expr {
 	public:
@@ -169,6 +170,14 @@ namespace ast {
 		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 	};
 
+	struct Instantiation : public Expr {
+	public:
+		const Box<type::Type> type;
+		const Vec<Box<Expr>> args;
+
+		Instantiation(Box<type::Type> type, Vec<Box<Expr>> args);
+	};
+
 	struct BlockStmt : public Stmt {
 	public:
 		const Vec<Box<Stmt>> stmts;
@@ -179,9 +188,12 @@ namespace ast {
 	struct IfStmt : public Stmt {
 	public:
 		const Box<Expr> cond;
-		const Box<BlockStmt> then, else_;
+		const Box<BlockStmt> then;
+		const Opt<Box<BlockStmt>> elseBlock;
+		const Opt<Box<IfStmt>> elseIfBlock;
 
-		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock);
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock);
 	};
 
 	struct WhileStmt : public Stmt {
