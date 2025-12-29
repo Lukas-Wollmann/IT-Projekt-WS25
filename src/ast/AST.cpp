@@ -64,7 +64,7 @@ namespace ast {
 		, expr(std::move(expr))
 		, args(std::move(args)) {}
 
-	Instantiation::Instantiation(Box<type::Type>, Vec<Box<Expr>> args)
+	Instantiation::Instantiation(Box<type::Type> type, Vec<Box<Expr>> args)
 		: Expr(NodeKind::Instantiation)
 		, type(std::move(type))
 		, args(std::move(args)) {}

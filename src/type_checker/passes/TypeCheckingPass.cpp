@@ -300,7 +300,7 @@ bool TypeCheckingPass::visit(IfStmt &n) {
 	}
 
 	bool thenReturns = dispatch(*n.then);
-	bool elseReturns = dispatch(*n.else_);
+	bool elseReturns = dispatch(*n.elseBlock.value());
 
 	return thenReturns && elseReturns;
 }

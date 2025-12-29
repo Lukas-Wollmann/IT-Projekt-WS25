@@ -47,11 +47,11 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-    void PrintVisitor::visit(const Assignment &n) {
+	void PrintVisitor::visit(const Assignment &n) {
 		m_OStream << "Assignment(";
 		dispatch(*n.left);
 		m_OStream << ", ";
-        m_OStream << n.assignmentKind << ", ";
+		m_OStream << n.assignmentKind << ", ";
 		dispatch(*n.right);
 		m_OStream << ")";
 	}
@@ -86,7 +86,7 @@ namespace ast {
 		m_OStream << ", ";
 		dispatch(*n.then);
 		m_OStream << ", ";
-		dispatch(*n.else_);
+		dispatch(*n.elseBlock.value());
 		m_OStream << ")";
 	}
 

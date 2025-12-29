@@ -116,6 +116,7 @@ Opt<Vec<Param>> Parser::ParamList() {
 	}
 	if (!consume(TokenType::SEPARATOR, u8")").has_value())
 		return std::nullopt;
+	return std::move(params);
 }
 
 Opt<Box<Type>> Parser::Type() {
@@ -238,11 +239,11 @@ Opt<Box<ast::IfStmt>> Parser::IfBlock() {
 		consume(TokenType::KEYWORD, u8"else");
 	Opt<Box<Stmt>> elseBody;
 	if (peek() == Token(TokenType::KEYWORD, u8"if"))
-		elseBody = IfBlock();
+		return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
+								   IfBlock().value());
 	else
-		elseBody = CodeBlock();
-	return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
-							   std::move(elseBody.value()));
+		return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
+								   CodeBlock().value());
 }
 
 Opt<Box<ast::VarDef>> Parser::Declaration() {
@@ -258,7 +259,7 @@ Opt<Box<ast::VarDef>> Parser::Declaration() {
 	if (!expr.has_value())
 		return std::nullopt;
 	consume(TokenType::SEPARATOR, u8";");
-	return make_unique<VarDef>(id.value().lexeme, type, expr);
+	return make_unique<VarDef>(id.value().lexeme, std::move(type.value()), std::move(expr.value()));
 }
 
 Opt<Box<ast::Expr>> Parser::Expression() {
@@ -285,7 +286,7 @@ Opt<Box<ast::Expr>> Parser::Expression() {
 		if (!expr.has_value())
 			return std::nullopt;
 		consume(TokenType::SEPARATOR, u8")");
-		return std::move(expr);
+		return expr;
 	} else if (peek() == Token(TokenType::KEYWORD, u8"new")) {
 		consume(TokenType::KEYWORD, u8"new");
 		auto type = Type();
@@ -299,7 +300,7 @@ Opt<Box<ast::Expr>> Parser::Expression() {
 			args = ExpressionList();
 			consume(TokenType::SEPARATOR, u8")");
 		}
-		return make_unique<Instantiation>(std::move(type), std::move(args));
+		return make_unique<Instantiation>(std::move(type.value()), std::move(args));
 	} else if (peek() == Token(TokenType::SEPARATOR, u8"[")) {
 		auto type = Type();
 		if (!type.has_value())
@@ -307,7 +308,7 @@ Opt<Box<ast::Expr>> Parser::Expression() {
 		consume(TokenType::SEPARATOR, u8"{");
 		auto exprs = ExpressionList();
 		consume(TokenType::SEPARATOR, u8"}");
-		return make_unique<ArrayExpr>(std::move(type), std::move(exprs));
+		return make_unique<ArrayExpr>(std::move(type.value()), std::move(exprs));
 	} else if (peek().type == TokenType::OPERATOR) {
 		auto op = consume(TokenType::OPERATOR);
 		UnaryOpKind opKind;
@@ -326,8 +327,9 @@ Opt<Box<ast::Expr>> Parser::Expression() {
 		auto expr = Expression();
 		if (!expr.has_value())
 			return std::nullopt;
-		return make_unique<UnaryExpr>(opKind, std::move(expr));
-	}
+		return make_unique<UnaryExpr>(opKind, std::move(expr.value()));
+	} else
+		return std::nullopt;
 }
 
 Vec<Box<Expr>> Parser::ExpressionList() {
@@ -341,7 +343,7 @@ Vec<Box<Expr>> Parser::ExpressionList() {
 			break;
 		exprs.push_back(std::move(expr.value()));
 	}
-	return std::move(exprs);
+	return exprs;
 }
 
 Opt<Box<FuncCall>> Parser::FunctionCall() {
