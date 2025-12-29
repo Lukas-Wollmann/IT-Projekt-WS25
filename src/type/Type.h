@@ -14,10 +14,14 @@ namespace type {
 		const TypeKind kind;
 
 		virtual ~Type() = default;
+		bool isTypeKind(TypeKind other) const;
 
 	protected:
 		explicit Type(const TypeKind kind);
 	};
+
+	using TypePtr = Ptr<const Type>;
+	using TypeList = Vec<TypePtr>;
 
 	struct Typename : public Type {
 	public:
@@ -28,27 +32,28 @@ namespace type {
 
 	struct PointerType : public Type {
 	public:
-		const Box<const Type> pointeeType;
+		const Ptr<const Type> pointeeType;
 
-		explicit PointerType(Box<const Type> pointeeType);
+		explicit PointerType(Ptr<const Type> pointeeType);
 	};
 
 	struct ArrayType : public Type {
 	public:
-		const Box<const Type> elementType;
-		const std::optional<size_t> arraySize;
+		const Ptr<const Type> elementType;
+		const Opt<size_t> arraySize;
 
-		explicit ArrayType(Box<const Type> elementType,
-						   std::optional<size_t> arraySize = std::nullopt);
+		explicit ArrayType(Ptr<const Type> elementType, Opt<size_t> arraySize = std::nullopt);
 	};
 
 	struct FunctionType : public Type {
 	public:
-		const Vec<Box<const Type>> paramTypes;
-		const Box<const Type> returnType;
+		const TypeList paramTypes;
+		const Ptr<const Type> returnType;
 
-		FunctionType(Vec<Box<const Type>> paramTypes, Box<const Type> returnType);
+		FunctionType(TypeList paramTypes, Ptr<const Type> returnType);
 	};
+
+	using FunctionTypePtr = Ptr<const FunctionType>;
 
 	struct ErrorType : public Type {
 	public:

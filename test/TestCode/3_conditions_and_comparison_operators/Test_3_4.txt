@@ -1,0 +1,7 @@
+func main() -> i32 {
+    a: i32 = 3;
+    if (a > 3) {
+        return 0;
+    }
+    return 1;
+}

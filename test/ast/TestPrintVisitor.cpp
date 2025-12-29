@@ -69,6 +69,18 @@ TEST_CASE("StringLit: toString works") {
 	CHECK(result == "StringLit(\"burger king\")");
 }
 
+TEST_CASE("UnitLit: toString works") {
+	// Arrange
+	auto unitLit = std::make_unique<UnitLit>();
+	std::stringstream ss;
+
+	// Act
+	ss << *unitLit;
+	std::string result = ss.str();
+
+	CHECK(result == "UnitLit()");
+}
+
 TEST_CASE("ArrayExpr: toString works") {
 	// Arrange
 	auto arrayType = std::make_unique<Typename>(u8"i32");
@@ -102,7 +114,7 @@ TEST_CASE("UnaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "UnaryExpr(Negative, IntLit(7))");
+	CHECK(result == "UnaryExpr(-, IntLit(7))");
 }
 
 TEST_CASE("BinaryExpr: toString works") {
@@ -118,7 +130,21 @@ TEST_CASE("BinaryExpr: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "BinaryExpr(IntLit(2), Addition, IntLit(3))");
+	CHECK(result == "BinaryExpr(IntLit(2), +, IntLit(3))");
+}
+
+TEST_CASE("HeapAlloc: toString works") {
+	// Arrange
+	auto type = std::make_shared<Typename>(u8"i32");
+	auto heapAlloc = std::make_unique<HeapAlloc>(type);
+	std::stringstream ss;
+
+	// Act
+	ss << *heapAlloc;
+	std::string result = ss.str();
+
+	// Assert
+	CHECK(result == "HeapAlloc(i32)");
 }
 
 TEST_CASE("Assignment: toString works") {
@@ -134,7 +160,7 @@ TEST_CASE("Assignment: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "Assignment(VarRef(x), MultiplicationAssignment, IntLit(3))");
+	CHECK(result == "Assignment(VarRef(x), *=, IntLit(3))");
 }
 
 TEST_CASE("VarRef: toString works") {

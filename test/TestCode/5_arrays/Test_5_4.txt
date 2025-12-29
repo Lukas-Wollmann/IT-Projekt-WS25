@@ -1,0 +1,6 @@
+func main() {
+    i32[] arr = [1, 2, 3, 4 ,5];
+    for (i: i32 = 0; i < arr.size; i++) {
+        println(arr[i]);
+    }
+}

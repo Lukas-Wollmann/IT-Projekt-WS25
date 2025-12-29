@@ -1,0 +1,5 @@
+func main() -> i32 {
+    s: string = "Hello";
+    println("${s} World!");
+    return 0;
+} 

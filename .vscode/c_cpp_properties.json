@@ -5,8 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/lib",
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/test",
-                "/usr/lib/**"
+                "${workspaceFolder}/test"
             ],
             "defines": [],
             "cStandard": "c17",

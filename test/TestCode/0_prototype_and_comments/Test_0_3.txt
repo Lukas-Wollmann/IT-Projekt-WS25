@@ -1,0 +1,3 @@
+func main() -> i32 {
+    return  /* Dies ist ein Block Kommentar */ 1337;
+}

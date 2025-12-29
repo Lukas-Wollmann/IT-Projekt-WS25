@@ -24,6 +24,10 @@ namespace ast {
 		m_OStream << "StringLit(\"" << n.value << "\")";
 	}
 
+    void PrintVisitor::visit(const UnitLit &) {
+        m_OStream << "UnitLit()";
+    }
+
 	void PrintVisitor::visit(const ArrayExpr &n) {
 		m_OStream << "ArrayExpr(" << *n.elementType << ", {";
 
@@ -55,6 +59,10 @@ namespace ast {
 		dispatch(*n.right);
 		m_OStream << ")";
 	}
+
+    void PrintVisitor::visit(const HeapAlloc &n) {
+        m_OStream << "HeapAlloc(" << *n.type << ")";
+    }
 
 	void PrintVisitor::visit(const FuncCall &n) {
 		m_OStream << "FuncCall(";
