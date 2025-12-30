@@ -41,17 +41,36 @@ IfBlock = "if", "(", Expression, ")", CodeBlock, "else", CodeBlock;
 
 Declaration = id, ":", Type, "=", Expression;
 
-Expression = id;
-Expression = FunctionCall;
-Expression = Literal;
-Expression = "[", "]", Type, "{", ExpressionList, "}";
-Expression = "[", int, "]", Type, "{", ExpressionList, "}";
-Expression = Expression, Operator, Expression;
-Expression = Operator, Expression;
-Expression = "(", Expression, ")";
-Expression = Expression, "[", Expression, "]";
-Expression = "new", Type, "(", ")";
-Expression = "new", Type, "(", Expression, ")";
+Expression = AssignmentExpression;
+
+AssignmentExpression = EqualityExpression, AssignmentOperator, AssignmentExpression;
+AssignmentExpression = EqualityExpression;
+
+EqualityExpression = RelationalExpression, EqualityOperator, RelationalExpression;
+EqualityExpression = RelationalExpression;
+
+RelationalExpression = AdditiveExpression, RelationalOperator, AdditiveExpression;
+RelationalExpression = AdditiveExpression;
+
+AdditiveExpression = MultiplicativeExpression, AdditiveOperator, MultiplicativeExpression;
+AdditiveExpression = MultiplicativeExpression;
+
+MultiplicativeExpression = UnaryExpression, MultiplicativeOperator, UnaryExpression;
+MultiplicativeExpression = UnaryExpression;
+
+UnaryExpression = UnaryOperator, UnaryExpression;
+UnaryExpression = PostfixExpression;
+
+PostfixExpression = PrimaryExpression, "(", ExpressionList, ")";
+PostfixExpression = PrimaryExpression, "[", Expression, "]";
+PostfixExpression = PrimaryExpression;
+
+PrimaryExpression = id;
+PrimaryExpression = Literal;
+PrimaryExpression = "(", Expression, ")";
+PrimaryExpression = "new", Type, "(", ExpressionList, ")";
+PrimaryExpression = "[", "]", Type, "{", ExpressionList, "}";
+PrimaryExpression = "[", int, "]", Type, "{", ExpressionList, "}";
 
 ExpressionList = ;
 ExpressionList = Expression;
