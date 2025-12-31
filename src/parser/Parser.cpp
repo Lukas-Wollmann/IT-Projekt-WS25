@@ -196,6 +196,7 @@ Opt<Box<ast::Stmt>> Parser::Statement() {
 			auto expr = Expression();
 			if (!expr.has_value())
 				return std::nullopt;
+			consume(TokenType::SEPARATOR, u8";");
 			return make_unique<ReturnStmt>(std::move(expr.value()));
 		}
 	} else if (peek().lexeme == u8"{") {
@@ -262,96 +263,22 @@ Opt<Box<ast::VarDef>> Parser::Declaration() {
 	return make_unique<VarDef>(id.value().lexeme, std::move(type.value()), std::move(expr.value()));
 }
 
-Opt<Box<ast::Expr>> Parser::Expression() {
-	if (peek().type == TokenType::IDENTIFIER) {
-		auto id = consume(TokenType::IDENTIFIER);
-		return make_unique<VarRef>(id.value().lexeme);
-	} else if (peek().type == TokenType::BOOL_LITERAL) {
-		auto lit = consume(TokenType::BOOL_LITERAL);
-		return make_unique<BoolLit>(lit.value().lexeme == u8"true");
-	} else if (peek().type == TokenType::CHAR_LITERAL) {
-		auto lit = consume(TokenType::CHAR_LITERAL);
-		return make_unique<CharLit>(lit.value().lexeme[0]); // TODO Test
-	} else if (peek().type == TokenType::NUMERIC_LITERAL) { // TODO add support for floating point
-															// numbers. Needs Issue #43
-		auto lit = consume(TokenType::NUMERIC_LITERAL);
-		return make_unique<IntLit>(
-				std::stoi(reinterpret_cast<const char *>(lit.value().lexeme.ptr())));
-	} else if (peek().type == TokenType::STRING_LITERAL) {
-		auto lit = consume(TokenType::STRING_LITERAL);
-		return make_unique<StringLit>(lit.value().lexeme);
-	} else if (peek() == Token(TokenType::SEPARATOR, u8"(")) {
-		consume(TokenType::SEPARATOR, u8"(");
-		auto expr = Expression();
-		if (!expr.has_value())
-			return std::nullopt;
-		consume(TokenType::SEPARATOR, u8")");
-		return expr;
-	} else if (peek() == Token(TokenType::KEYWORD, u8"new")) {
-		consume(TokenType::KEYWORD, u8"new");
-		auto type = Type();
-		if (!type.has_value())
-			return std::nullopt;
-		consume(TokenType::SEPARATOR, u8"(");
-		Vec<Box<Expr>> args;
-		if (peek() == Token(TokenType::SEPARATOR, u8")"))
-			consume(TokenType::SEPARATOR, u8")");
-		else {
-			args = ExpressionList();
-			consume(TokenType::SEPARATOR, u8")");
-		}
-		return make_unique<Instantiation>(std::move(type.value()), std::move(args));
-	} else if (peek() == Token(TokenType::SEPARATOR, u8"[")) {
-		auto type = Type();
-		if (!type.has_value())
-			return std::nullopt;
-		consume(TokenType::SEPARATOR, u8"{");
-		auto exprs = ExpressionList();
-		consume(TokenType::SEPARATOR, u8"}");
-		return make_unique<ArrayExpr>(std::move(type.value()), std::move(exprs));
-	} else if (peek().type == TokenType::OPERATOR) {
-		auto op = consume(TokenType::OPERATOR);
-		UnaryOpKind opKind;
-		if (op.value().lexeme == u8"!")
-			opKind = UnaryOpKind::LogicalNot;
-		else if (op.value().lexeme == u8"~")
-			opKind = UnaryOpKind::BitwiseNot;
-		else if (op.value().lexeme == u8"+")
-			opKind = UnaryOpKind::Positive;
-		else if (op.value().lexeme == u8"-")
-			opKind = UnaryOpKind::Negative;
-		else if (op.value().lexeme == u8"*")
-			opKind = UnaryOpKind::Dereference;
-		else
-			return std::nullopt;
-		auto expr = Expression();
-		if (!expr.has_value())
-			return std::nullopt;
-		return make_unique<UnaryExpr>(opKind, std::move(expr.value()));
-	} else
-		return std::nullopt;
-}
-
 Vec<Box<Expr>> Parser::ExpressionList() {
 	Vec<Box<Expr>> exprs;
+	if (peek() == Token(TokenType::SEPARATOR, u8")") ||
+		peek() == Token(TokenType::SEPARATOR, u8"}"))
+		return exprs;
 	while (true) {
-		if (peek() == Token(TokenType::SEPARATOR, u8")") ||
-			peek() == Token(TokenType::SEPARATOR, u8"}"))
-			break;
 		auto expr = Expression();
 		if (!expr.has_value())
 			break;
 		exprs.push_back(std::move(expr.value()));
+		if (peek() == Token(TokenType::SEPARATOR, u8")") ||
+			peek() == Token(TokenType::SEPARATOR, u8"}"))
+			break;
+		consume(TokenType::SEPARATOR, u8",");
 	}
 	return exprs;
 }
 
-Opt<Box<FuncCall>> Parser::FunctionCall() {
-	auto expr = Expression();
-	if (!expr.has_value())
-		return std::nullopt;
-	consume(TokenType::SEPARATOR, u8"(");
-	auto args = ExpressionList();
-	consume(TokenType::SEPARATOR, u8")");
-	return make_unique<FuncCall>(std::move(expr.value()), std::move(args));
-}
+Opt<Box<ast::Expr>> Parser::Expression() {}

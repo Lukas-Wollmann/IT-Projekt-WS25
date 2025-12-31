@@ -31,7 +31,6 @@ private:
 	Opt<Box<ast::WhileStmt>> Loop();
 	Opt<Box<ast::IfStmt>> IfBlock();
 	Opt<Box<ast::VarDef>> Declaration();
-	Opt<Box<ast::Expr>> Expression();
 	Vec<Box<ast::Expr>> ExpressionList();
-	Opt<Box<ast::FuncCall>> FunctionCall();
+	Opt<Box<ast::Expr>> Expression();
 };
