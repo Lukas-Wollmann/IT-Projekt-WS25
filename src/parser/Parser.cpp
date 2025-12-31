@@ -99,21 +99,22 @@ Opt<Vec<Param>> Parser::ParamList() {
 	Vec<Param> params;
 	if (!consume(TokenType::SEPARATOR, u8"(").has_value())
 		return std::nullopt;
-	while (true) {
-		auto name = consume(TokenType::IDENTIFIER);
-		if (!name.has_value())
-			return std::nullopt;
-		if (!consume(TokenType::SEPARATOR, u8":").has_value())
-			return std::nullopt;
-		auto t = Type();
-		if (!t.has_value())
-			return std::nullopt;
-		params.push_back({name.value().lexeme, std::move(t.value())});
-		if (peek() == Token(TokenType::SEPARATOR, u8","))
-			consume(TokenType::SEPARATOR, u8",");
-		else
-			break;
-	}
+	if (peek() != Token(TokenType::SEPARATOR, u8")"))
+		while (true) {
+			auto name = consume(TokenType::IDENTIFIER);
+			if (!name.has_value())
+				return std::nullopt;
+			if (!consume(TokenType::SEPARATOR, u8":").has_value())
+				return std::nullopt;
+			auto t = Type();
+			if (!t.has_value())
+				return std::nullopt;
+			params.push_back({name.value().lexeme, std::move(t.value())});
+			if (peek() == Token(TokenType::SEPARATOR, u8","))
+				consume(TokenType::SEPARATOR, u8",");
+			else
+				break;
+		}
 	if (!consume(TokenType::SEPARATOR, u8")").has_value())
 		return std::nullopt;
 	return std::move(params);
@@ -153,7 +154,7 @@ Opt<Box<Type>> Parser::Type() {
 	if (peek() == Token(TokenType::SEPARATOR, u8"[")) {
 		consume(TokenType::SEPARATOR, u8"[");
 		Opt<size_t> size = std::nullopt;
-		if (peek().type == TokenType::NUMERIC_LITERAL)
+		if (peek().type == TokenType::NUMERIC_LITERAL) // TODO should be expression here
 			size = std::stoi(reinterpret_cast<const char *>(
 					consume(TokenType::NUMERIC_LITERAL)->lexeme.ptr()));
 		if (peek() != Token(TokenType::SEPARATOR, u8"]"))
@@ -281,4 +282,260 @@ Vec<Box<Expr>> Parser::ExpressionList() {
 	return exprs;
 }
 
-Opt<Box<ast::Expr>> Parser::Expression() {}
+Opt<Box<ast::Expr>> Parser::Expression() { // TODO implement binary Operators somewhere idk where
+	return AssignmentExpression();
+}
+
+Opt<Box<ast::Expr>> Parser::AssignmentExpression() {
+	auto lhs = EqualityExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	if (peek().type == TokenType::OPERATOR) {
+		using ast::AssignmentKind;
+		AssignmentKind opKind;
+		if (peek().lexeme == u8"=")
+			opKind = AssignmentKind::Simple;
+		else if (peek().lexeme == u8"+=")
+			opKind = AssignmentKind::Addition;
+		else if (peek().lexeme == u8"-=")
+			opKind = AssignmentKind::Subtraction;
+		else if (peek().lexeme == u8"*=")
+			opKind = AssignmentKind::Multiplication;
+		else if (peek().lexeme == u8"/=")
+			opKind = AssignmentKind::Division;
+		else if (peek().lexeme == u8"%=")
+			opKind = AssignmentKind::Modulo;
+		else if (peek().lexeme == u8"&=")
+			opKind = AssignmentKind::BitwiseAnd;
+		else if (peek().lexeme == u8"|=")
+			opKind = AssignmentKind::BitwiseOr;
+		else if (peek().lexeme == u8"^=")
+			opKind = AssignmentKind::BitwiseXor;
+		else if (peek().lexeme == u8"<<=")
+			opKind = AssignmentKind::LeftShift;
+		else if (peek().lexeme == u8">>=")
+			opKind = AssignmentKind::RightShift;
+		else {
+			errors.push_back("Unexpected operator at end of AssignmentExpression");
+			return lhs;
+		}
+		auto op = consume(TokenType::OPERATOR);
+		if (!op.has_value())
+			return std::nullopt;
+		auto rhs = AssignmentExpression();
+		if (!rhs.has_value())
+			return std::nullopt;
+		return make_unique<Assignment>(opKind, std::move(lhs.value()), std::move(rhs.value()));
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::EqualityExpression() {
+	auto lhs = RelationalExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	while (true) {
+		if (peek().type == TokenType::OPERATOR &&
+			(peek().lexeme == u8"==" || peek().lexeme == u8"!=")) {
+			auto op = consume(TokenType::OPERATOR);
+			if (!op.has_value())
+				return std::nullopt;
+			auto rhs = RelationalExpression();
+			if (!rhs.has_value())
+				return std::nullopt;
+			auto tmp =
+					make_unique<BinaryExpr>(op.value().lexeme == u8"==" ? BinaryOpKind::Equality
+																		: BinaryOpKind::Inequality,
+											std::move(lhs.value()), std::move(rhs.value()));
+			lhs = std::move(tmp);
+		} else
+			break;
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::RelationalExpression() {
+	auto lhs = AdditiveExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	while (true) {
+		if (peek().type == TokenType::OPERATOR &&
+			(peek().lexeme == u8"<" || peek().lexeme == u8">" || peek().lexeme == u8"<=" ||
+			 peek().lexeme == u8">=")) {
+			auto op = consume(TokenType::OPERATOR);
+			if (!op.has_value())
+				return std::nullopt;
+			BinaryOpKind opKind;
+			if (op.value().lexeme == u8"<")
+				opKind = BinaryOpKind::LessThan;
+			else if (op.value().lexeme == u8">")
+				opKind = BinaryOpKind::GreaterThan;
+			else if (op.value().lexeme == u8"<=")
+				opKind = BinaryOpKind::LessThanOrEqual;
+			else if (op.value().lexeme == u8">=")
+				opKind = BinaryOpKind::GreaterThanOrEqual;
+			auto rhs = AdditiveExpression();
+			if (!rhs.has_value())
+				return std::nullopt;
+			auto tmp =
+					make_unique<BinaryExpr>(opKind, std::move(lhs.value()), std::move(rhs.value()));
+			lhs = std::move(tmp);
+		} else
+			break;
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::AdditiveExpression() {
+	auto lhs = MultiplicativeExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	while (true) {
+		if (peek().type == TokenType::OPERATOR &&
+			(peek().lexeme == u8"+" || peek().lexeme == u8"-")) {
+			auto op = consume(TokenType::OPERATOR);
+			if (!op.has_value())
+				return std::nullopt;
+			auto rhs = MultiplicativeExpression();
+			if (!rhs.has_value())
+				return std::nullopt;
+			auto tmp =
+					make_unique<BinaryExpr>(op.value().lexeme == u8"+" ? BinaryOpKind::Addition
+																	   : BinaryOpKind::Subtraction,
+											std::move(lhs.value()), std::move(rhs.value()));
+			lhs = std::move(tmp);
+		} else
+			break;
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::MultiplicativeExpression() {
+	auto lhs = UnaryExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	while (true) {
+		if (peek().type == TokenType::OPERATOR &&
+			(peek().lexeme == u8"*" || peek().lexeme == u8"/" || peek().lexeme == u8"%")) {
+			auto op = consume(TokenType::OPERATOR);
+			if (!op.has_value())
+				return std::nullopt;
+			BinaryOpKind opKind;
+			if (op.value().lexeme == u8"*")
+				opKind = BinaryOpKind::Multiplication;
+			else if (op.value().lexeme == u8"/")
+				opKind = BinaryOpKind::Division;
+			else if (op.value().lexeme == u8"%")
+				opKind = BinaryOpKind::Modulo;
+			auto rhs = UnaryExpression();
+			if (!rhs.has_value())
+				return std::nullopt;
+			auto tmp =
+					make_unique<BinaryExpr>(opKind, std::move(lhs.value()), std::move(rhs.value()));
+			lhs = std::move(tmp);
+		} else
+			break;
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::UnaryExpression() {
+	if (peek().type == TokenType::OPERATOR) {
+		auto op = consume(TokenType::OPERATOR);
+		UnaryOpKind opKind;
+		if (op.value().lexeme == u8"+")
+			opKind = UnaryOpKind::Positive;
+		else if (op.value().lexeme == u8"-")
+			opKind = UnaryOpKind::Negative;
+		else if (op.value().lexeme == u8"!")
+			opKind = UnaryOpKind::LogicalNot;
+		else if (op.value().lexeme == u8"~")
+			opKind = UnaryOpKind::BitwiseNot;
+		else if (op.value().lexeme == u8"*")
+			opKind = UnaryOpKind::Dereference;
+		else {
+			std::stringstream ss;
+			ss << "expected Unary Operator, got:" << op.value();
+			errors.push_back(ss.str());
+			return std::nullopt;
+		}
+		auto expr = UnaryExpression();
+		if (!expr.has_value())
+			return std::nullopt;
+		return make_unique<UnaryExpr>(opKind, std::move(expr.value()));
+	}
+	return PostfixExpression();
+}
+
+Opt<Box<ast::Expr>> Parser::PostfixExpression() {
+	auto lhs = PrimaryExpression();
+	if (!lhs.has_value())
+		return std::nullopt;
+	while (true) {
+		if (peek().type == TokenType::SEPARATOR &&
+			(peek().lexeme == u8"(" || peek().lexeme == u8"[")) {
+			auto op = consume(TokenType::SEPARATOR);
+			if (!op.has_value())
+				return std::nullopt;
+			if (op.value().lexeme == u8"(") {
+				auto args = ExpressionList();
+				consume(TokenType::SEPARATOR, u8")");
+				auto tmp = make_unique<FuncCall>(std::move(lhs.value()), std::move(args));
+				lhs = std::move(tmp);
+			} else {
+				auto index = Expression();
+				auto op = consume(TokenType::OPERATOR, u8"]");
+				auto tmp = make_unique<BinaryExpr>(BinaryOpKind::Index, std::move(lhs.value()),
+												   std::move(index.value()));
+				lhs = std::move(tmp);
+			}
+
+		} else
+			break;
+	}
+	return lhs;
+}
+
+Opt<Box<ast::Expr>> Parser::PrimaryExpression() {
+	if (peek().type == TokenType::IDENTIFIER)
+		return make_unique<VarRef>(consume(TokenType::IDENTIFIER).value().lexeme);
+	if (peek().type == TokenType::BOOL_LITERAL)
+		return make_unique<BoolLit>(consume(TokenType::BOOL_LITERAL).value().lexeme == u8"true");
+	if (peek().type == TokenType::CHAR_LITERAL)
+		return make_unique<CharLit>(consume(TokenType::CHAR_LITERAL).value().lexeme[0]);
+	if (peek().type == TokenType::STRING_LITERAL)
+		return make_unique<StringLit>(consume(TokenType::CHAR_LITERAL).value().lexeme);
+	if (peek().type == TokenType::NUMERIC_LITERAL)
+		return make_unique<IntLit>(std::stoi(reinterpret_cast<const char *>(
+				consume(TokenType::NUMERIC_LITERAL).value().lexeme.ptr())));
+	if (peek().lexeme == u8"(") {
+		consume(TokenType::SEPARATOR, u8"(");
+		auto expr = Expression();
+		if (!expr.has_value())
+			return std::nullopt;
+		consume(TokenType::SEPARATOR, u8")");
+		return expr;
+	}
+	if (peek().lexeme == u8"new") {
+		consume(TokenType::KEYWORD, u8"new");
+		auto type = Type();
+		if (!type.has_value())
+			return std::nullopt;
+		consume(TokenType::SEPARATOR, u8"(");
+		auto args = ExpressionList();
+		consume(TokenType::SEPARATOR, u8")");
+		return make_unique<Instantiation>(std::move(type.value()), std::move(args));
+	}
+	if (peek().lexeme == u8"[") {
+		auto type = Type();
+		consume(TokenType::SEPARATOR, u8"{");
+		auto args = ExpressionList();
+		consume(TokenType::SEPARATOR, u8"}");
+		return make_unique<ArrayExpr>(std::move(type.value()), std::move(args));
+	}
+	std::stringstream ss;
+	ss << "unexpected Token:" << peek();
+	index++;
+	errors.push_back(ss.str());
+	return std::nullopt;
+}

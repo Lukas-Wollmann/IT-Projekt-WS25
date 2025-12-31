@@ -43,37 +43,49 @@ Declaration = id, ":", Type, "=", Expression;
 
 Expression = AssignmentExpression;
 
-AssignmentExpression = EqualityExpression, AssignmentOperator, AssignmentExpression;
+AssignmentExpression = EqualityExpression, "=", AssignmentExpression;
 AssignmentExpression = EqualityExpression;
 
-EqualityExpression = RelationalExpression, EqualityOperator, RelationalExpression;
-EqualityExpression = RelationalExpression;
+EqualityExpression = RelationalExpression, EqualityTail;
 
-RelationalExpression = AdditiveExpression, RelationalOperator, AdditiveExpression;
-RelationalExpression = AdditiveExpression;
+EqualityTail = ;
+EqualityTail = ("==" | "!="), RelationalExpression, EqualityTail;
 
-AdditiveExpression = MultiplicativeExpression, AdditiveOperator, MultiplicativeExpression;
-AdditiveExpression = MultiplicativeExpression;
+RelationalExpression = AdditiveExpression, RelationalTail;
 
-MultiplicativeExpression = UnaryExpression, MultiplicativeOperator, UnaryExpression;
-MultiplicativeExpression = UnaryExpression;
+RelationalTail = ;
+RelationalTail = ("<" | ">" | "<=" | ">="), AdditiveExpression, RelationalTail;
 
-UnaryExpression = UnaryOperator, UnaryExpression;
+AdditiveExpression = MultiplicativeExpression, AdditiveTail;
+
+AdditiveTail = ;
+AdditiveTail = ("+" | "-"), MultiplicativeExpression, AdditiveTail;
+
+MultiplicativeExpression = UnaryExpression, MultiplicativeTail;
+
+MultiplicativeTail = ;
+MultiplicativeTail = ("*" | "/"), UnaryExpression, MultiplicativeTail;
+
+UnaryExpression = Operator, UnaryExpression;
 UnaryExpression = PostfixExpression;
 
-PostfixExpression = PrimaryExpression, "(", ExpressionList, ")";
-PostfixExpression = PrimaryExpression, "[", Expression, "]";
-PostfixExpression = PrimaryExpression;
+PostfixExpression = PrimaryExpression, PostfixTail;
+
+PostfixTail = ;
+PostfixTail = "(", ExpressionList, ")", PostfixTail;
+PostfixTail = "[", Expression, "]", PostfixTail;
 
 PrimaryExpression = id;
 PrimaryExpression = Literal;
 PrimaryExpression = "(", Expression, ")";
 PrimaryExpression = "new", Type, "(", ExpressionList, ")";
-PrimaryExpression = "[", "]", Type, "{", ExpressionList, "}";
-PrimaryExpression = "[", int, "]", Type, "{", ExpressionList, "}";
+PrimaryExpression "[", "]", Type, "{", ExpressionList, "}";
+PrimaryExpression "[", int, "]", Type, "{", ExpressionList, "}";
 
 ExpressionList = ;
-ExpressionList = Expression;
-ExpressionList = Expression, ",", ExpressionList;
+ExpressionList = Expression, ExpressionListTail;
+
+ExpressionListTail = ;
+ExpressionListTail = ",", Expression, ExpressionListTail;
 
 FunctionCall = Expression, "(", ExpressionList, ")";

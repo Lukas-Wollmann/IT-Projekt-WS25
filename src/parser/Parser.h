@@ -33,4 +33,12 @@ private:
 	Opt<Box<ast::VarDef>> Declaration();
 	Vec<Box<ast::Expr>> ExpressionList();
 	Opt<Box<ast::Expr>> Expression();
+	Opt<Box<ast::Expr>> AssignmentExpression();
+	Opt<Box<ast::Expr>> EqualityExpression();
+	Opt<Box<ast::Expr>> RelationalExpression();
+	Opt<Box<ast::Expr>> AdditiveExpression();
+	Opt<Box<ast::Expr>> MultiplicativeExpression();
+	Opt<Box<ast::Expr>> UnaryExpression();
+	Opt<Box<ast::Expr>> PostfixExpression();
+	Opt<Box<ast::Expr>> PrimaryExpression();
 };

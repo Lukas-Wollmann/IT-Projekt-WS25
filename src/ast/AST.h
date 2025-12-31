@@ -138,7 +138,8 @@ namespace ast {
 		BitwiseOr,
 		BitwiseXor,
 		LeftShift,
-		RightShift
+		RightShift,
+		Index
 	};
 
 	struct BinaryExpr : public Expr {
