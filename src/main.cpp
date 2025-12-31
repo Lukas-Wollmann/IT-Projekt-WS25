@@ -16,6 +16,129 @@ using namespace codegen;
 #define MOVE(t) std::move(t)
 
 int main() {
+
+    Vec<Box<Stmt>> stmts;
+
+// n = 5, res = 1, i = 1
+stmts.push_back(MAKE(VarDef, u8"n", MAKE(Typename, u8"i32"), MAKE(IntLit, 5)));
+stmts.push_back(MAKE(VarDef, u8"res", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+stmts.push_back(MAKE(VarDef, u8"i", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+
+// outer loop: while(i <= n)
+auto cond_outer = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"i"), MAKE(VarRef, u8"n"));
+Vec<Box<Stmt>> body_outer;
+
+// inner loop variables
+body_outer.push_back(MAKE(VarDef, u8"j", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+body_outer.push_back(MAKE(VarDef, u8"tmp", MAKE(Typename, u8"i32"), MAKE(IntLit, 0)));
+
+// inner loop: while(j <= i)
+auto cond_inner = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"j"), MAKE(VarRef, u8"i"));
+Vec<Box<Stmt>> body_inner;
+body_inner.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"tmp"),
+                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"tmp"), MAKE(VarRef, u8"j"))));
+body_inner.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"j"),
+                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"j"), MAKE(IntLit, 1))));
+auto inner_while = MAKE(WhileStmt, MOVE(cond_inner), MAKE(BlockStmt, MOVE(body_inner)));
+body_outer.push_back(MOVE(inner_while));
+
+// res = res * tmp
+body_outer.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"res"),
+                          MAKE(BinaryExpr, BinaryOpKind::Multiplication, MAKE(VarRef, u8"res"), MAKE(VarRef, u8"tmp"))));
+
+// i = i + 1
+body_outer.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"i"),
+                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"i"), MAKE(IntLit, 1))));
+
+auto outer_while = MAKE(WhileStmt, MOVE(cond_outer), MAKE(BlockStmt, MOVE(body_outer)));
+
+stmts.push_back(MOVE(outer_while));
+stmts.push_back(MAKE(ReturnStmt, MAKE(VarRef, u8"res")));
+
+// function main
+Vec<Param> params;
+auto mainFunc = MAKE(FuncDecl, u8"main", MOVE(params), MAKE(Typename, u8"i32"), MAKE(BlockStmt, MOVE(stmts)));
+
+// module
+Vec<Box<FuncDecl>> funcs;
+funcs.push_back(MOVE(mainFunc));
+auto module = MAKE(Module, u8"complex_test", MOVE(funcs));
+
+// type check
+TypeCheckerContext ctx;
+ExplorationPass ep(ctx);
+TypeCheckingPass tc(ctx);
+ep.dispatch(*module);
+tc.dispatch(*module);
+
+std::cout << *module << std::endl;
+
+// generate code
+if (!ctx.getErrors().empty()) {
+    for (auto &err : ctx.getErrors())
+        std::cout << err << std::endl;
+    return 1;
+}
+std::ofstream file("out.ll");
+CodeGen::generate(file, *module);
+
+    #if 0
+    // ======== iterative Fibonacci ========
+
+    // Variable declarations
+    Vec<Box<Stmt>> stmts;
+    stmts.push_back(MAKE(VarDef, u8"n", MAKE(Typename, u8"i32"), MAKE(IntLit, 20)));
+    stmts.push_back(MAKE(VarDef, u8"a", MAKE(Typename, u8"i32"), MAKE(IntLit, 0)));
+    stmts.push_back(MAKE(VarDef, u8"b", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+    stmts.push_back(MAKE(VarDef, u8"temp", MAKE(Typename, u8"i32"), MAKE(IntLit, 0)));
+    stmts.push_back(MAKE(VarDef, u8"i", MAKE(Typename, u8"i32"), MAKE(IntLit, 2)));
+
+    // while(i <= n) { ... }
+    auto cond = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"i"), MAKE(VarRef, u8"n"));
+
+    Vec<Box<Stmt>> body;
+    body.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"temp"), MAKE(VarRef, u8"b")));
+    body.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"b"),
+                         MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"a"), MAKE(VarRef, u8"b"))));
+    body.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"a"), MAKE(VarRef, u8"temp")));
+    body.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"i"),
+                         MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"i"), MAKE(IntLit, 1))));
+
+    auto whileStmt = MAKE(WhileStmt, MOVE(cond), MAKE(BlockStmt, MOVE(body)));
+    stmts.push_back(MOVE(whileStmt));
+
+    // return b
+    stmts.push_back(MAKE(ReturnStmt, MAKE(VarRef, u8"b")));
+
+    // Function main()
+    Vec<Param> params; // no parameters
+    auto mainFunc = MAKE(FuncDecl, u8"main", MOVE(params), MAKE(Typename, u8"i32"), MAKE(BlockStmt, MOVE(stmts)));
+
+    // Module
+    Vec<Box<FuncDecl>> funcs;
+    funcs.push_back(MOVE(mainFunc));
+    auto module = MAKE(Module, u8"fib_module", MOVE(funcs));
+
+    // Type checking
+    TypeCheckerContext ctx;
+    ExplorationPass ep(ctx);
+    TypeCheckingPass tc(ctx);
+
+    ep.dispatch(*module);
+    tc.dispatch(*module);
+
+    if (!ctx.getErrors().empty()) {
+        for (auto &err : ctx.getErrors())
+            std::cout << err << std::endl;
+        return 1;
+    }
+
+    // Code generation
+    std::ofstream file("out.ll");
+    CodeGen::generate(file, *module);
+    #endif
+
+    #if 0
     //  =========== pow.code ===========
     // 
     //  func pow(base: i32, exponent: i32) -> i32 {
@@ -113,9 +236,9 @@ int main() {
         return 1;
     }
 
-    std::ofstream file("pow.ll");
-    codegen::generate(file, *module);
-
+    std::ofstream file("out.ll");
+    CodeGen::generate(file, *module);
+    #endif
     #if 0
     /*
 

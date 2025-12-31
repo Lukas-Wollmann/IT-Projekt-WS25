@@ -144,10 +144,10 @@ std::ostream &operator<<(std::ostream &os, ast::NodeKind kind) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
+std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind) {
 	using enum ast::UnaryOpKind;
 
-	switch (op) {
+	switch (kind) {
 		case Not:		  return os << "!";
 		case Positive:	  return os << "+";
 		case Negative:	  return os << "-";
@@ -156,10 +156,10 @@ std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind kind) {
 	using enum ast::AssignmentKind;
 
-	switch (op) {
+	switch (kind) {
 		case Simple:		 return os << "=";
 		case Addition:		 return os << "+=";
 		case Subtraction:	 return os << "-=";
@@ -175,10 +175,10 @@ std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
+std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind kind) {
 	using enum ast::BinaryOpKind;
 
-	switch (op) {
+	switch (kind) {
 		case Addition:			 return os << "+";
 		case Subtraction:		 return os << "-";
 		case Multiplication:	 return os << "*";
@@ -198,5 +198,15 @@ std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 		case LeftShift:			 return os << "<<";
 		case RightShift:		 return os << ">>";
 		default:				 UNREACHABLE();
+	}
+}
+
+std::ostream &operator<<(std::ostream &os, ast::ValueCategory cat) {
+	using enum ast::ValueCategory;
+
+	switch (cat) {
+		case LValue: return os << "LValue";
+		case RValue: return os << "RValue";
+		default:	 UNREACHABLE();
 	}
 }

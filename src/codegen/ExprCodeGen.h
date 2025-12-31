@@ -30,10 +30,9 @@ namespace codegen {
 	struct LValueCodeGen : public ast::ConstVisitor<llvm::Value *> {
 	private:
 		CodeGenContext &m_Context;
-		RValueCodeGen &m_RValueCodeGen;
 
 	public:
-		LValueCodeGen(CodeGenContext &impl, RValueCodeGen &rValueCodeGen);
+		LValueCodeGen(CodeGenContext &ctx);
 
 	private:
 		llvm::Value *visit(const ast::VarRef &n) override;

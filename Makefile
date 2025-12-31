@@ -64,4 +64,10 @@ test: $(TEST_TARGET)
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
+compile: $(TARGET)
+	./$(TARGET)
+	clang out.ll -o out
+	@./out; echo "\033[1;38;5;111mProgram returned: $$?"
+
+
 .PHONY: all run test clean

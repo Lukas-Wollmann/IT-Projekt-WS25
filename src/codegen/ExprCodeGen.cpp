@@ -217,9 +217,8 @@ namespace codegen {
 		return m_Context.getIRBuilder().CreateLoad(type, alloca);
 	}
 
-	LValueCodeGen::LValueCodeGen(CodeGenContext &ctx, RValueCodeGen &rValueCodeGen)
-		: m_Context(ctx)
-		, m_RValueCodeGen(rValueCodeGen) {}
+	LValueCodeGen::LValueCodeGen(CodeGenContext &ctx)
+		: m_Context(ctx) {}
 
 	llvm::Value *LValueCodeGen::visit(const VarRef &n) {
 		return m_Context.getAlloca(n.ident);
@@ -228,6 +227,6 @@ namespace codegen {
 	llvm::Value *LValueCodeGen::visit(const UnaryExpr &n) {
 		VERIFY(n.op == UnaryOpKind::Dereference);
 
-		return m_RValueCodeGen.dispatch(*n.operand);
+		return RValueCodeGen(m_Context).dispatch(*n.operand);
 	}
 }
