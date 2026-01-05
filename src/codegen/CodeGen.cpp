@@ -3,16 +3,12 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_os_ostream.h>
 
+#include "type/CompareVisitor.h"
 #include "CodeGenContext.h"
 
 namespace codegen {
 	using namespace type;
 	using namespace ast;
-
-	CodeGen::CodeGen(CodeGenContext &ctx)
-		: m_Context(ctx)
-		, m_RValueCodeGen(m_Context)
-		, m_LValueCodeGen(m_Context) {}
 
     void CodeGen::generate(std::ostream &os, const ast::Module &module) {
         CodeGenContext ctx(module.name);
@@ -24,11 +20,92 @@ namespace codegen {
 		ctx.getLLVMModule().print(llvmOS, nullptr);
     }
 
-	void CodeGen::visit(const Assignment &n) {
-		auto left = m_LValueCodeGen.dispatch(*n.left);
-		auto right = m_RValueCodeGen.dispatch(*n.right);
+    CodeGen::CodeGen(CodeGenContext &ctx)
+    : m_Context(ctx)
+    , m_RValueCodeGen(m_Context)
+    , m_LValueCodeGen(m_Context) {}
 
-		m_Context.getIRBuilder().CreateStore(right, left);
+    // a[1] =a[1] *  1;
+
+	void CodeGen::visit(const Assignment &n) {
+		using enum AssignmentKind;
+        
+        auto left = m_LValueCodeGen.dispatch(*n.left);
+        auto rvalueLeft = m_RValueCodeGen.dispatch(*n.left);
+		
+        auto right = m_RValueCodeGen.dispatch(*n.right);
+
+        auto leftType = n.left->inferredType.value();
+        auto &builder = m_Context.getIRBuilder();
+
+        llvm::Value *res = nullptr;
+
+        switch (n.assignmentKind) {
+            case Simple:
+                res = left;
+                break;
+            
+            case Addition:
+				if (*leftType == Typename(u8"i32"))
+					res = builder.CreateAdd(rvalueLeft , right);
+				else if (*leftType == Typename(u8"u32"))
+					res = builder.CreateAdd(rvalueLeft, right);
+				else if (*leftType == Typename(u8"f32"))
+					res = builder.CreateFAdd(rvalueLeft, right);
+				else if (*leftType == Typename(u8"string"))
+					UNREACHABLE(); // TODO: Implement string concatination here
+				else UNREACHABLE();
+                break;
+
+			case Subtraction:
+				if (*leftType == Typename(u8"i32"))
+					res = builder.CreateSub(rvalueLeft, right);
+				else if (*leftType == Typename(u8"u32"))
+					res = builder.CreateSub(rvalueLeft, right);
+				else if (*leftType == Typename(u8"f32"))
+					res = builder.CreateFSub(rvalueLeft, right);
+				else UNREACHABLE();
+                break;
+
+			case Multiplication:
+				if (*leftType == Typename(u8"i32"))
+					res = builder.CreateMul(rvalueLeft, right);
+				else if (*leftType == Typename(u8"i32"))
+					res = builder.CreateMul(rvalueLeft, right);
+				else if (*leftType == Typename(u8"f32"))
+					res = builder.CreateFMul(rvalueLeft, right);
+				else UNREACHABLE();
+                break;
+
+			case Division:
+				if (*leftType == Typename(u8"i32"))
+					res = builder.CreateSDiv(rvalueLeft, right);
+				else if (*leftType == Typename(u8"u32"))
+					res = builder.CreateUDiv(rvalueLeft, right);
+				else if (*leftType == Typename(u8"f32"))
+					res = builder.CreateFDiv(rvalueLeft, right);
+				else UNREACHABLE();
+                break;
+
+			case Modulo:
+				if (*leftType == Typename(u8"i32"))
+					res = builder.CreateSRem(rvalueLeft, right);
+				else if (*leftType == Typename(u8"u32"))
+					res = builder.CreateURem(rvalueLeft, right);
+				else UNREACHABLE();
+                break;
+
+		    case BitwiseAnd:
+		    case BitwiseOr:
+		    case BitwiseXor:
+		    case LeftShift:
+		    case RightShift:
+                UNREACHABLE(); // TODO: Implement this stuff
+
+            default: UNREACHABLE();
+        }
+
+        builder.CreateStore(res, left);
 	}
 
 	void CodeGen::visit(const BlockStmt &n) {

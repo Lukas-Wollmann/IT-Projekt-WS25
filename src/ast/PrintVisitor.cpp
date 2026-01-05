@@ -94,7 +94,7 @@ namespace ast {
 		m_OStream << ", ";
 		dispatch(*n.then);
 		m_OStream << ", ";
-		dispatch(*n.elseBlock.value());
+		dispatch(*n.else_);
 		m_OStream << ")";
 	}
 

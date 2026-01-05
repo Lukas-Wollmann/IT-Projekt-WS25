@@ -215,11 +215,9 @@ namespace ast {
 	public:
 		const Box<Expr> cond;
 		const Box<BlockStmt> then;
-		const Opt<Box<BlockStmt>> elseBlock;
-		const Opt<Box<IfStmt>> elseIfBlock;
+		const Box<BlockStmt> else_;
 
-		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock);
-		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock);
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
 	};
 
 	struct WhileStmt : public Stmt {

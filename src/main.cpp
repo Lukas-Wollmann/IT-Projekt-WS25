@@ -4,6 +4,7 @@
 
 #include "ast/PrintVisitor.h"
 #include "codegen/CodeGen.h"
+#include "codegen/CodeGenContext.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
 #include "parser/Parser.h"
@@ -36,7 +37,28 @@ int main(const int argc, const char *argv[]) {
     for (auto err : parser.errors)
         std::cout << err << std::endl;
 
+    if (!parser.errors.empty())
+        return 1;
+
     std::cout << *ast << std::endl;
+
+    TypeCheckerContext ctx;
+
+    ExplorationPass pass1(ctx);
+    pass1.dispatch(*ast);
+
+    TypeCheckingPass pass2(ctx);
+    pass2.dispatch(*ast);
+
+    for (auto err : ctx.getErrors())
+        std::cout << err << std::endl;
+
+    if (!ctx.getErrors().empty())
+        return 2;
+
+    std::ofstream file("out.ll");
+    CodeGen::generate(file, *ast);
+    file.close();
 }
 
 

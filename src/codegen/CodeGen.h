@@ -10,11 +10,11 @@ namespace codegen {
         LValueCodeGen m_LValueCodeGen;
 
 	public:
-		CodeGen(CodeGenContext &ctx);
-
         static void generate(std::ostream &os, const ast::Module &module);
 
 	private:
+		CodeGen(CodeGenContext &ctx);
+        
 		void visit(const ast::Assignment &n) override;
 		void visit(const ast::BlockStmt &n) override;
 		void visit(const ast::IfStmt &n) override;

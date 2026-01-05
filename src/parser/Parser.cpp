@@ -240,12 +240,26 @@ Opt<Box<ast::IfStmt>> Parser::IfBlock() {
 	if (peek() == Token(TokenType::KEYWORD, u8"else"))
 		consume(TokenType::KEYWORD, u8"else");
 	Opt<Box<Stmt>> elseBody;
-	if (peek() == Token(TokenType::KEYWORD, u8"if"))
-		return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
-								   IfBlock().value());
-	else
-		return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()),
-								   CodeBlock().value());
+	
+    if (peek() == Token(TokenType::KEYWORD, u8"if")) {
+		auto elseIf_ = IfBlock();
+
+        if (!elseIf_.has_value())
+            return std::nullopt;
+        
+        Vec<Box<Stmt>> body;
+        body.push_back(std::move(elseIf_.value()));
+
+        
+        return make_unique<IfStmt>(std::move(cond.value()), make_unique<BlockStmt>(std::move(body)), make_unique<BlockStmt>(Vec<Box<Stmt>>{}));
+    } else {
+        auto else_ = CodeBlock();
+        
+        if (else_.has_value())
+            return std::nullopt;
+
+        return make_unique<IfStmt>(std::move(cond.value()), std::move(body.value()), std::move(else_.value()));
+    }
 }
 
 Opt<Box<ast::VarDef>> Parser::Declaration() {

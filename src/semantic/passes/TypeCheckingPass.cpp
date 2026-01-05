@@ -278,7 +278,7 @@ namespace semantic {
 		}
 
 		bool thenReturns = dispatch(*n.then);
-		bool elseReturns = dispatch(*n.elseBlock.value());
+		bool elseReturns = dispatch(*n.else_);
 
 		return thenReturns && elseReturns;
 	}

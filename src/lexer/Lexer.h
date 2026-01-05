@@ -46,7 +46,7 @@ private:
 	char32_t peek(size_t distance) const;
 	void skipWhitespace();
 	U8String skipToClosing();
-
+    
 	Token lexNumber(SourceLoc startLoc);
 	Token lexString(SourceLoc startLoc);
 	Token lexEscapedChar(SourceLoc startLoc);

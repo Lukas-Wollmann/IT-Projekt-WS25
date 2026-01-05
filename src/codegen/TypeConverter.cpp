@@ -8,14 +8,16 @@ namespace codegen {
 		: m_Context(ctx) {}
 
 	llvm::Type *TypeConverter::visit(const type::Typename &t) {
-		if (t.typename_ == u8"i32")
+		if (t.typename_ == u8"u32")
+			return llvm::Type::getInt32Ty(m_Context);
+        if (t.typename_ == u8"i32")
 			return llvm::Type::getInt32Ty(m_Context);
 		if (t.typename_ == u8"f32")
-			return llvm::Type::getInt32Ty(m_Context);
+			return llvm::Type::getFloatTy(m_Context);
 		if (t.typename_ == u8"char")
 			return llvm::Type::getInt32Ty(m_Context);
 		if (t.typename_ == u8"bool")
-			return llvm::Type::getInt32Ty(m_Context);
+			return llvm::Type::getInt1Ty(m_Context);
 
 		UNREACHABLE();
 	}

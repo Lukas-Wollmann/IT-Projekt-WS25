@@ -144,7 +144,7 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will error if operator doesn't exist") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Not, std::make_unique<StringLit>(u8"2"));
+	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot, std::make_unique<StringLit>(u8"2"));
 
 	// Act
 	tc.dispatch(*expr);
@@ -165,7 +165,7 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will fail silently if operand has ErrorTy
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
 	auto errorOperand =
-			std::make_unique<UnaryExpr>(UnaryOpKind::Not, std::make_unique<StringLit>(u8"67"));
+			std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot, std::make_unique<StringLit>(u8"67"));
 
 	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Negative, std::move(errorOperand));
 
@@ -231,7 +231,7 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will fail silently if one of the operand
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto errorOperand = std::make_unique<UnaryExpr>(UnaryOpKind::Not,
+	auto errorOperand = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot,
 													std::make_unique<StringLit>(u8"🐄 Mooh 🐄"));
 	auto expr = std::make_unique<BinaryExpr>(BinaryOpKind::Addition,
 											 std::make_unique<StringLit>(u8"67"),
@@ -346,7 +346,7 @@ TEST_CASE("TypeCheckingPass: Assignment will fail silently if one of the sides h
     TypeCheckerContext ctx;
     TypeCheckingPass tc(ctx);
     auto errorExpr = std::make_unique<UnaryExpr>(
-        UnaryOpKind::Not, 
+        UnaryOpKind::LogicalNot, 
         std::make_unique<StringLit>(u8"test")
     ); 
     auto assignment = std::make_unique<Assignment>(

@@ -31,7 +31,7 @@ namespace codegen {
 	}
 
 	llvm::Value *RValueCodeGen::visit(const CharLit &n) {
-		auto type = llvm::Type::getInt8Ty(m_Context.getLLVMContext());
+		auto type = llvm::Type::getInt32Ty(m_Context.getLLVMContext());
 		return llvm::ConstantInt::get(type, n.value);
 	}
 
@@ -52,9 +52,12 @@ namespace codegen {
 					return builder.CreateFNeg(value);
 				UNREACHABLE();
 
-			case Not:
+			case LogicalNot:
 				if (*type == Typename(u8"bool"))
 					return builder.CreateNot(value);
+                UNREACHABLE();
+
+            case BitwiseNot:
 				if (*type == Typename(u8"i32"))
 					return builder.CreateNot(value);
 				if (*type == Typename(u8"u32"))

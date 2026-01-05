@@ -89,19 +89,11 @@ namespace ast {
 		: Stmt(NodeKind::BlockStmt)
 		, stmts(std::move(stmts)) {}
 
-	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock)
+	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_)
 		: Stmt(NodeKind::IfStmt)
 		, cond(std::move(cond))
 		, then(std::move(then))
-		, elseBlock(std::move(elseBlock))
-		, elseIfBlock(std::nullopt) {}
-
-	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock)
-		: Stmt(NodeKind::IfStmt)
-		, cond(std::move(cond))
-		, then(std::move(then))
-		, elseBlock(std::nullopt)
-		, elseIfBlock(std::move(elseIfBlock)) {}
+		, else_(std::move(else_)) {}
 
 	WhileStmt::WhileStmt(Box<Expr> cond, Box<BlockStmt> body)
 		: Stmt(NodeKind::WhileStmt)
@@ -160,7 +152,7 @@ std::ostream &operator<<(std::ostream &os, ast::NodeKind kind) {
 std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind) {
 	using enum ast::UnaryOpKind;
 
-	switch (op) {
+	switch (kind) {
 		case LogicalNot:  return os << "!";
 		case BitwiseNot:  return os << "~";
 		case Positive:	  return os << "+";
