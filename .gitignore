@@ -42,3 +42,6 @@
 
 bin
 build
+
+out
+out.ll
