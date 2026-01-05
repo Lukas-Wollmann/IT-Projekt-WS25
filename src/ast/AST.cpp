@@ -80,15 +80,28 @@ namespace ast {
 		, expr(std::move(expr))
 		, args(std::move(args)) {}
 
+	Instantiation::Instantiation(Box<type::Type> type, Vec<Box<Expr>> args)
+		: Expr(NodeKind::Instantiation)
+		, type(std::move(type))
+		, args(std::move(args)) {}
+
 	BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
 		: Stmt(NodeKind::BlockStmt)
 		, stmts(std::move(stmts)) {}
 
-	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_)
+	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock)
 		: Stmt(NodeKind::IfStmt)
 		, cond(std::move(cond))
 		, then(std::move(then))
-		, else_(std::move(else_)) {}
+		, elseBlock(std::move(elseBlock))
+		, elseIfBlock(std::nullopt) {}
+
+	IfStmt::IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock)
+		: Stmt(NodeKind::IfStmt)
+		, cond(std::move(cond))
+		, then(std::move(then))
+		, elseBlock(std::nullopt)
+		, elseIfBlock(std::move(elseIfBlock)) {}
 
 	WhileStmt::WhileStmt(Box<Expr> cond, Box<BlockStmt> body)
 		: Stmt(NodeKind::WhileStmt)
@@ -147,8 +160,9 @@ std::ostream &operator<<(std::ostream &os, ast::NodeKind kind) {
 std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind) {
 	using enum ast::UnaryOpKind;
 
-	switch (kind) {
-		case Not:		  return os << "!";
+	switch (op) {
+		case LogicalNot:  return os << "!";
+		case BitwiseNot:  return os << "~";
 		case Positive:	  return os << "+";
 		case Negative:	  return os << "-";
 		case Dereference: return os << "*";

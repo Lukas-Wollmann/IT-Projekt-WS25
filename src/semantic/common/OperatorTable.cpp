@@ -102,11 +102,11 @@ namespace semantic {
 		addUnaryOperator(Negative, u8"f32", u8"f32");
 
 		// UNARY LOGICAL
-		addUnaryOperator(Not, u8"bool", u8"bool");
+		addUnaryOperator(LogicalNot, u8"bool", u8"bool");
 
 		// UNARY BITWISE
-		addUnaryOperator(Not, u8"i32", u8"i32");
-		addUnaryOperator(Not, u8"u32", u8"u32");
+		addUnaryOperator(BitwiseNot, u8"i32", u8"i32");
+		addUnaryOperator(BitwiseNot, u8"u32", u8"u32");
 
 		// Dereference handled in type-checker explicitly
 	}

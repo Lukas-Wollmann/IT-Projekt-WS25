@@ -24,7 +24,7 @@ private:
 	static inline const std::array<U8String, 2> s_TripleOps = {u8"<<=", u8">>="};
 
 public:
-	explicit Lexer(U8String &&source);
+	explicit Lexer(U8String &&source, bool inludeComments = false);
 	std::vector<Token> tokenize();
 
 private:
@@ -32,6 +32,7 @@ private:
 	U8String::ConstIterator m_Iter;
 	char32_t m_CurentChar;
 	SourceLoc m_Loc;
+	bool m_includeComments;
 
 	void advance();
 	bool isCurrentSingleOperator() const;

@@ -46,17 +46,12 @@ public:
 
 	ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL;
 
-	Token(TokenType type, U8String lexeme, SourceLoc loc)
+	Token(TokenType type, U8String lexeme, SourceLoc loc = {0, 0, 0},
+		  ErrorTypeToken errorType = ErrorTypeToken::NOT_ILLEGAL)
 		: type(type)
 		, lexeme(std::move(lexeme))
 		, loc(loc)
-		, errorType(ErrorTypeToken::NOT_ILLEGAL) {};
-
-	Token(TokenType type, U8String lexeme, SourceLoc loc, ErrorTypeToken errorType)
-		: type(type)
-		, lexeme(std::move(lexeme))
-		, loc(loc)
-		, errorType(errorType) {};
+		, errorType(errorType) {}
 };
 
 std::ostream &operator<<(std::ostream &os, const Token &t);

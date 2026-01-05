@@ -22,6 +22,7 @@ namespace ast {
 		Assignment,
 		VarRef,
 		FuncCall,
+		Instantiation,
 		BlockStmt,
 		IfStmt,
 		WhileStmt,
@@ -111,7 +112,7 @@ namespace ast {
 		ArrayExpr(TypePtr elementType, Vec<Box<Expr>> values);
 	};
 
-	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
+	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
 
 	struct UnaryExpr : public Expr {
 	public:
@@ -139,7 +140,8 @@ namespace ast {
 		BitwiseOr,
 		BitwiseXor,
 		LeftShift,
-		RightShift
+		RightShift,
+		Index
 	};
 
 	struct BinaryExpr : public Expr {
@@ -194,6 +196,14 @@ namespace ast {
 		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 	};
 
+	struct Instantiation : public Expr {
+	public:
+		const Box<type::Type> type;
+		const Vec<Box<Expr>> args;
+
+		Instantiation(Box<type::Type> type, Vec<Box<Expr>> args);
+	};
+
 	struct BlockStmt : public Stmt {
 	public:
 		const Vec<Box<Stmt>> stmts;
@@ -204,9 +214,12 @@ namespace ast {
 	struct IfStmt : public Stmt {
 	public:
 		const Box<Expr> cond;
-		const Box<BlockStmt> then, else_;
+		const Box<BlockStmt> then;
+		const Opt<Box<BlockStmt>> elseBlock;
+		const Opt<Box<IfStmt>> elseIfBlock;
 
-		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<BlockStmt>> elseBlock);
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Opt<Box<IfStmt>> elseIfBlock);
 	};
 
 	struct WhileStmt : public Stmt {

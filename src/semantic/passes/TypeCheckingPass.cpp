@@ -15,38 +15,38 @@ namespace semantic {
 		: m_Context(context) {}
 
 	bool TypeCheckingPass::visit(IntLit &n) {
-        VERIFY(!n.isInferred());
+		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<Typename>(u8"i32"), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(FloatLit &n) {
-        VERIFY(!n.isInferred());
+		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<Typename>(u8"f32"), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(CharLit &n) {
-        VERIFY(!n.isInferred());
+		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<Typename>(u8"char"), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(BoolLit &n) {
-        VERIFY(!n.isInferred());
+		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<Typename>(u8"bool"), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(StringLit &n) {
-        VERIFY(!n.isInferred());
-        n.infer(std::make_shared<Typename>(u8"string"), ValueCategory::RValue);
+		VERIFY(!n.isInferred());
+		n.infer(std::make_shared<Typename>(u8"string"), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(UnitLit &n) {
-        VERIFY(!n.isInferred());
-        n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
+		VERIFY(!n.isInferred());
+		n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
 		return false;
 	}
 
@@ -66,8 +66,8 @@ namespace semantic {
 			m_Context.addError(err.str(n.elementType, type));
 		}
 
-        auto arrType = std::make_shared<ArrayType>(n.elementType, n.values.size());
-        n.infer(arrType, ValueCategory::RValue);
+		auto arrType = std::make_shared<ArrayType>(n.elementType, n.values.size());
+		n.infer(arrType, ValueCategory::RValue);
 		return false;
 	}
 
@@ -76,40 +76,40 @@ namespace semantic {
 		auto type = checkExpression(*n.operand);
 
 		if (type->isTypeKind(TypeKind::Error)) {
-            n.infer(type, ValueCategory::RValue);
+			n.infer(type, ValueCategory::RValue);
 			return false;
-        }
+		}
 
 		if (n.op == UnaryOpKind::Dereference) {
 			if (!type->isTypeKind(TypeKind::Pointer)) {
 				ErrorMessage<ErrorMessageKind::DEREFERENCE_NON_POINTER_TYPE> err;
 				m_Context.addError(err.str(type));
 
-                n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+				n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 				return false;
 			}
 
 			auto ptrType = std::static_pointer_cast<const PointerType>(type);
-			
-            n.infer(ptrType->pointeeType, ValueCategory::LValue);
-            return false;
+
+			n.infer(ptrType->pointeeType, ValueCategory::LValue);
+			return false;
 		}
 
-        auto &operatorTable = m_Context.getOperatorTable();
+		auto &operatorTable = m_Context.getOperatorTable();
 		auto opFunc = operatorTable.getUnaryOperator(n.op, type);
 
 		if (opFunc.has_value()) {
-            auto returnType = opFunc.value().returnType;
+			auto returnType = opFunc.value().returnType;
 
-            n.infer(returnType, ValueCategory::RValue);
+			n.infer(returnType, ValueCategory::RValue);
 			return false;
 		}
 
 		ErrorMessage<ErrorMessageKind::UNARY_OPERATOR_NOT_FOUND> err;
 		m_Context.addError(err.str(type, n.op));
-		
-        n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
-        return false;
+
+		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+		return false;
 	}
 
 	bool TypeCheckingPass::visit(BinaryExpr &n) {
@@ -117,25 +117,24 @@ namespace semantic {
 		auto right = checkExpression(*n.right);
 
 		if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error)) {
-            n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+			n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 			return false;
-        }
+		}
 
-            
-        auto &operatorTable = m_Context.getOperatorTable();
+		auto &operatorTable = m_Context.getOperatorTable();
 		auto opFunc = operatorTable.getBinaryOperator(n.op, left, right);
 
 		if (opFunc.has_value()) {
-            auto returnType = opFunc.value().returnType;
-            
-            n.infer(returnType, ValueCategory::RValue);
+			auto returnType = opFunc.value().returnType;
+
+			n.infer(returnType, ValueCategory::RValue);
 			return false;
 		}
 
 		ErrorMessage<ErrorMessageKind::BINARY_OPERATOR_NOT_FOUND> err;
 		m_Context.addError(err.str(left, right, n.op));
 
-        n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
 	}
 
@@ -143,15 +142,15 @@ namespace semantic {
         // TODO: Not yet implemented
 
 		VERIFY(!n.type->isTypeKind(TypeKind::Error));
-        n.infer(std::make_shared<PointerType>(n.type), ValueCategory::RValue);
+		n.infer(std::make_shared<PointerType>(n.type), ValueCategory::RValue);
 		return false;
 	}
 
 	bool TypeCheckingPass::visit(Assignment &n) {
 		// For now assignments dont return anything, so i = j = 5 won't work.
 		n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
-		
-        auto left = checkExpression(*n.left);
+
+		auto left = checkExpression(*n.left);
 		auto right = checkExpression(*n.right);
 
         if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
@@ -160,7 +159,7 @@ namespace semantic {
         if (n.left->valueCategory != ValueCategory::LValue) {
 			ErrorMessage<ErrorMessageKind::ASSIGN_TO_RVALUE> err;
 			m_Context.addError(err.str());
-            return false;
+			return false;
 		}
 
 		// Some assignments are compound assignments like '+='
@@ -176,7 +175,7 @@ namespace semantic {
 			return false;
 		}
 
-        auto &operatorTable = m_Context.getOperatorTable();
+		auto &operatorTable = m_Context.getOperatorTable();
 		auto opFunc = operatorTable.getBinaryOperator(compoundOp.value(), left, right);
 
 		if (!opFunc.has_value()) {
@@ -187,9 +186,9 @@ namespace semantic {
 
 		auto resultType = opFunc.value().returnType;
 
-        // The expression is only legal if the result type is equal to the left type of the 
-        // assignment. If we have 'a += b' this will be expanded to 'a = a + b', then the type
-        // of 'a' has to be equal to the type of 'a + b' to make the assignment legal.
+		// The expression is only legal if the result type is equal to the left type of the
+		// assignment. If we have 'a += b' this will be expanded to 'a = a + b', then the type
+		// of 'a' has to be equal to the type of 'a + b' to make the assignment legal.
 		if (*left == *resultType)
 			return false;
 
@@ -199,31 +198,31 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(FuncCall &n) {
-        auto type = checkExpression(*n.expr);
+		auto type = checkExpression(*n.expr);
 
-        if (type->isTypeKind(TypeKind::Error)) {
-            n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
-            return false;
-        }
+		if (type->isTypeKind(TypeKind::Error)) {
+			n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+			return false;
+		}
 
-        if (!type->isTypeKind(TypeKind::Function)) {
-            ErrorMessage<ErrorMessageKind::CALL_ON_NON_FUNCTION> err;
+		if (!type->isTypeKind(TypeKind::Function)) {
+			ErrorMessage<ErrorMessageKind::CALL_ON_NON_FUNCTION> err;
 			m_Context.addError(err.str(type));
-            return false;
-        }
+			return false;
+		}
 
 		auto funcType = std::static_pointer_cast<const FunctionType>(type);
-        
-        TypeList argTypes;
-        argTypes.reserve(n.args.size());
+
+		TypeList argTypes;
+		argTypes.reserve(n.args.size());
 
 		for (auto &expr : n.args) {
-            auto exprType = checkExpression(*expr);
-            argTypes.push_back(exprType);
+			auto exprType = checkExpression(*expr);
+			argTypes.push_back(exprType);
 		}
 
 		canArgsCallFunc(argTypes, funcType);
-        n.infer(funcType->returnType, ValueCategory::RValue);
+		n.infer(funcType->returnType, ValueCategory::RValue);
 		return false;
 	}
 
@@ -231,21 +230,21 @@ namespace semantic {
 		auto symbol = m_SymbolTable.getSymbol(n.ident);
 
 		if (symbol.has_value()) {
-            n.infer(symbol.value().get().getType(), ValueCategory::LValue);
+			n.infer(symbol.value().get().getType(), ValueCategory::LValue);
 			return false;
 		}
 
 		auto func = m_Context.getGlobalNamespace().getFunction(n.ident);
 
 		if (func.has_value()) {
-            n.infer(func.value(), ValueCategory::RValue);
+			n.infer(func.value(), ValueCategory::RValue);
 			return false;
 		}
 
 		ErrorMessage<ErrorMessageKind::UNDEFINED_REFERENCE> err;
 		m_Context.addError(err.str(n.ident));
 
-        n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
 	}
 
@@ -270,28 +269,28 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(IfStmt &n) {
-        auto type = checkExpression(*n.cond);
-        auto boolType = std::make_shared<Typename>(u8"bool");
+		auto type = checkExpression(*n.cond);
+		auto boolType = std::make_shared<Typename>(u8"bool");
 
-        if (!typesMatch(type, boolType)) {
-            ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
-            m_Context.addError(err.str(boolType, type));
-        }
+		if (!typesMatch(type, boolType)) {
+			ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
+			m_Context.addError(err.str(boolType, type));
+		}
 
 		bool thenReturns = dispatch(*n.then);
-		bool elseReturns = dispatch(*n.else_);
+		bool elseReturns = dispatch(*n.elseBlock.value());
 
 		return thenReturns && elseReturns;
 	}
 
 	bool TypeCheckingPass::visit(WhileStmt &n) {
-        auto type = checkExpression(*n.cond);
-        auto boolType = std::make_shared<Typename>(u8"bool");
+		auto type = checkExpression(*n.cond);
+		auto boolType = std::make_shared<Typename>(u8"bool");
 
-        if (!typesMatch(type, boolType)) {
-            ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
-            m_Context.addError(err.str(boolType, type));
-        }
+		if (!typesMatch(type, boolType)) {
+			ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
+			m_Context.addError(err.str(boolType, type));
+		}
 
 		dispatch(*n.body);
 		return false;
@@ -299,14 +298,14 @@ namespace semantic {
 
 	bool TypeCheckingPass::visit(ReturnStmt &n) {
 		VERIFY(m_CurrentFunctionReturnType.has_value());
-        auto currentFuncRetType = m_CurrentFunctionReturnType.value();
+		auto currentFuncRetType = m_CurrentFunctionReturnType.value();
 
 		// The function has a Unit return type and we returned with no value.
 		if (currentFuncRetType->isTypeKind(TypeKind::Unit) && !n.expr.has_value())
 			return true;
 
 		auto &expr = *n.expr.value();
-        auto type = checkExpression(expr);
+		auto type = checkExpression(expr);
 
 		// If the type is <error-type> or if the return type matches
 		// the function declaration, its okay and a valid return.
@@ -320,8 +319,8 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(VarDef &n) {
-        auto type = checkExpression(*n.value);
-        auto varType = n.type;
+		auto type = checkExpression(*n.value);
+		auto varType = n.type;
 
 		// The expression is not of type <error-type> but does not match type
 		// type of the variable declaration - this is an actual error
@@ -372,7 +371,7 @@ namespace semantic {
 		return false;
 	}
 
-    TypePtr TypeCheckingPass::checkExpression(Expr &n) {
+	TypePtr TypeCheckingPass::checkExpression(Expr &n) {
 		VERIFY(!n.inferredType.has_value());
 		dispatch(n);
 		VERIFY(n.inferredType.has_value());
@@ -400,8 +399,8 @@ namespace semantic {
 			auto argType = args[i];
 			auto paramType = params[i];
 
-            if (typesMatch(argType, paramType))
-                continue; 
+			if (typesMatch(argType, paramType))
+				continue;
 
 			ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
 			m_Context.addError(err.str(paramType, argType));
