@@ -2,10 +2,11 @@
 #include <iostream>
 #include <memory>
 
+#include "ast/PrintVisitor.h"
 #include "codegen/CodeGen.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
-#include "ast/PrintVisitor.h"
+
 
 using namespace ast;
 using namespace type;
@@ -13,76 +14,82 @@ using namespace semantic;
 using namespace codegen;
 
 #define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
-#define MOVE(t) std::move(t)
+#define MOVE(t)		 std::move(t)
 
 int main() {
+	Vec<Box<Stmt>> stmts;
 
-    Vec<Box<Stmt>> stmts;
+	// n = 5, res = 1, i = 1
+	stmts.push_back(MAKE(VarDef, u8"n", MAKE(Typename, u8"i32"), MAKE(IntLit, 5)));
+	stmts.push_back(MAKE(VarDef, u8"res", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+	stmts.push_back(MAKE(VarDef, u8"i", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
 
-// n = 5, res = 1, i = 1
-stmts.push_back(MAKE(VarDef, u8"n", MAKE(Typename, u8"i32"), MAKE(IntLit, 5)));
-stmts.push_back(MAKE(VarDef, u8"res", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
-stmts.push_back(MAKE(VarDef, u8"i", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+	// outer loop: while(i <= n)
+	auto cond_outer = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"i"),
+						   MAKE(VarRef, u8"n"));
+	Vec<Box<Stmt>> body_outer;
 
-// outer loop: while(i <= n)
-auto cond_outer = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"i"), MAKE(VarRef, u8"n"));
-Vec<Box<Stmt>> body_outer;
+	// inner loop variables
+	body_outer.push_back(MAKE(VarDef, u8"j", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
+	body_outer.push_back(MAKE(VarDef, u8"tmp", MAKE(Typename, u8"i32"), MAKE(IntLit, 0)));
 
-// inner loop variables
-body_outer.push_back(MAKE(VarDef, u8"j", MAKE(Typename, u8"i32"), MAKE(IntLit, 1)));
-body_outer.push_back(MAKE(VarDef, u8"tmp", MAKE(Typename, u8"i32"), MAKE(IntLit, 0)));
+	// inner loop: while(j <= i)
+	auto cond_inner = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"j"),
+						   MAKE(VarRef, u8"i"));
+	Vec<Box<Stmt>> body_inner;
+	body_inner.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"tmp"),
+							  MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"tmp"),
+								   MAKE(VarRef, u8"j"))));
+	body_inner.push_back(
+			MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"j"),
+				 MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"j"), MAKE(IntLit, 1))));
+	auto inner_while = MAKE(WhileStmt, MOVE(cond_inner), MAKE(BlockStmt, MOVE(body_inner)));
+	body_outer.push_back(MOVE(inner_while));
 
-// inner loop: while(j <= i)
-auto cond_inner = MAKE(BinaryExpr, BinaryOpKind::LessThanOrEqual, MAKE(VarRef, u8"j"), MAKE(VarRef, u8"i"));
-Vec<Box<Stmt>> body_inner;
-body_inner.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"tmp"),
-                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"tmp"), MAKE(VarRef, u8"j"))));
-body_inner.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"j"),
-                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"j"), MAKE(IntLit, 1))));
-auto inner_while = MAKE(WhileStmt, MOVE(cond_inner), MAKE(BlockStmt, MOVE(body_inner)));
-body_outer.push_back(MOVE(inner_while));
+	// res = res * tmp
+	body_outer.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"res"),
+							  MAKE(BinaryExpr, BinaryOpKind::Multiplication, MAKE(VarRef, u8"res"),
+								   MAKE(VarRef, u8"tmp"))));
 
-// res = res * tmp
-body_outer.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"res"),
-                          MAKE(BinaryExpr, BinaryOpKind::Multiplication, MAKE(VarRef, u8"res"), MAKE(VarRef, u8"tmp"))));
+	// i = i + 1
+	body_outer.push_back(
+			MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"i"),
+				 MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"i"), MAKE(IntLit, 1))));
 
-// i = i + 1
-body_outer.push_back(MAKE(Assignment, AssignmentKind::Simple, MAKE(VarRef, u8"i"),
-                          MAKE(BinaryExpr, BinaryOpKind::Addition, MAKE(VarRef, u8"i"), MAKE(IntLit, 1))));
+	auto outer_while = MAKE(WhileStmt, MOVE(cond_outer), MAKE(BlockStmt, MOVE(body_outer)));
 
-auto outer_while = MAKE(WhileStmt, MOVE(cond_outer), MAKE(BlockStmt, MOVE(body_outer)));
+	stmts.push_back(MOVE(outer_while));
+	stmts.push_back(MAKE(ReturnStmt, MAKE(VarRef, u8"res")));
 
-stmts.push_back(MOVE(outer_while));
-stmts.push_back(MAKE(ReturnStmt, MAKE(VarRef, u8"res")));
+	// function main
+	Vec<Param> params;
+	auto mainFunc = MAKE(FuncDecl, u8"main", MOVE(params), MAKE(Typename, u8"i32"),
+						 MAKE(BlockStmt, MOVE(stmts)));
 
-// function main
-Vec<Param> params;
-auto mainFunc = MAKE(FuncDecl, u8"main", MOVE(params), MAKE(Typename, u8"i32"), MAKE(BlockStmt, MOVE(stmts)));
+	// module
+	Vec<Box<FuncDecl>> funcs;
+	funcs.push_back(MOVE(mainFunc));
+	auto module = MAKE(Module, u8"complex_test", MOVE(funcs));
 
-// module
-Vec<Box<FuncDecl>> funcs;
-funcs.push_back(MOVE(mainFunc));
-auto module = MAKE(Module, u8"complex_test", MOVE(funcs));
+	// type check
+	TypeCheckerContext ctx;
+	ExplorationPass ep(ctx);
+	TypeCheckingPass tc(ctx);
+	ep.dispatch(*module);
+	tc.dispatch(*module);
 
-// type check
-TypeCheckerContext ctx;
-ExplorationPass ep(ctx);
-TypeCheckingPass tc(ctx);
-ep.dispatch(*module);
-tc.dispatch(*module);
+	std::cout << *module << std::endl;
 
-std::cout << *module << std::endl;
+	// generate code
+	if (!ctx.getErrors().empty()) {
+		for (auto &err : ctx.getErrors())
+			std::cout << err << std::endl;
+		return 1;
+	}
+	std::ofstream file("out.ll");
+	CodeGen::generate(file, *module);
 
-// generate code
-if (!ctx.getErrors().empty()) {
-    for (auto &err : ctx.getErrors())
-        std::cout << err << std::endl;
-    return 1;
-}
-std::ofstream file("out.ll");
-CodeGen::generate(file, *module);
-
-    #if 0
+#if 0
     // ======== iterative Fibonacci ========
 
     // Variable declarations
@@ -136,9 +143,9 @@ CodeGen::generate(file, *module);
     // Code generation
     std::ofstream file("out.ll");
     CodeGen::generate(file, *module);
-    #endif
+#endif
 
-    #if 0
+#if 0
     //  =========== pow.code ===========
     // 
     //  func pow(base: i32, exponent: i32) -> i32 {
@@ -238,8 +245,8 @@ CodeGen::generate(file, *module);
 
     std::ofstream file("out.ll");
     CodeGen::generate(file, *module);
-    #endif
-    #if 0
+#endif
+#if 0
     /*
 
     TypePtr i32Type = std::make_shared<Typename>(u8"i32");
@@ -391,5 +398,5 @@ CodeGen::generate(file, *module);
     cg.dispatch(*node);
 
     return 0;
-    #endif
+#endif
 }

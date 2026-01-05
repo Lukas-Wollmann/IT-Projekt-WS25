@@ -51,7 +51,9 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(ArrayExpr &n) {
-		VERIFY(!n.isInferred());
+		UNREACHABLE(); // TODO: Not yet implemented
+        
+        VERIFY(!n.isInferred());
 		VERIFY(!n.elementType->isTypeKind(TypeKind::Error));
 
 		for (auto &expr : n.values) {
@@ -138,6 +140,8 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(HeapAlloc &n) {
+        // TODO: Not yet implemented
+
 		VERIFY(!n.type->isTypeKind(TypeKind::Error));
         n.infer(std::make_shared<PointerType>(n.type), ValueCategory::RValue);
 		return false;
@@ -150,14 +154,14 @@ namespace semantic {
         auto left = checkExpression(*n.left);
 		auto right = checkExpression(*n.right);
 
-		if (n.left->valueCategory != ValueCategory::LValue) {
+        if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
+            return false;
+		
+        if (n.left->valueCategory != ValueCategory::LValue) {
 			ErrorMessage<ErrorMessageKind::ASSIGN_TO_RVALUE> err;
 			m_Context.addError(err.str());
             return false;
 		}
-
-		if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
-			return false;
 
 		// Some assignments are compound assignments like '+='
 		auto compoundOp = getBinaryOpFromAssignment(n.assignmentKind);
@@ -178,8 +182,6 @@ namespace semantic {
 		if (!opFunc.has_value()) {
 			ErrorMessage<ErrorMessageKind::BINARY_OPERATOR_NOT_FOUND> err;
 			m_Context.addError(err.str(left, right, compoundOp.value()));
-
-			n.inferredType = std::make_shared<ErrorType>();	
             return false;
 		}
 

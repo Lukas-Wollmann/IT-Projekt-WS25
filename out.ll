@@ -1,8 +1,5 @@
-; declare printf
-declare i32 @printf(i8*, ...)
-
-; format string global
-@fmt = constant [4 x i8] c"%d\0A\00"
+; ModuleID = 'complex_test'
+source_filename = "complex_test"
 
 define i32 @main() {
 entry:
@@ -52,15 +49,8 @@ after3:                                           ; preds = %cond1
   %13 = load i32, ptr %tmp, align 4
   %14 = mul i32 %12, %13
   store i32 %14, ptr %res, align 4
-
-  ; ---- PRINTF HERE ----
-  %15 = load i32, ptr %res, align 4
-  %16 = getelementptr [4 x i8], [4 x i8]* @fmt, i32 0, i32 0
-  call i32 (i8*, ...) @printf(i8* %16, i32 %15)
-  ; --------------------
-
-  %18 = load i32, ptr %i, align 4
-  %19 = add i32 %18, 1
-  store i32 %19, ptr %i, align 4
+  %15 = load i32, ptr %i, align 4
+  %16 = add i32 %15, 1
+  store i32 %16, ptr %i, align 4
   br label %cond
 }

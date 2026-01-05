@@ -102,7 +102,7 @@ TEST_CASE("TypeCheckingPass: StringLit type will be infered as Typename string")
 	CHECK(strLit->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: UnitLit type will be infered as UnitLit") {
+TEST_CASE("TypeCheckingPass: UnitLit type will be infered as UnitType") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
@@ -118,66 +118,14 @@ TEST_CASE("TypeCheckingPass: UnitLit type will be infered as UnitLit") {
 
 	auto type = unitLit->inferredType.value();
 	CHECK(*type == UnitType());
-	CHECK(unitLit->valueCategory == ValueCategory::RValue);
+	CHECK(unitLit->valueCategory.value() == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: ArrayLit type will be infered as ArrayType of element type and "
-		  "correct size") {
+TEST_CASE("TypeCheckingPass: UnaryExpr will infer correct type if operator exists") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	Vec<Box<Expr>> elements;
-	elements.push_back(std::make_unique<IntLit>(1));
-	elements.push_back(std::make_unique<IntLit>(2));
-	elements.push_back(std::make_unique<IntLit>(3));
-	auto elemType = std::make_shared<Typename>(u8"i32");
-	auto arrayLit = std::make_unique<ArrayExpr>(elemType, std::move(elements));
-
-	// Act
-	tc.dispatch(*arrayLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(arrayLit->inferredType.has_value());
-	CHECK(arrayLit->valueCategory.has_value());
-
-	auto type = arrayLit->inferredType.value();
-	CHECK(*type == ArrayType(elemType, 3));
-	CHECK(arrayLit->valueCategory == ValueCategory::RValue);
-}
-
-TEST_CASE("TypeCheckingPass: ArrayLit will error if element type missmatch") {
-	// Arrange
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-	Vec<Box<Expr>> elements;
-	elements.push_back(std::make_unique<IntLit>(1));
-	elements.push_back(std::make_unique<FloatLit>(2.0f));
-	elements.push_back(std::make_unique<IntLit>(3));
-	auto elemType = std::make_shared<Typename>(u8"i32");
-	auto arrayLit = std::make_unique<ArrayExpr>(elemType, std::move(elements));
-
-	// Act
-	tc.dispatch(*arrayLit);
-
-	// Assert
-	CHECK(ctx.getErrors().size() == 1);
-	CHECK(arrayLit->inferredType.has_value());
-	CHECK(arrayLit->valueCategory.has_value());
-
-	auto type = arrayLit->inferredType.value();
-	CHECK(*type == ArrayType(elemType, 3));
-	CHECK(arrayLit->valueCategory == ValueCategory::RValue);
-}
-
-TEST_CASE("TypeCheckingPass: UnaryExpr will infer correct type for valid operator") {
-	// Arrange
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<UnaryExpr>(
-		UnaryOpKind::Negative,
-		std::make_unique<IntLit>(42)
-	);
+	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Negative, std::make_unique<IntLit>(42));
 
 	// Act
 	tc.dispatch(*expr);
@@ -192,20 +140,18 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will infer correct type for valid operato
 	CHECK(expr->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: UnaryExpr will error for invalid operand type") {
+TEST_CASE("TypeCheckingPass: UnaryExpr will error if operator doesn't exist") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<UnaryExpr>(
-		UnaryOpKind::Not,
-		std::make_unique<StringLit>(u8"67")
-	);
+	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Not, std::make_unique<StringLit>(u8"2"));
 
 	// Act
 	tc.dispatch(*expr);
 
 	// Assert
 	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
 	CHECK(expr->inferredType.has_value());
 	CHECK(expr->valueCategory.has_value());
 
@@ -214,19 +160,14 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will error for invalid operand type") {
 	CHECK(expr->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: UnaryExpr will propagate ErrorType if operand has ErrorType") {
+TEST_CASE("TypeCheckingPass: UnaryExpr will fail silently if operand has ErrorType") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto operand = std::make_unique<UnaryExpr>(
-		UnaryOpKind::Not,
-		std::make_unique<StringLit>(u8"67")
-	);
+	auto errorOperand =
+			std::make_unique<UnaryExpr>(UnaryOpKind::Not, std::make_unique<StringLit>(u8"67"));
 
-	auto expr = std::make_unique<UnaryExpr>(
-		UnaryOpKind::Negative,
-		std::move(operand)
-	);
+	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Negative, std::move(errorOperand));
 
 	// Act
 	tc.dispatch(*expr);
@@ -234,24 +175,21 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will propagate ErrorType if operand has E
 	// Assert
 	// Still only one error, second unary expr should only propagate the error
 	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
 	CHECK(expr->inferredType.has_value());
 	CHECK(expr->valueCategory.has_value());
 
 	auto type = expr->inferredType.value();
 	CHECK(type->isTypeKind(TypeKind::Error));
 	CHECK(expr->valueCategory == ValueCategory::RValue);
-
 }
 
-TEST_CASE("TypeCheckingPass: BinaryExpr will infer correct type for valid operator") {
+TEST_CASE("TypeCheckingPass: BinaryExpr will infer correct type if operator exists") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<BinaryExpr>(
-		BinaryOpKind::Equality,
-		std::make_unique<IntLit>(42),
-		std::make_unique<IntLit>(58)
-	);
+	auto expr = std::make_unique<BinaryExpr>(BinaryOpKind::Equality, std::make_unique<IntLit>(42),
+											 std::make_unique<IntLit>(58));
 
 	// Act
 	tc.dispatch(*expr);
@@ -266,21 +204,21 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will infer correct type for valid operat
 	CHECK(expr->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: BinaryExpr will error for invalid operand types") {
+TEST_CASE("TypeCheckingPass: BinaryExpr will error if operator doesn't exist") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<BinaryExpr>(
-		BinaryOpKind::Modulo,
-		std::make_unique<StringLit>(u8"🦒"),
-		std::make_unique<StringLit>(u8"67")
-	);
+	auto expr =
+			std::make_unique<BinaryExpr>(BinaryOpKind::Modulo, std::make_unique<StringLit>(u8"🦒"),
+										 std::make_unique<StringLit>(u8"67"));
 
 	// Act
 	tc.dispatch(*expr);
 
 	// Assert
 	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] ==
+		  u8"Cannot use binary operator '%' on values of type 'string' and 'string'.");
 	CHECK(expr->inferredType.has_value());
 	CHECK(expr->valueCategory.has_value());
 
@@ -289,19 +227,15 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will error for invalid operand types") {
 	CHECK(expr->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: BinaryExpr will propagate ErrorType if one of the operands has ErrorType") {
+TEST_CASE("TypeCheckingPass: BinaryExpr will fail silently if one of the operands has ErrorType") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto operand = std::make_unique<UnaryExpr>(
-		UnaryOpKind::Not,
-		std::make_unique<StringLit>(u8"🐄 Mooh 🐄")
-	);
-	auto expr = std::make_unique<BinaryExpr>(
-		BinaryOpKind::Addition,
-		std::make_unique<StringLit>(u8"67"),
-		std::move(operand)
-	);
+	auto errorOperand = std::make_unique<UnaryExpr>(UnaryOpKind::Not,
+													std::make_unique<StringLit>(u8"🐄 Mooh 🐄"));
+	auto expr = std::make_unique<BinaryExpr>(BinaryOpKind::Addition,
+											 std::make_unique<StringLit>(u8"67"),
+											 std::move(errorOperand));
 
 	// Act
 	tc.dispatch(*expr);
@@ -309,6 +243,7 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will propagate ErrorType if one of the o
 	// Assert
 	// Still only one error, second binary expr should only propagate the error
 	CHECK(ctx.getErrors().size() == 1);
+    CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
 	CHECK(expr->inferredType.has_value());
 	CHECK(expr->valueCategory.has_value());
 
@@ -317,169 +252,189 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will propagate ErrorType if one of the o
 	CHECK(expr->valueCategory == ValueCategory::RValue);
 }
 
-TEST_CASE("TypeCheckingPass: HeapAlloc will return a pointer to allocated type") {
-	// Arrange
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-	auto allocType = std::make_shared<Typename>(u8"i32");
-	auto expr = std::make_unique<HeapAlloc>(allocType);
+TEST_CASE("TypeCheckingPass: Simple Assignment will be infered as UnitType") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
-	// Act
-	tc.dispatch(*expr);
+    auto var = std::make_unique<VarDef>(
+        u8"i", 
+        std::make_shared<Typename>(u8"i32"), 
+        std::make_unique<IntLit>(67)
+    );
+    auto assignment = std::make_unique<Assignment>(
+        AssignmentKind::Simple, 
+        std::make_unique<VarRef>(u8"i"), 
+        std::make_unique<IntLit>(187)
+    );
 
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(expr->inferredType.has_value());
-	CHECK(expr->valueCategory.has_value());
+    // Add a variable to the symbol table
+    tc.dispatch(*var);
 
-	auto type = expr->inferredType.value();
-	CHECK(*type == PointerType(allocType));
-	CHECK(expr->valueCategory == ValueCategory::RValue);
+    // Act
+    tc.dispatch(*assignment);
+
+    // Assert
+    CHECK(ctx.getErrors().size() == 0);
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
 }
 
-#if 0
-TEST_CASE("TypeChecker: FloatLit type will be infered as Typename f32") {
-	// Arrange
-	auto floatLit = std::make_unique<FloatLit>(187.0f);
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
+TEST_CASE("TypeCheckingPass: Compound Assignment will be infered as UnitType") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
 
-	// Act
-	tc.dispatch(*floatLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(floatLit->inferredType);
-
-	const Type &type = *floatLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Typename);
-
-	auto &typename_ = static_cast<const Typename &>(type);
-	CHECK(typename_.typename_ == u8"f32");
-}
-
-TEST_CASE("TypeChecker: CharLit type will be infered as Typename char") {
-	// Arrange
-	auto charLit = std::make_unique<CharLit>('X');
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-
-	// Act
-	tc.dispatch(*charLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(charLit->inferredType);
-
-	const Type &type = *charLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Typename);
-
-	auto &typename_ = static_cast<const Typename &>(type);
-	CHECK(typename_.typename_ == u8"char");
-}
-
-TEST_CASE("TypeChecker: BoolLit type will be infered as Typename bool") {
-	// Arrange
-	auto boolLit = std::make_unique<BoolLit>(false);
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-
-	// Act
-	tc.dispatch(*boolLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(boolLit->inferredType);
-
-	const Type &type = *boolLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Typename);
-
-	auto &typename_ = static_cast<const Typename &>(type);
-	CHECK(typename_.typename_ == u8"bool");
-}
-
-TEST_CASE("TypeChecker: StringLit type will be infered as Typename string") {
-	// Arrange
-	auto strLit = std::make_unique<StringLit>(u8"UwU");
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-
-	// Act
-	tc.dispatch(*strLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(strLit->inferredType);
-
-	const Type &type = *strLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Typename);
-
-	auto &typename_ = static_cast<const Typename &>(type);
-	CHECK(typename_.typename_ == u8"string");
-}
-
-TEST_CASE("TypeChecker: UnitLit type will be infered as UnitType") {
-	// Arrange
-	auto unitLit = std::make_unique<UnitLit>();
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-
-	// Act
-	tc.dispatch(*unitLit);
-
-	// Assert
-	CHECK(ctx.getErrors().empty());
-	CHECK(unitLit->inferredType);
-
-	const Type &type = *unitLit->inferredType.value();
-	CHECK(type.kind == TypeKind::Unit);
-}
-
-TEST_CASE("TypeChecker: ReturnStmt works if return expression has correct type") {
-	Vec<Box<Stmt>> stmts;
-	stmts.push_back(std::make_unique<ReturnStmt>(std::make_unique<FloatLit>(10.0f)));
-
-	auto funcDecl = std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{},
-											   std::make_unique<Typename>(u8"f32"),
-											   std::make_unique<BlockStmt>(std::move(stmts)));
-
-	TypeCheckerContext ctx;
-	TypeCheckingPass tc(ctx);
-	tc.dispatch(*funcDecl);
-
-	for (const auto &err : ctx.getErrors())
-		std::cout << err << std::endl;
-}
-
-TEST_CASE("TypeChecker: Playground") {
-	Vec<Box<Stmt>> stmts;
-	stmts.push_back(std::make_unique<UnitLit>());
-	
-    // foo: i32 = 5
-    stmts.push_back(std::make_unique<VarDef>(
-        u8"foo",
-        std::make_unique<Typename>(u8"i32"),
-		std::make_unique<IntLit>(3)
-    ));
-
-    // foo += 2
-    stmts.push_back(std::make_unique<Assignment>(
+    auto var = std::make_unique<VarDef>(
+        u8"i", 
+        std::make_shared<Typename>(u8"i32"), 
+        std::make_unique<IntLit>(67)
+    );
+    auto assignment = std::make_unique<Assignment>(
         AssignmentKind::Addition, 
-        std::make_unique<IntLit>(3),
-        std::make_unique<IntLit>(3)
-    ));
+        std::make_unique<VarRef>(u8"i"), 
+        std::make_unique<IntLit>(187)
+    );
 
-	auto funcDecl =
-			std::make_unique<FuncDecl>(u8"testFunction", Vec<Param>{}, std::make_unique<UnitType>(),
-									   std::make_unique<BlockStmt>(std::move(stmts)));
+    // Add a variable to the symbol table
+    tc.dispatch(*var);
 
-	TypeCheckerContext ctx;
-	ExplorationPass ep(ctx);
-	ep.dispatch(*funcDecl);
-	TypeCheckingPass tc(ctx);
-	tc.dispatch(*funcDecl);
+    // Act
+    tc.dispatch(*assignment);
 
-	for (const auto &err : ctx.getErrors())
-		std::cout << err << std::endl;
+    // Assert
+    CHECK(ctx.getErrors().size() == 0);
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
 }
-#endif
+
+TEST_CASE("TypeCheckingPass: Assignment to rvalue will add an error") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
+
+    auto assignment = std::make_unique<Assignment>(
+        AssignmentKind::Simple, 
+        std::make_unique<IntLit>(1),
+        std::make_unique<IntLit>(2)
+    );
+
+    // Act
+    tc.dispatch(*assignment);
+
+    // Assert
+    CHECK(ctx.getErrors().size() == 1);
+    CHECK(ctx.getErrors()[0] == u8"Left side of an assignment needs to be an l-value.");
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
+}
+
+TEST_CASE("TypeCheckingPass: Assignment will fail silently if one of the sides has ErrorType") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
+    auto errorExpr = std::make_unique<UnaryExpr>(
+        UnaryOpKind::Not, 
+        std::make_unique<StringLit>(u8"test")
+    ); 
+    auto assignment = std::make_unique<Assignment>(
+        AssignmentKind::Simple,
+        std::move(errorExpr),
+        std::make_unique<IntLit>(2)
+    );
+
+    // Act
+    tc.dispatch(*assignment);
+
+    // Assert
+    CHECK(ctx.getErrors().size() == 1);
+    CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
+}
+
+TEST_CASE("TypeCheckingPass: Illegal Compound Assignment will add an error") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
+
+    auto var = std::make_unique<VarDef>(
+        u8"i", 
+        std::make_shared<Typename>(u8"string"), 
+        std::make_unique<StringLit>(u8"foo")
+    );
+    auto assignment = std::make_unique<Assignment>(
+        AssignmentKind::Multiplication, 
+        std::make_unique<VarRef>(u8"i"), 
+        std::make_unique<StringLit>(u8"bar")
+    );
+
+    // Add a variable to the symbol table
+    tc.dispatch(*var);
+
+    // Act
+    tc.dispatch(*assignment);
+
+    // Assert
+    CHECK(ctx.getErrors().size() == 1);
+    CHECK(ctx.getErrors()[0] == u8"Cannot use binary operator '*' on values of type 'string' and 'string'.");
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
+}
+
+TEST_CASE("TypeCheckingPass: Compound Assignment with wrong return type will add an error") {
+    // No case like this exists yet.
+}
+
+TEST_CASE("TypeCheckingPass: Simple Assignment with wrong type will add an error") {
+    // Arrange
+    TypeCheckerContext ctx;
+    TypeCheckingPass tc(ctx);
+
+    auto var = std::make_unique<VarDef>(
+        u8"i", 
+        std::make_shared<Typename>(u8"string"), 
+        std::make_unique<StringLit>(u8"foo")
+    );
+    auto assignment = std::make_unique<Assignment>(
+        AssignmentKind::Simple, 
+        std::make_unique<VarRef>(u8"i"), 
+        std::make_unique<IntLit>(67)
+    );
+
+    // Add a variable to the symbol table
+    tc.dispatch(*var);
+
+    // Act
+    tc.dispatch(*assignment);
+
+    // Assert
+    CHECK(ctx.getErrors().size() == 1);
+    CHECK(ctx.getErrors()[0] == u8"Expected value of type 'string', got type 'i32' instead.");
+    CHECK(assignment->inferredType.has_value());
+	CHECK(assignment->valueCategory.has_value());
+
+	auto type = assignment->inferredType.value();
+	CHECK(*type == UnitType());
+	CHECK(assignment->valueCategory == ValueCategory::RValue);
+}

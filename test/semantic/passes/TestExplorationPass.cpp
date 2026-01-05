@@ -31,6 +31,7 @@ TEST_CASE("ExplorationPass: Visit Module visits all FuncDecls") {
 
     // Assert
     auto &ns = ctx.getGlobalNamespace();
+    CHECK(ns.getSize() == 2);
     CHECK(ns.getFunction(u8"foo").has_value());
     CHECK(ns.getFunction(u8"bar").has_value());
 }
