@@ -5,6 +5,7 @@
 
 #include "Typedef.h"
 #include "core/U8String.h"
+#include "core/U8String.h"
 
 namespace type {
 	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
@@ -27,6 +28,7 @@ namespace type {
 	public:
 		const U8String typename_;
 
+		explicit Typename(U8String typename_);
 		explicit Typename(U8String typename_);
 	};
 
