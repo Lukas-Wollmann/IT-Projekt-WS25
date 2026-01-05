@@ -33,10 +33,6 @@ namespace type {
 
 	UnitType::UnitType()
 		: Type(TypeKind::Unit) {}
-
-	Typename::Typename(U8String typename_)
-		: Type(TypeKind::Typename)
-		, typename_(std::move(typename_)) {}
 }
 
 std::ostream &operator<<(std::ostream &os, type::TypeKind kind) {

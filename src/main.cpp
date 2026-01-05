@@ -6,16 +6,41 @@
 #include "codegen/CodeGen.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
-
+#include "parser/Parser.h"
+#include "lexer/Lexer.h"
 
 using namespace ast;
 using namespace type;
 using namespace semantic;
 using namespace codegen;
 
+
 #define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
 #define MOVE(t)		 std::move(t)
 
+int main(const int argc, const char *argv[]) {
+    std::string buf; 
+    std::getline(std::cin, buf);
+
+    U8String source(buf);
+
+    Lexer lexer(std::move(source));
+    auto tokens = lexer.tokenize();
+
+    for (auto tok : tokens)
+        std::cout << tok << std::endl;
+
+    Parser parser(tokens, "test-module");
+    auto ast = parser.parse();
+
+    for (auto err : parser.errors)
+        std::cout << err << std::endl;
+
+    std::cout << *ast << std::endl;
+}
+
+
+#if 0
 int main() {
 	Vec<Box<Stmt>> stmts;
 
@@ -88,7 +113,7 @@ int main() {
 	}
 	std::ofstream file("out.ll");
 	CodeGen::generate(file, *module);
-
+#endif
 #if 0
     // ======== iterative Fibonacci ========
 
@@ -398,5 +423,5 @@ int main() {
     cg.dispatch(*node);
 
     return 0;
-#endif
 }
+#endif

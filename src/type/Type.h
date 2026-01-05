@@ -29,7 +29,6 @@ namespace type {
 		const U8String typename_;
 
 		explicit Typename(U8String typename_);
-		explicit Typename(U8String typename_);
 	};
 
 	struct PointerType : public Type {
