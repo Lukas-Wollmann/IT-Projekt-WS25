@@ -6,9 +6,8 @@
                 "${workspaceFolder}/lib",
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/test",
-                "/usr/include/llvm-18",
-                "/usr/include/llvm-c-18",
-                "/usr/include/c++/v1"
+                "/usr/include/llvm",
+                "/usr/include/llvm-c"
             ],
             "defines": [],
             "cStandard": "c17",

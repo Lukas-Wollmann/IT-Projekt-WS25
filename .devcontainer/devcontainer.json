@@ -12,25 +12,11 @@
 
   "customizations": {
     "vscode": {
-      "extensions": [
-        "ms-vscode.cpptools",
-        "ms-vscode.cmake-tools",
-        "llvm-vs-code-extensions.vscode-clangd"
-      ],
-      "settings": {
-        "cmake.generator": "Ninja",
-        "cmake.buildDirectory": "${workspaceFolder}/build",
-
-        "C_Cpp.default.compilerPath": "/usr/bin/clang++",
-        "C_Cpp.intelliSenseEngine": "disabled",
-
-        "clangd.path": "/usr/bin/clangd",
-        "clangd.arguments": [
-          "--background-index",
-          "--clang-tidy",
-          "--completion-style=detailed"
+        "extensions": [
+            "ms-vscode.cpptools-extension-pack",
+            "ms-vscode.hexeditor",
+            "gruntfuggly.todo-tree"
         ]
-      }
     }
   },
 
