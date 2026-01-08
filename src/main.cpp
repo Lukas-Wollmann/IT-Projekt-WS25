@@ -1,152 +1,141 @@
-#include <fstream>
-#include <iostream>
-#include <memory>
-
-#include "ast/PrintVisitor.h"
-#include "codegen/CodeGen.h"
-#include "codegen/CodeGenContext.h"
-#include "semantic/passes/ExplorationPass.h"
-#include "semantic/passes/TypeCheckingPass.h"
-#include "parser/Parser.h"
-#include "lexer/Lexer.h"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <fstream>
+#include <iostream>
+#include <memory>
+
+#include "ast/AST.h"
+#include "ast/Printer.h"
+#include "codegen/CodeGen.h"
+#include "codegen/CodeGenContext.h"
+#include "lexer/Lexer.h"
+#include "parser/Parser.h"
+#include "semantic/passes/ExplorationPass.h"
+#include "semantic/passes/TypeCheckingPass.h"
 
 using namespace ast;
 using namespace type;
 using namespace semantic;
 using namespace codegen;
 
-
 #define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
 #define MOVE(t)		 std::move(t)
 
 int main(const int argc, const char *argv[]) {
+	if (argc < 2) {
+		std::cout << "Usage: \"" << argv[0] << "\" <input-filename> [options]\n";
+		std::cout << "Options:\n";
+		std::cout << "\t-o, --output <filename> Name of the generated output file\n";
+		std::cout << "\t-d, --debug             Print debug information for AST and Tokens\n";
+		std::cout << "\t-i, --keep-intermediate Keeps the generated intermediate files\n";
+		std::cout << std::endl;
+		return 1;
+	}
 
-    if (argc < 2) {
-        std::cout << "Usage: \"" << argv[0] << "\" <input-filename> [options]\n";
-        std::cout << "Options:\n";
-        std::cout << "\t-o, --output <filename> Name of the generated output file\n";
-        std::cout << "\t-d, --debug             Print debug information for AST and Tokens\n";
-        std::cout << "\t-i, --keep-intermediate Keeps the generated intermediate files\n";
-        std::cout << std::endl;
-        return 1;
-    }
+	std::string filename = argv[1];
+	std::string outputFilename = "out";
+	bool debug = false, keepIntermediate = false;
 
-    std::string filename = argv[1];
-    std::string outputFilename = "out";
-    bool debug = false, keepIntermediate = false;
+	for (int i = 2; i < argc; ++i) {
+		std::string opt = argv[i];
 
-    for (int i = 2; i < argc; ++i) {
-        std::string opt = argv[i];
-        
-        if (opt == "-d" || opt == "--debug") {
-            debug = true;
-        } else if (opt == "-o" || opt == "--output") {
-            if (i > argc - 2) {
-                std::cout << "Expected filename after option '" << opt << "'" << std::endl;
-                return 1;
-            }
-            
-            outputFilename = argv[++i];
-        }
-        else if (opt == "-i" || opt == "--keep-intermediate") {
-            keepIntermediate = true;
-        } else {
-            std::cout << "Unknown option: " << opt << std::endl;
-            return 1;
-        }
-    }
+		if (opt == "-d" || opt == "--debug") {
+			debug = true;
+		} else if (opt == "-o" || opt == "--output") {
+			if (i > argc - 2) {
+				std::cout << "Expected filename after option '" << opt << "'" << std::endl;
+				return 1;
+			}
 
-    std::ifstream file(filename, std::ios::in | std::ios::binary);
+			outputFilename = argv[++i];
+		} else if (opt == "-i" || opt == "--keep-intermediate") {
+			keepIntermediate = true;
+		} else {
+			std::cout << "Unknown option: " << opt << std::endl;
+			return 1;
+		}
+	}
 
-    if (!file) {
-        std::cout << "Failed to open file" << std::endl;
-        return 3;
-    }
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    U8String source(buffer.str());
-    file.close();
+	if (!file) {
+		std::cout << "Failed to open file" << std::endl;
+		return 3;
+	}
 
-    Lexer lexer(std::move(source));
-    auto tokens = lexer.tokenize();
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	U8String source(buffer.str());
+	file.close();
 
-    if (debug) {
-        for (auto tok : tokens)
-            std::cout << tok << "\n";
-    }
+	Lexer lexer(std::move(source));
+	auto tokens = lexer.tokenize();
 
-    Parser parser(tokens, "test-module");
-    auto ast = parser.parse();
+	if (debug) {
+		for (auto tok : tokens)
+			std::cout << tok << "\n";
+	}
 
-    for (auto err : parser.errors)
-        std::cout << err << "\n";
+	Parser parser(tokens, "test-module");
+	auto ast = parser.parse();
 
-    std::cout.flush();
+	for (auto err : parser.errors)
+		std::cout << err << "\n";
 
-    if (!parser.errors.empty())
-        return 1;
+	std::cout.flush();
 
-    if (debug)
-        std::cout << *ast << std::endl;
+	if (!parser.errors.empty())
+		return 1;
 
-    TypeCheckerContext ctx;
+	if (debug)
+		std::cout << *ast << std::endl;
 
-    ExplorationPass pass1(ctx);
-    pass1.dispatch(*ast);
+	TypeCheckerContext ctx;
 
-    TypeCheckingPass pass2(ctx);
-    pass2.dispatch(*ast);
+	ExplorationPass pass1(ctx);
+	pass1.dispatch(*ast);
 
-    for (auto err : ctx.getErrors())
-        std::cout << err << "\n";
+	TypeCheckingPass pass2(ctx);
+	pass2.dispatch(*ast);
 
-    std::cout.flush();
+	for (auto err : ctx.getErrors())
+		std::cout << err << "\n";
 
-    if (!ctx.getErrors().empty())
-        return 2;
+	std::cout.flush();
 
-    std::ofstream output(outputFilename + ".ll");
-    CodeGen::generate(output, *ast);
-    output.close();
+	if (!ctx.getErrors().empty())
+		return 2;
 
-    pid_t pid = fork();
-    if (pid == 0) {
-        std::vector<const char*> clangArgs = {
-            "clang",
-            (outputFilename + ".ll").c_str(),
-            "-o",
-            outputFilename.c_str(),
-            nullptr
-        };
-        execvp("clang", const_cast<char* const*>(clangArgs.data()));
-        perror("execvp failed");
-        return 3;
-    } else if (pid > 0) {
-        int status;
-        waitpid(pid, &status, 0);
+	std::ofstream output(outputFilename + ".ll");
+	CodeGen::generate(output, *ast);
+	output.close();
 
-        if (!keepIntermediate) {
-            std::vector<const char*> rmArgs = {
-                "rm",
-                (outputFilename + ".ll").c_str(),
-                nullptr
-            };
-            execvp("rm", const_cast<char* const*>(rmArgs.data()));
-            perror("execvp failed");
-        }
+	pid_t pid = fork();
+	if (pid == 0) {
+		std::vector<const char *> clangArgs = {"clang", (outputFilename + ".ll").c_str(), "-o",
+											   outputFilename.c_str(), nullptr};
+		execvp("clang", const_cast<char *const *>(clangArgs.data()));
+		perror("execvp failed");
+		return 3;
+	} else if (pid > 0) {
+		int status;
+		waitpid(pid, &status, 0);
 
-        std::cout << "Clang exited with " << status << "\n";
-    } else {
-        perror("fork failed");
-        return 4;
-    }
+		if (!keepIntermediate) {
+			std::vector<const char *> rmArgs = {"rm", (outputFilename + ".ll").c_str(), nullptr};
+			execvp("rm", const_cast<char *const *>(rmArgs.data()));
+			perror("execvp failed");
+		}
 
-    std::cout << "Build finished sucessfully." << std::endl;
+		std::cout << "Clang exited with " << status << "\n";
+	} else {
+		perror("fork failed");
+		return 4;
+	}
 
-    return 0;
+	std::cout << "Build finished sucessfully." << std::endl;
+
+	return 0;
 }

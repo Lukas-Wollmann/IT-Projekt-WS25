@@ -1,7 +1,6 @@
 #include "AST.h"
 
 #include "Macros.h"
-#include "core/U8String.h"
 
 namespace ast {
 	Node::Node(NodeKind kind)

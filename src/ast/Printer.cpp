@@ -1,34 +1,36 @@
-#include "PrintVisitor.h"
+#include "Printer.h"
+
+#include "type/PrintVisitor.h"
 
 namespace ast {
-	PrintVisitor::PrintVisitor(std::ostream &os)
+	Printer::Printer(std::ostream &os)
 		: m_OStream(os) {}
 
-	void PrintVisitor::visit(const IntLit &n) {
+	void Printer::visit(const IntLit &n) {
 		m_OStream << "IntLit(" << n.value << ")";
 	}
 
-	void PrintVisitor::visit(const FloatLit &n) {
+	void Printer::visit(const FloatLit &n) {
 		m_OStream << "FloatLit(" << n.value << ")";
 	}
 
-	void PrintVisitor::visit(const CharLit &n) {
+	void Printer::visit(const CharLit &n) {
 		m_OStream << "CharLit('" << U8String(n.value) << "')";
 	}
 
-	void PrintVisitor::visit(const BoolLit &n) {
+	void Printer::visit(const BoolLit &n) {
 		m_OStream << "BoolLit(" << (n.value ? "true" : "false") << ")";
 	}
 
-	void PrintVisitor::visit(const StringLit &n) {
+	void Printer::visit(const StringLit &n) {
 		m_OStream << "StringLit(\"" << n.value << "\")";
 	}
 
-    void PrintVisitor::visit(const UnitLit &) {
-        m_OStream << "UnitLit()";
-    }
+	void Printer::visit(const UnitLit &) {
+		m_OStream << "UnitLit()";
+	}
 
-	void PrintVisitor::visit(const ArrayExpr &n) {
+	void Printer::visit(const ArrayExpr &n) {
 		m_OStream << "ArrayExpr(" << *n.elementType << ", {";
 
 		for (size_t i = 0; i < n.values.size(); ++i)
@@ -37,13 +39,13 @@ namespace ast {
 		m_OStream << "})";
 	}
 
-	void PrintVisitor::visit(const UnaryExpr &n) {
+	void Printer::visit(const UnaryExpr &n) {
 		m_OStream << "UnaryExpr(" << n.op << ", ";
 		dispatch(*n.operand);
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const BinaryExpr &n) {
+	void Printer::visit(const BinaryExpr &n) {
 		m_OStream << "BinaryExpr(";
 		dispatch(*n.left);
 		m_OStream << ", " << n.op << ", ";
@@ -51,7 +53,7 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const Assignment &n) {
+	void Printer::visit(const Assignment &n) {
 		m_OStream << "Assignment(";
 		dispatch(*n.left);
 		m_OStream << ", ";
@@ -60,11 +62,11 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-    void PrintVisitor::visit(const HeapAlloc &n) {
-        m_OStream << "HeapAlloc(" << *n.type << ")";
-    }
+	void Printer::visit(const HeapAlloc &n) {
+		m_OStream << "HeapAlloc(" << *n.type << ")";
+	}
 
-	void PrintVisitor::visit(const FuncCall &n) {
+	void Printer::visit(const FuncCall &n) {
 		m_OStream << "FuncCall(";
 		dispatch(*n.expr);
 		m_OStream << ", {";
@@ -75,11 +77,11 @@ namespace ast {
 		m_OStream << "})";
 	}
 
-	void PrintVisitor::visit(const VarRef &n) {
+	void Printer::visit(const VarRef &n) {
 		m_OStream << "VarRef(" << n.ident << ")";
 	}
 
-	void PrintVisitor::visit(const BlockStmt &n) {
+	void Printer::visit(const BlockStmt &n) {
 		m_OStream << "BlockStmt({";
 
 		for (size_t i = 0; i < n.stmts.size(); ++i)
@@ -88,7 +90,7 @@ namespace ast {
 		m_OStream << "})";
 	}
 
-	void PrintVisitor::visit(const IfStmt &n) {
+	void Printer::visit(const IfStmt &n) {
 		m_OStream << "IfStmt(";
 		dispatch(*n.cond);
 		m_OStream << ", ";
@@ -98,7 +100,7 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const WhileStmt &n) {
+	void Printer::visit(const WhileStmt &n) {
 		m_OStream << "WhileStmt(";
 		dispatch(*n.cond);
 		m_OStream << ", ";
@@ -106,7 +108,7 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const ReturnStmt &n) {
+	void Printer::visit(const ReturnStmt &n) {
 		m_OStream << "ReturnStmt(";
 
 		if (n.expr)
@@ -115,14 +117,14 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const VarDef &n) {
+	void Printer::visit(const VarDef &n) {
 		m_OStream << "VarDef(" << n.ident << ", ";
 		m_OStream << *n.type << ", ";
 		dispatch(*n.value);
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const FuncDecl &n) {
+	void Printer::visit(const FuncDecl &n) {
 		m_OStream << "FuncDecl(" << n.ident << ", {";
 
 		for (size_t i = 0; i < n.params.size(); ++i)
@@ -134,7 +136,7 @@ namespace ast {
 		m_OStream << ")";
 	}
 
-	void PrintVisitor::visit(const Module &n) {
+	void Printer::visit(const Module &n) {
 		m_OStream << "Module(" << n.name << ", {";
 
 		for (size_t i = 0; i < n.decls.size(); ++i)
@@ -145,6 +147,6 @@ namespace ast {
 }
 
 std::ostream &operator<<(std::ostream &os, const ast::Node &n) {
-	ast::PrintVisitor(os).dispatch(n);
+	ast::Printer(os).dispatch(n);
 	return os;
 }

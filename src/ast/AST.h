@@ -6,8 +6,6 @@
 #include "type/Type.h"
 
 namespace ast {
-    using namespace type;
-
 	enum struct NodeKind {
 		IntLit,
 		FloatLit,
@@ -54,10 +52,10 @@ namespace ast {
 
 	struct Expr : public Stmt {
 	public:
-		Opt<TypePtr> inferredType;
+		Opt<type::TypePtr> inferredType;
 		Opt<ValueCategory> valueCategory;
 
-		void infer(TypePtr type, ValueCategory category);
+		void infer(type::TypePtr type, ValueCategory category);
 		bool isInferred() const;
 
 	protected:
@@ -106,10 +104,10 @@ namespace ast {
 
 	struct ArrayExpr : public Expr {
 	public:
-		const TypePtr elementType;
+		const type::TypePtr elementType;
 		const Vec<Box<Expr>> values;
 
-		ArrayExpr(TypePtr elementType, Vec<Box<Expr>> values);
+		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
 	};
 
 	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
@@ -238,23 +236,23 @@ namespace ast {
 	struct VarDef : public Stmt {
 	public:
 		const U8String ident;
-		const TypePtr type;
+		const type::TypePtr type;
 		const Box<Expr> value;
 
 	public:
-		VarDef(U8String ident, TypePtr type, Box<Expr> value);
+		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
 	};
 
-	using Param = Pair<U8String, TypePtr>;
+	using Param = Pair<U8String, type::TypePtr>;
 
 	struct FuncDecl : public Node {
 	public:
 		const U8String ident;
 		const Vec<Param> params;
-		const TypePtr returnType;
+		const type::TypePtr returnType;
 		const Box<BlockStmt> body;
 
-		FuncDecl(U8String ident, Vec<Param> params, TypePtr returnType, Box<BlockStmt> body);
+		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
 	};
 
 	struct Module : public Node {
