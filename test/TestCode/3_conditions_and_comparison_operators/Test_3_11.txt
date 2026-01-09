@@ -1,0 +1,9 @@
+func main() -> i32 {
+    a: i32 = 3;
+    if (a == 3) {
+        return 0;
+    } else {
+        return 1;
+    }
+    return 2;
+}

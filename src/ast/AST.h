@@ -1,396 +1,259 @@
 #pragma once
-#include "Type.h"
-#include "Typedef.h"
 #include <iostream>
-#include <memory>
-#include <vector>
-#include <optional>
-
-
-struct Node;
-struct Expr;
-struct Stmt;
-struct CodeBlock;
-struct Param;
-
-using ExprPtr = std::unique_ptr<const Expr>;
-using ExprList = std::vector<ExprPtr>;
-using StmtPtr = std::unique_ptr<const Stmt>;
-using StmtList = std::vector<StmtPtr>;
-using ParamPtr = std::unique_ptr<const Param>;
-using ParamList = std::vector<ParamPtr>;
-using CodeBlockPtr = std::unique_ptr<const CodeBlock>;
-
-
-enum struct NodeKind 
-{
-    IntLit,
-    FloatLit,
-    CharLit,
-    BoolLit,
-    StringLit,
-    ArrayExpr,
-    UnaryExpr,
-    BinaryExpr,
-    FuncCall,
-    VarRef,
-    CodeBlock,
-    IfStmt,
-    WhileStmt,
-    ReturnStmt,
-    VarDecl,
-    FuncDecl
-};
-
-
-enum struct UnaryOperatorKind
-{
-    LogicalNot,
-    BitwiseNot,
-    Positive,
-    Negative
-};
-
-
-enum struct BinaryOperatorKind
-{
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    Modulo,
-    Equality,
-    Inequality,
-    LessThan,
-    GreaterThan,
-    LessThanOrEqual,
-    GreaterThanOrEqual,
-    LogicalAnd,
-    LogicalOr,
-    BitwiseAnd,
-    BitwiseOr,
-    BitwiseXor,
-    LeftShift,
-    RightShift,
-    Assignment,
-    AdditionAssignment,
-    SubtractionAssignment,
-    MultiplicationAssignment,
-    DivisionAssignment,
-    ModuloAssignment,
-    BitwiseAndAssignment,
-    BitwiseOrAssignment,
-    BitwiseXorAssignment,
-    LeftShiftAssignment,
-    RightShiftAssignment
-};
-
-
-std::ostream &operator<<(std::ostream &os, const Node &node);
-std::ostream &operator<<(std::ostream &os, const Param &param);
-std::ostream &operator<<(std::ostream &os, UnaryOperatorKind op);
-std::ostream &operator<<(std::ostream &os, BinaryOperatorKind op);
-
-
-struct Node 
-{
-private:
-    const NodeKind m_Kind;
-
-protected:
-    explicit Node(const NodeKind kind);
-
-public:
-    virtual ~Node()  = default;
-
-    virtual void toString(std::ostream &os) const = 0;
 
-    NodeKind getNodeKind() const;
-};
-
-
-struct Stmt : public Node 
-{
-protected:
-    explicit Stmt(const NodeKind kind);
-
-public:
-    void toString(std::ostream &os) const override = 0;
-};
-
-
-struct Expr : public Stmt
-{
-private:
-    mutable std::optional<TypePtr> m_Type;
-
-protected:
-    explicit Expr(const NodeKind kind, std::optional<TypePtr> type = std::nullopt);
-
-public:
-    void toString(std::ostream &os) const override = 0;
-
-    const std::optional<TypePtr> &getType() const { return m_Type; }
-    void setType(std::optional<TypePtr> type) const { m_Type = std::move(type); }
-};
-
-
-struct IntLit : public Expr 
-{
-private:
-    const i32 m_Value;
-
-public:    
-    explicit IntLit(i32 value);
-
-    void toString(std::ostream &os) const override;
-
-    i32 getValue() const { return m_Value; }
-};
-
-
-struct FloatLit : public Expr 
-{
-private:
-    const f32 m_Value;
-    
-public:
-    explicit FloatLit(f32 value);
-
-    void toString(std::ostream &os) const override;
-
-    f32 getValue() const { return m_Value; }
-};
-
-
-struct CharLit : public Expr 
-{
-private:
-    const char32_t m_Value;
-    
-public:
-    explicit CharLit(char32_t value);
-
-    void toString(std::ostream &os) const override;
-
-    char32_t getValue() const { return m_Value; }
-};
-
-
-struct BoolLit : public Expr
-{
-private:
-    const bool m_Value;
-    
-public:
-    explicit BoolLit(bool value);
-    
-    void toString(std::ostream &os) const override;
-
-    bool getValue() const { return m_Value; }
-};
-
-
-struct StringLit : public Expr
-{
-private:
-    const std::string m_Value;
-    
-public:
-    explicit StringLit(std::string value);
-    
-    void toString(std::ostream &os) const override;
-
-    const std::string getValue() const { return m_Value; }
-};
-
-
-struct ArrayExpr : public Expr 
-{
-private:
-    const TypePtr m_ElemType;
-    const ExprList m_Values;
-
-public:
-    explicit ArrayExpr(TypePtr elemType, ExprList values);
-    
-    void toString(std::ostream &os) const override;
-
-    const TypePtr &getElementType() const { return m_ElemType; }
-};
-
-
-struct UnaryExpr : public Expr 
-{
-private:
-    const UnaryOperatorKind m_Op;
-    const ExprPtr m_Operand;
-
-public:
-    explicit UnaryExpr(UnaryOperatorKind op, ExprPtr operand);
-    
-    void toString(std::ostream &os) const override;
-
-    UnaryOperatorKind getOp() const { return m_Op; }
-    const ExprPtr &getOperand() const { return m_Operand; }
-};
-
-
-struct BinaryExpr : public Expr 
-{
-private:
-    const BinaryOperatorKind m_Op;
-    const ExprPtr m_LeftOp, m_RightOp;
-
-public:
-    explicit BinaryExpr(BinaryOperatorKind op, ExprPtr leftOp, ExprPtr rightOp);
-    
-    void toString(std::ostream &os) const override;
-
-    BinaryOperatorKind getOp() const { return m_Op; }
-    const ExprPtr &getLeftOp() const { return m_LeftOp; }
-    const ExprPtr &getRightOp() const { return m_RightOp; }
-};
-
-
-struct VarRef : public Expr
-{
-private:
-    const std::string m_Ident;
-    
-public:
-    explicit VarRef(std::string ident);
-    
-    void toString(std::ostream &os) const override;
-
-    const std::string &getIdent() const { return m_Ident; }
-};
-
-
-struct FuncCall : public Expr
-{
-private:
-    const std::string m_Ident;
-    const ExprList m_Args;
-    
-public:
-    explicit FuncCall(std::string ident, ExprList args);
-    
-    void toString(std::ostream &os) const override;
-
-    const std::string &getIdent() const { return m_Ident; }
-    const ExprList &getArgs() const { return m_Args; }
-};
-
-
-struct CodeBlock : public Stmt 
-{
-private:
-    const StmtList m_Stmts;
-    
-public:
-    explicit CodeBlock(StmtList stmts);
-    
-    void toString(std::ostream &os) const override;
-
-    const StmtList &getStmts() const { return m_Stmts; }
-};
-
-
-struct IfStmt : public Stmt 
-{
-private:
-    const ExprPtr m_Cond;
-    const CodeBlockPtr m_Then, m_Else;
-
-public:
-    explicit IfStmt(ExprPtr cond, CodeBlockPtr then, CodeBlockPtr else_);
-    
-    void toString(std::ostream &os) const override;
-
-    const ExprPtr &getCond() const { return m_Cond; }
-    const CodeBlockPtr &getThen() const { return m_Then; }
-    const CodeBlockPtr &getElse() const { return m_Else; }
-};
-
-
-struct WhileStmt : public Stmt 
-{
-private:
-    const ExprPtr m_Cond;
-    const CodeBlockPtr m_Body;
-    
-public:
-    explicit WhileStmt(ExprPtr cond, CodeBlockPtr body);
-    
-    void toString(std::ostream &os) const override;
-
-    const ExprPtr &getCond() const { return m_Cond; }
-    const CodeBlockPtr &getBody() const { return m_Body; }
-};
-
-
-struct ReturnStmt : public Stmt
-{
-private:
-    const ExprPtr m_Expr;
-
-public:
-    explicit ReturnStmt(ExprPtr expr);
-    
-    void toString(std::ostream &os) const override;
-
-    const ExprPtr &getExpr() const { return m_Expr; }
-};
-
-
-struct VarDecl : public Stmt
-{
-private:
-    const std::string m_Ident;
-    const TypePtr m_Type;
-    const ExprPtr m_Value;
-
-public:
-    explicit VarDecl(std::string name, TypePtr type, ExprPtr value);
-    
-    void toString(std::ostream &os) const override;
-
-    const std::string &getIdent() const { return m_Ident; }
-    const TypePtr &getType() const { return m_Type; }
-    const ExprPtr &getValue() const { return m_Value; }
-};
-
-
-struct Param
-{
-private:
-    std::string m_Ident;
-    const TypePtr m_Type;
-
-public:
-    explicit Param(std::string name, TypePtr type);
-
-    const std::string &getIdent() const { return m_Ident; }
-    const TypePtr &getType() const { return m_Type; }
-};
-
-
-struct FuncDecl : public Node 
-{
-private:
-    const std::string m_Ident;
-    const ParamList m_Params;
-    const TypePtr m_ReturnType;
-    const CodeBlockPtr m_Body;
-
-public:
-    explicit FuncDecl(std::string name, ParamList params, TypePtr returnType, CodeBlockPtr body);
-    
-    void toString(std::ostream &os) const override;
-
-    const std::string &getIdent() const { return m_Ident; };
-    const ParamList &getParams() const { return m_Params; } 
-    const TypePtr &getReturnType() const { return m_ReturnType; }
-    const CodeBlockPtr &getBody() const { return m_Body; }
-};
+#include "Typedef.h"
+#include "core/U8String.h"
+#include "type/Type.h"
+
+namespace ast {
+	enum struct NodeKind {
+		IntLit,
+		FloatLit,
+		CharLit,
+		BoolLit,
+		StringLit,
+		UnitLit,
+		ArrayExpr,
+		UnaryExpr,
+		BinaryExpr,
+		HeapAlloc,
+		Assignment,
+		VarRef,
+		FuncCall,
+		BlockStmt,
+		IfStmt,
+		WhileStmt,
+		ReturnStmt,
+		VarDef,
+		FuncDecl,
+		Module
+	};
+
+	enum struct ValueCategory {
+		LValue,
+		RValue,
+	};
+
+	struct Node {
+	public:
+		const NodeKind kind;
+
+		virtual ~Node() = default;
+
+	protected:
+		explicit Node(NodeKind kind);
+	};
+
+	struct Stmt : public Node {
+	protected:
+		explicit Stmt(NodeKind kind);
+	};
+
+	struct Expr : public Stmt {
+	public:
+		Opt<type::TypePtr> inferredType;
+		Opt<ValueCategory> valueCategory;
+
+		void infer(type::TypePtr type, ValueCategory category);
+		bool isInferred() const;
+
+	protected:
+		explicit Expr(NodeKind kind);
+	};
+
+	struct IntLit : public Expr {
+	public:
+		const i32 value;
+
+		explicit IntLit(i32 value);
+	};
+
+	struct FloatLit : public Expr {
+	public:
+		const f32 value;
+
+		explicit FloatLit(f32 value);
+	};
+
+	struct CharLit : public Expr {
+	public:
+		const char32_t value;
+
+		explicit CharLit(char32_t value);
+	};
+
+	struct BoolLit : public Expr {
+	public:
+		const bool value;
+
+		explicit BoolLit(bool value);
+	};
+
+	struct StringLit : public Expr {
+	public:
+		const U8String value;
+
+		explicit StringLit(U8String value);
+	};
+
+	struct UnitLit : public Expr {
+	public:
+		UnitLit();
+	};
+
+	struct ArrayExpr : public Expr {
+	public:
+		const type::TypePtr elementType;
+		const Vec<Box<Expr>> values;
+
+		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
+	};
+
+	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
+
+	struct UnaryExpr : public Expr {
+	public:
+		const UnaryOpKind op;
+		const Box<Expr> operand;
+
+		UnaryExpr(UnaryOpKind op, Box<Expr> operand);
+	};
+
+	enum struct BinaryOpKind {
+		Addition,
+		Subtraction,
+		Multiplication,
+		Division,
+		Modulo,
+		Equality,
+		Inequality,
+		LessThan,
+		GreaterThan,
+		LessThanOrEqual,
+		GreaterThanOrEqual,
+		LogicalAnd,
+		LogicalOr,
+		BitwiseAnd,
+		BitwiseOr,
+		BitwiseXor,
+		LeftShift,
+		RightShift
+	};
+
+	struct BinaryExpr : public Expr {
+	public:
+		const BinaryOpKind op;
+		const Box<Expr> left, right;
+
+		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
+	};
+
+	enum struct AssignmentKind {
+		Simple,
+		Addition,
+		Subtraction,
+		Multiplication,
+		Division,
+		Modulo,
+		BitwiseAnd,
+		BitwiseOr,
+		BitwiseXor,
+		LeftShift,
+		RightShift,
+	};
+
+	struct HeapAlloc : public Expr {
+	public:
+		const type::TypePtr type;
+
+		explicit HeapAlloc(type::TypePtr type);
+	};
+
+	struct Assignment : public Expr {
+	public:
+		const AssignmentKind assignmentKind;
+		const Box<Expr> left, right;
+
+		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+	};
+
+	struct VarRef : public Expr {
+	public:
+		const U8String ident;
+
+		explicit VarRef(U8String ident);
+	};
+
+	struct FuncCall : public Expr {
+	public:
+		const Box<Expr> expr;
+		const Vec<Box<Expr>> args;
+
+		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
+	};
+
+	struct BlockStmt : public Stmt {
+	public:
+		const Vec<Box<Stmt>> stmts;
+
+		explicit BlockStmt(Vec<Box<Stmt>> stmts);
+	};
+
+	struct IfStmt : public Stmt {
+	public:
+		const Box<Expr> cond;
+		const Box<BlockStmt> then, else_;
+
+		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
+	};
+
+	struct WhileStmt : public Stmt {
+	public:
+		const Box<Expr> cond;
+		const Box<BlockStmt> body;
+
+		WhileStmt(Box<Expr> cond, Box<BlockStmt> body);
+	};
+
+	struct ReturnStmt : public Stmt {
+	public:
+		const Opt<Box<Expr>> expr;
+
+		explicit ReturnStmt(Opt<Box<Expr>> expr = std::nullopt);
+	};
+
+	struct VarDef : public Stmt {
+	public:
+		const U8String ident;
+		const type::TypePtr type;
+		const Box<Expr> value;
+
+	public:
+		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
+	};
+
+	using Param = Pair<U8String, type::TypePtr>;
+
+	struct FuncDecl : public Node {
+	public:
+		const U8String ident;
+		const Vec<Param> params;
+		const type::TypePtr returnType;
+		const Box<BlockStmt> body;
+
+		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
+	};
+
+	struct Module : public Node {
+	public:
+		const U8String name;
+		const Vec<Box<FuncDecl>> decls;
+
+		Module(U8String name, Vec<Box<FuncDecl>> decls);
+	};
+}
+
+std::ostream &operator<<(std::ostream &os, ast::NodeKind kind);
+std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op);
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op);
+std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op);

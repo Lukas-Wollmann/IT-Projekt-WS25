@@ -1,0 +1,6 @@
+func main() -> i32 {
+    a: i32 = 42;
+    b: i32;
+    b = 69;
+    return (a + b) / 2;
+}

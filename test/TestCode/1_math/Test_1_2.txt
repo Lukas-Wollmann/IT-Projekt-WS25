@@ -1,0 +1,7 @@
+func main() -> i32 {
+    a: i32 = 42;
+    b, c: i32; // Error here
+    b = 69;
+    c = a - b;
+    return c;
+}
