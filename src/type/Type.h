@@ -5,6 +5,7 @@
 
 #include "Typedef.h"
 #include "core/U8String.h"
+#include "core/U8String.h"
 
 namespace type {
 	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
@@ -14,14 +15,14 @@ namespace type {
 		const TypeKind kind;
 
 		virtual ~Type() = default;
-        bool isTypeKind(TypeKind other) const;
+		bool isTypeKind(TypeKind other) const;
 
 	protected:
 		explicit Type(const TypeKind kind);
 	};
 
 	using TypePtr = Ptr<const Type>;
-    using TypeList = Vec<TypePtr>;
+	using TypeList = Vec<TypePtr>;
 
 	struct Typename : public Type {
 	public:
@@ -53,7 +54,7 @@ namespace type {
 		FunctionType(TypeList paramTypes, Ptr<const Type> returnType);
 	};
 
-    using FunctionTypePtr = Ptr<const FunctionType>;
+	using FunctionTypePtr = Ptr<const FunctionType>;
 
 	struct ErrorType : public Type {
 	public:

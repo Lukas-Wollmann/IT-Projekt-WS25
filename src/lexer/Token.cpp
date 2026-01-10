@@ -1,53 +1,60 @@
 #include "Token.h"
 
-#include <format>
+#include "Macros.h"
 
-std::ostream &operator<<(std::ostream &os, TokenType type) {
-	switch (type) {
-		case TokenType::IDENTIFIER:		 return os << "IDENTIFIER";
-		case TokenType::STRING_LITERAL:	 return os << "STRING_LITERAL";
-		case TokenType::NUMERIC_LITERAL: return os << "NUMERIC_LITERAL";
-		case TokenType::CHAR_LITERAL:	 return os << "CHAR_LITERAL";
-		case TokenType::BOOL_LITERAL:	 return os << "BOOL_LITERAL";
-		case TokenType::KEYWORD:		 return os << "KEYWORD";
-		case TokenType::OPERATOR:		 return os << "OPERATOR";
-		case TokenType::SEPARATOR:		 return os << "SEPARATOR";
-		case TokenType::COMMENT:		 return os << "COMMENT";
-		case TokenType::ILLEGAL:		 return os << "ILLEGAL";
-		case TokenType::END_OF_FILE:	 return os << "END_OF_FILE";
+namespace lexer {
+	Token::Token(TokenType type, U8String lexeme, SourceLoc loc, TokenError error)
+		: type(type)
+		, lexeme(std::move(lexeme))
+		, loc(loc)
+		, error(error) {}
+
+	bool operator==(const Token &left, const Token &right) {
+		return left.type == right.type && left.lexeme == right.lexeme;
 	}
 
-	return os << "<UnknownTokenType>";
-}
-
-std::ostream &operator<<(std::ostream &os, ErrorTypeToken type) {
-	switch (type) {
-		case ErrorTypeToken::NOT_ILLEGAL:		  return os << "NOT_ILLEGAL";
-		case ErrorTypeToken::UNTERMINATED_STRING: return os << "UNTERMINATED_STRING";
-		case ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL:
-			return os << "SOLO_BACKSLASH_IN_CHAR_LITERAL";
-		case ErrorTypeToken::INVALID_ESCAPE_SEQUENCE: return os << "INVALID_ESCAPE_SEQUENCE";
-		case ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL:
-			return os << "MULTIPLE_CHAR_IN_CHAR_LITERAL";
-		case ErrorTypeToken::UNTERMINATED_CHAR_LITERAL:	 return os << "UNTERMINATED_CHAR_LITERAL";
-		case ErrorTypeToken::EMPTY_CHAR_LITERAL:		 return os << "EMPTY_CHAR_LITERAL";
-		case ErrorTypeToken::UNTERMINATED_BLOCK_COMMENT: return os << "UNTERMINATED_BLOCK_COMMENT";
-		case ErrorTypeToken::ILLEGAL_IDENTIFIER:		 return os << "ILLEGAL_IDENTIFIER";
+	bool operator!=(const Token &left, const Token &right) {
+		return !(left == right);
 	}
-	return os << "<UnknownIllegalType>";
-}
 
-std::ostream &operator<<(std::ostream &os, const Token &t) {
-	return os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line << ", "
-			  << t.loc.column << ", " << t.loc.index << ", " << t.errorType << ")";
-}
+	std::ostream &operator<<(std::ostream &os, TokenType type) {
+		using enum TokenType;
 
-bool operator==(const Token &lhs, const Token &rhs) {
-	// Compare type, lexeme, and all fields inside loc
-	return lhs.type == rhs.type && lhs.lexeme == rhs.lexeme && lhs.loc.line == rhs.loc.line &&
-		   lhs.loc.column == rhs.loc.column && lhs.loc.index == rhs.loc.index;
-}
+		switch (type) {
+			case Identifier:	return os << "Identifier";
+			case StringLiteral: return os << "StringLiteral";
+			case IntLiteral:	return os << "IntLiteral";
+			case CharLiteral:	return os << "CharLiteral";
+			case BoolLiteral:	return os << "BoolLiteral";
+			case Keyword:		return os << "Keyword";
+			case Operator:		return os << "Operator";
+			case Separator:		return os << "Separator";
+			case Comment:		return os << "Comment";
+			case Illegal:		return os << "Illegal";
+			case EndOfFile:		return os << "EndOfFile";
+			default:			UNREACHABLE();
+		}
+	}
 
-bool operator!=(const Token &lhs, const Token &rhs) {
-	return !(lhs == rhs);
+	std::ostream &operator<<(std::ostream &os, TokenError error) {
+		using enum TokenError;
+
+		switch (error) {
+			case None:						 return os << "None";
+			case UnterminatedStringLiteral:	 return os << "UnterminatedStringLiteral";
+			case UnterminatedBlockComment:	 return os << "UnterminatedBlockComment";
+			case UnterminatedCharLiteral:	 return os << "UnterminatedCharLiteral";
+			case EmptyCharLiteral:			 return os << "EmptyCharLiteral";
+			case MultipleCharsInCharLiteral: return os << "MultipleCharsInCharLiteral";
+			case InvalidEscapeSequence:		 return os << "InvalidEscapeSequence";
+			case IllegalIdentifier:			 return os << "IllegalIdentifier";
+			default:						 UNREACHABLE();
+		}
+	}
+
+	std::ostream &operator<<(std::ostream &os, const Token &token) {
+		os << "Token(" << token.type << ", " << token.lexeme << ", ";
+		os << token.loc << ", " << token.error << ")";
+		return os;
+	}
 }

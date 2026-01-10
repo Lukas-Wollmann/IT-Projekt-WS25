@@ -46,7 +46,7 @@ namespace semantic {
 	struct ErrorMessage<ErrorMessageKind::UNARY_OPERATOR_NOT_FOUND> {
 		U8String str(type::TypePtr type, ast::UnaryOpKind op) const {
 			std::stringstream ss;
-			ss << "Cannot use unary operator '" << op << "' on a value of '" << *type << "'.";
+			ss << "Cannot use unary operator '" << op << "' on a value of type '" << *type << "'.";
 			return U8String(ss.str());
 		}
 	};

@@ -1,7 +1,6 @@
 #include "AST.h"
 
 #include "Macros.h"
-#include "core/U8String.h"
 
 namespace ast {
 	Node::Node(NodeKind kind)
@@ -80,6 +79,11 @@ namespace ast {
 		, expr(std::move(expr))
 		, args(std::move(args)) {}
 
+	Instantiation::Instantiation(Box<type::Type> type, Vec<Box<Expr>> args)
+		: Expr(NodeKind::Instantiation)
+		, type(std::move(type))
+		, args(std::move(args)) {}
+
 	BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
 		: Stmt(NodeKind::BlockStmt)
 		, stmts(std::move(stmts)) {}
@@ -99,10 +103,10 @@ namespace ast {
 		: Stmt(NodeKind::ReturnStmt)
 		, expr(std::move(expr)) {}
 
-	VarDef::VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value)
+	VarDef::VarDef(U8String ident, type::TypePtr type, Box<Expr> value)
 		: Stmt(NodeKind::VarDef)
 		, ident(std::move(ident))
-		, type(std::move(type))
+		, type(type)
 		, value(std::move(value)) {}
 
 	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType,
@@ -144,11 +148,12 @@ std::ostream &operator<<(std::ostream &os, ast::NodeKind kind) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
+std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind) {
 	using enum ast::UnaryOpKind;
 
-	switch (op) {
-		case Not:		  return os << "!";
+	switch (kind) {
+		case LogicalNot:  return os << "!";
+		case BitwiseNot:  return os << "~";
 		case Positive:	  return os << "+";
 		case Negative:	  return os << "-";
 		case Dereference: return os << "*";
@@ -156,10 +161,10 @@ std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind kind) {
 	using enum ast::AssignmentKind;
 
-	switch (op) {
+	switch (kind) {
 		case Simple:		 return os << "=";
 		case Addition:		 return os << "+=";
 		case Subtraction:	 return os << "-=";
@@ -175,10 +180,10 @@ std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op) {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
+std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind kind) {
 	using enum ast::BinaryOpKind;
 
-	switch (op) {
+	switch (kind) {
 		case Addition:			 return os << "+";
 		case Subtraction:		 return os << "-";
 		case Multiplication:	 return os << "*";
@@ -198,5 +203,15 @@ std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op) {
 		case LeftShift:			 return os << "<<";
 		case RightShift:		 return os << ">>";
 		default:				 UNREACHABLE();
+	}
+}
+
+std::ostream &operator<<(std::ostream &os, ast::ValueCategory cat) {
+	using enum ast::ValueCategory;
+
+	switch (cat) {
+		case LValue: return os << "LValue";
+		case RValue: return os << "RValue";
+		default:	 UNREACHABLE();
 	}
 }
