@@ -1,5 +1,7 @@
 #include "Lexer.h"
 
+#include <algorithm>
+
 #include "CharUtil.h"
 #include "Macros.h"
 

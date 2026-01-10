@@ -1,4 +1,4 @@
-LLVM_CONFIG := llvm-config
+LLVM_CONFIG := llvm-config-21
 
 LLVM_CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags)
 LLVM_LDFLAGS  := $(shell $(LLVM_CONFIG) --ldflags)

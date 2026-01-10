@@ -1,9 +1,5 @@
-FROM ubuntu:24.04
-ENV DEBIAN_FRONTEND=noninteractive
+FROM alpine:3.23
 
-RUN apt-get update \
-    && apt-get install -y \
-    build-essential llvm llvm-dev clang clang-format gdb git \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache make llvm llvm-dev clang gdb git clang-extra-tools
 
 WORKDIR /workspace

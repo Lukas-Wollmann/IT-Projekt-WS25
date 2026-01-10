@@ -108,13 +108,15 @@ int main(const int argc, const char *argv[]) {
 	if (!ctx.getErrors().empty())
 		return 2;
 
-	std::ofstream output(outputFilename + ".ll");
+    std::string llFilename = outputFilename + ".ll";
+	std::ofstream output(llFilename);
 	CodeGen::generate(output, *ast);
 	output.close();
 
 	pid_t pid = fork();
-	if (pid == 0) {
-		std::vector<const char *> clangArgs = {"clang", (outputFilename + ".ll").c_str(), "-o",
+	
+    if (pid == 0) {
+		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(), "-o",
 											   outputFilename.c_str(), nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
@@ -124,7 +126,7 @@ int main(const int argc, const char *argv[]) {
 		waitpid(pid, &status, 0);
 
 		if (!keepIntermediate) {
-			std::vector<const char *> rmArgs = {"rm", (outputFilename + ".ll").c_str(), nullptr};
+			std::vector<const char *> rmArgs = {"rm", llFilename.c_str(), nullptr};
 			execvp("rm", const_cast<char *const *>(rmArgs.data()));
 			perror("execvp failed");
 		}
