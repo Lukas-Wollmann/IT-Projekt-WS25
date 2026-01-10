@@ -19,6 +19,7 @@ using namespace ast;
 using namespace type;
 using namespace semantic;
 using namespace codegen;
+using namespace lexer;
 
 #define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
 #define MOVE(t)		 std::move(t)
@@ -70,8 +71,7 @@ int main(const int argc, const char *argv[]) {
 	U8String source(buffer.str());
 	file.close();
 
-	Lexer lexer(std::move(source));
-	auto tokens = lexer.tokenize();
+	auto tokens = Lexer::tokenize(source, U8String(filename));
 
 	if (debug) {
 		for (auto tok : tokens)

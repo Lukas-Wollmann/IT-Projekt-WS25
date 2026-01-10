@@ -23,7 +23,7 @@ namespace lexer {
 
 	enum struct TokenError {
 		None,
-		UnterminatedString,
+		UnterminatedStringLiteral,
 		UnterminatedBlockComment,
 		UnterminatedCharLiteral,
 		EmptyCharLiteral,
@@ -39,13 +39,14 @@ namespace lexer {
 		SourceLoc loc;
 		TokenError error;
 
-		Token(TokenType type, U8String lexeme, SourceLoc loc, TokenError error = TokenError::None);
+		Token(TokenType type, U8String lexeme, SourceLoc loc = {0, 0, 0},
+			  TokenError error = TokenError::None);
 	};
+
+	bool operator==(const Token &left, const Token &right);
+	bool operator!=(const Token &left, const Token &right);
+
+	std::ostream &operator<<(std::ostream &os, TokenType type);
+	std::ostream &operator<<(std::ostream &os, TokenError error);
+	std::ostream &operator<<(std::ostream &os, const Token &token);
 }
-
-std::ostream &operator<<(std::ostream &os, lexer::TokenType type);
-std::ostream &operator<<(std::ostream &os, lexer::TokenError error);
-std::ostream &operator<<(std::ostream &os, const lexer::Token &token);
-
-bool operator==(const lexer::Token &left, const lexer::Token &right);
-bool operator!=(const lexer::Token &left, const lexer::Token &right);

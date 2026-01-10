@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "ast/PrintVisitor.h"
+#include "ast/Printer.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
 #include "type/CompareVisitor.h"
@@ -144,7 +144,8 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will error if operator doesn't exist") {
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot, std::make_unique<StringLit>(u8"2"));
+	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot,
+											std::make_unique<StringLit>(u8"2"));
 
 	// Act
 	tc.dispatch(*expr);
@@ -164,8 +165,8 @@ TEST_CASE("TypeCheckingPass: UnaryExpr will fail silently if operand has ErrorTy
 	// Arrange
 	TypeCheckerContext ctx;
 	TypeCheckingPass tc(ctx);
-	auto errorOperand =
-			std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot, std::make_unique<StringLit>(u8"67"));
+	auto errorOperand = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot,
+													std::make_unique<StringLit>(u8"67"));
 
 	auto expr = std::make_unique<UnaryExpr>(UnaryOpKind::Negative, std::move(errorOperand));
 
@@ -243,7 +244,7 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will fail silently if one of the operand
 	// Assert
 	// Still only one error, second binary expr should only propagate the error
 	CHECK(ctx.getErrors().size() == 1);
-    CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
+	CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
 	CHECK(expr->inferredType.has_value());
 	CHECK(expr->valueCategory.has_value());
 
@@ -253,30 +254,25 @@ TEST_CASE("TypeCheckingPass: BinaryExpr will fail silently if one of the operand
 }
 
 TEST_CASE("TypeCheckingPass: Simple Assignment will be infered as UnitType") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
 
-    auto var = std::make_unique<VarDef>(
-        u8"i", 
-        std::make_shared<Typename>(u8"i32"), 
-        std::make_unique<IntLit>(67)
-    );
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Simple, 
-        std::make_unique<VarRef>(u8"i"), 
-        std::make_unique<IntLit>(187)
-    );
+	auto var = std::make_unique<VarDef>(u8"i", std::make_shared<Typename>(u8"i32"),
+										std::make_unique<IntLit>(67));
+	auto assignment =
+			std::make_unique<Assignment>(AssignmentKind::Simple, std::make_unique<VarRef>(u8"i"),
+										 std::make_unique<IntLit>(187));
 
-    // Add a variable to the symbol table
-    tc.dispatch(*var);
+	// Add a variable to the symbol table
+	tc.dispatch(*var);
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 0);
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 0);
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();
@@ -285,30 +281,25 @@ TEST_CASE("TypeCheckingPass: Simple Assignment will be infered as UnitType") {
 }
 
 TEST_CASE("TypeCheckingPass: Compound Assignment will be infered as UnitType") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
 
-    auto var = std::make_unique<VarDef>(
-        u8"i", 
-        std::make_shared<Typename>(u8"i32"), 
-        std::make_unique<IntLit>(67)
-    );
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Addition, 
-        std::make_unique<VarRef>(u8"i"), 
-        std::make_unique<IntLit>(187)
-    );
+	auto var = std::make_unique<VarDef>(u8"i", std::make_shared<Typename>(u8"i32"),
+										std::make_unique<IntLit>(67));
+	auto assignment =
+			std::make_unique<Assignment>(AssignmentKind::Addition, std::make_unique<VarRef>(u8"i"),
+										 std::make_unique<IntLit>(187));
 
-    // Add a variable to the symbol table
-    tc.dispatch(*var);
+	// Add a variable to the symbol table
+	tc.dispatch(*var);
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 0);
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 0);
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();
@@ -317,23 +308,21 @@ TEST_CASE("TypeCheckingPass: Compound Assignment will be infered as UnitType") {
 }
 
 TEST_CASE("TypeCheckingPass: Assignment to rvalue will add an error") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
 
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Simple, 
-        std::make_unique<IntLit>(1),
-        std::make_unique<IntLit>(2)
-    );
+	auto assignment =
+			std::make_unique<Assignment>(AssignmentKind::Simple, std::make_unique<IntLit>(1),
+										 std::make_unique<IntLit>(2));
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 1);
-    CHECK(ctx.getErrors()[0] == u8"Left side of an assignment needs to be an l-value.");
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] == u8"Left side of an assignment needs to be an l-value.");
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();
@@ -342,26 +331,21 @@ TEST_CASE("TypeCheckingPass: Assignment to rvalue will add an error") {
 }
 
 TEST_CASE("TypeCheckingPass: Assignment will fail silently if one of the sides has ErrorType") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
-    auto errorExpr = std::make_unique<UnaryExpr>(
-        UnaryOpKind::LogicalNot, 
-        std::make_unique<StringLit>(u8"test")
-    ); 
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Simple,
-        std::move(errorExpr),
-        std::make_unique<IntLit>(2)
-    );
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
+	auto errorExpr = std::make_unique<UnaryExpr>(UnaryOpKind::LogicalNot,
+												 std::make_unique<StringLit>(u8"test"));
+	auto assignment = std::make_unique<Assignment>(AssignmentKind::Simple, std::move(errorExpr),
+												   std::make_unique<IntLit>(2));
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 1);
-    CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] == u8"Cannot use unary operator '!' on a value of type 'string'.");
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();
@@ -370,31 +354,27 @@ TEST_CASE("TypeCheckingPass: Assignment will fail silently if one of the sides h
 }
 
 TEST_CASE("TypeCheckingPass: Illegal Compound Assignment will add an error") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
 
-    auto var = std::make_unique<VarDef>(
-        u8"i", 
-        std::make_shared<Typename>(u8"string"), 
-        std::make_unique<StringLit>(u8"foo")
-    );
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Multiplication, 
-        std::make_unique<VarRef>(u8"i"), 
-        std::make_unique<StringLit>(u8"bar")
-    );
+	auto var = std::make_unique<VarDef>(u8"i", std::make_shared<Typename>(u8"string"),
+										std::make_unique<StringLit>(u8"foo"));
+	auto assignment = std::make_unique<Assignment>(AssignmentKind::Multiplication,
+												   std::make_unique<VarRef>(u8"i"),
+												   std::make_unique<StringLit>(u8"bar"));
 
-    // Add a variable to the symbol table
-    tc.dispatch(*var);
+	// Add a variable to the symbol table
+	tc.dispatch(*var);
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 1);
-    CHECK(ctx.getErrors()[0] == u8"Cannot use binary operator '*' on values of type 'string' and 'string'.");
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] ==
+		  u8"Cannot use binary operator '*' on values of type 'string' and 'string'.");
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();
@@ -403,35 +383,30 @@ TEST_CASE("TypeCheckingPass: Illegal Compound Assignment will add an error") {
 }
 
 TEST_CASE("TypeCheckingPass: Compound Assignment with wrong return type will add an error") {
-    // No case like this exists yet.
+	// No case like this exists yet.
 }
 
 TEST_CASE("TypeCheckingPass: Simple Assignment with wrong type will add an error") {
-    // Arrange
-    TypeCheckerContext ctx;
-    TypeCheckingPass tc(ctx);
+	// Arrange
+	TypeCheckerContext ctx;
+	TypeCheckingPass tc(ctx);
 
-    auto var = std::make_unique<VarDef>(
-        u8"i", 
-        std::make_shared<Typename>(u8"string"), 
-        std::make_unique<StringLit>(u8"foo")
-    );
-    auto assignment = std::make_unique<Assignment>(
-        AssignmentKind::Simple, 
-        std::make_unique<VarRef>(u8"i"), 
-        std::make_unique<IntLit>(67)
-    );
+	auto var = std::make_unique<VarDef>(u8"i", std::make_shared<Typename>(u8"string"),
+										std::make_unique<StringLit>(u8"foo"));
+	auto assignment =
+			std::make_unique<Assignment>(AssignmentKind::Simple, std::make_unique<VarRef>(u8"i"),
+										 std::make_unique<IntLit>(67));
 
-    // Add a variable to the symbol table
-    tc.dispatch(*var);
+	// Add a variable to the symbol table
+	tc.dispatch(*var);
 
-    // Act
-    tc.dispatch(*assignment);
+	// Act
+	tc.dispatch(*assignment);
 
-    // Assert
-    CHECK(ctx.getErrors().size() == 1);
-    CHECK(ctx.getErrors()[0] == u8"Expected value of type 'string', got type 'i32' instead.");
-    CHECK(assignment->inferredType.has_value());
+	// Assert
+	CHECK(ctx.getErrors().size() == 1);
+	CHECK(ctx.getErrors()[0] == u8"Expected value of type 'string', got type 'i32' instead.");
+	CHECK(assignment->inferredType.has_value());
 	CHECK(assignment->valueCategory.has_value());
 
 	auto type = assignment->inferredType.value();

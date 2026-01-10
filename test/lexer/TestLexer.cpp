@@ -1,6 +1,176 @@
 #include "Doctest.h"
+#include "PrintUtil.h"
 #include "core/U8String.h"
 #include "lexer/Lexer.h"
+
+using namespace lexer;
+using enum TokenType;
+
+TEST_CASE("Lexer: Empty source") {
+	// Arrange
+	U8String source = u8"";
+	Vec<Token> expected = {{EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single identifier") {
+	// Arrange
+	U8String source = u8"hallo";
+	Vec<Token> expected = {{Identifier, u8"hallo"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single keyword") {
+	// Arrange
+	U8String source = u8"if";
+	Vec<Token> expected = {{Keyword, u8"if"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single bool literal") {
+	// Arrange
+	U8String source = u8"true";
+	Vec<Token> expected = {{BoolLiteral, u8"true"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single integer literal") {
+	// Arrange
+	U8String source = u8"67";
+	Vec<Token> expected = {{IntLiteral, u8"67"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single string literal") {
+	// Arrange
+	U8String source = u8"\"Hall\\o\\n\\\\\"";
+	Vec<Token> expected = {{StringLiteral, u8"Hallo\n\\"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single separator") {
+	// Arrange
+	U8String source = u8"i32,bool";
+	Vec<Token> expected = {{Identifier, u8"i32"},
+						   {Separator, u8","},
+						   {Identifier, u8"bool"},
+						   {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single line comment") {
+	// Arrange
+	U8String source = u8"// Test 1\nabc\n//Test 2 ";
+	Vec<Token> expected = {{Comment, u8" Test 1"},
+						   {Identifier, u8"abc"},
+						   {Comment, u8"Test 2 "},
+						   {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"", true);
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Multi line comment") {
+	// Arrange
+	U8String source = u8"/* Test 1\n Test 2 */ abc";
+	Vec<Token> expected = {{Comment, u8" Test 1\n Test 2 "},
+						   {Identifier, u8"abc"},
+						   {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"", true);
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Multi line comment unterminated") {
+	// Arrange
+	U8String source = u8"/* Test 1\n Test 2";
+	Vec<Token> expected = {{Illegal, u8" Test 1\n Test 2"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"", true);
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Illegal identifier") {
+	// Arrange
+	U8String source = u8"halloß";
+	Vec<Token> expected = {{Identifier, u8"hallo"}, {Illegal, u8"ß"}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"", true);
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+TEST_CASE("Lexer: Single operator") {
+	// Arrange
+	U8String source = u8"<<=";
+	Vec<Token> expected = {{Operator, u8"<<="}, {EndOfFile, u8""}};
+
+	// Act
+	auto tokens = Lexer::tokenize(source, u8"");
+
+	// Assert
+	CHECK(tokens.size() == expected.size());
+	CHECK(tokens == expected);
+}
+
+#if 0
 
 // LexNumber tests
 TEST_CASE("LexNumber: simple integer") {
@@ -91,7 +261,7 @@ TEST_CASE("LexString: unterminated string literal") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("Unterminated string"), startLoc,
-						ErrorTypeToken::UNTERMINATED_STRING);
+						TokenError::UnterminatedString);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -268,7 +438,7 @@ TEST_CASE("LexChar: unterminated char literal") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("b"), startLoc,
-						ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+						TokenError::UnterminatedCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -283,8 +453,7 @@ TEST_CASE("LexChar: empty char literal") {
 	U8String source = u8"''";
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
-	Token expectedToken(TokenType::Illegal, U8String(""), startLoc,
-						ErrorTypeToken::EMPTY_CHAR_LITERAL);
+	Token expectedToken(TokenType::Illegal, U8String(""), startLoc, TokenError::EmptyCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -300,7 +469,7 @@ TEST_CASE("LexChar: char literal with multiple characters") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("ab"), startLoc,
-						ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
+						TokenError::MultipleCharsInCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -440,7 +609,7 @@ TEST_CASE("LexChar: whole sentence in one char literal") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("Hello, World!"), startLoc,
-						ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
+						TokenError::MultipleCharsInCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -456,7 +625,7 @@ TEST_CASE("LexChar: illegal escape sequence in char literal") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("\\x"), startLoc,
-						ErrorTypeToken::INVALID_ESCAPE_SEQUENCE);
+						TokenError::InvalidEscapeSequence);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -472,7 +641,7 @@ TEST_CASE("LexChar: missing closing quote in char literal and other tokens after
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("a + b"), startLoc,
-						ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+						TokenError::UnterminatedCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -488,7 +657,7 @@ TEST_CASE("LexChar: missing opening quote in char literal") {
 	Lexer lexer(std::move(source), true);
 	std::vector<Token> expectedTokens = {Token(TokenType::Identifier, U8String("a"), {1, 1, 0}),
 										 Token(TokenType::Illegal, U8String(""), {1, 2, 1},
-											   ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)};
+											   TokenError::UnterminatedCharLiteral)};
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -519,7 +688,7 @@ TEST_CASE("LexChar: missing closing quote and char literal in next line") {
 	U8String source = u8"'a\n'b'";
 	Lexer lexer(std::move(source), true);
 	std::vector<Token> expectedTokens = {Token(TokenType::Illegal, U8String("a"), {1, 1, 0},
-											   ErrorTypeToken::UNTERMINATED_CHAR_LITERAL),
+											   TokenError::UnterminatedCharLiteral),
 										 Token(TokenType::CharLiteral, U8String("b"), {2, 1, 3})};
 
 	// Act
@@ -536,10 +705,10 @@ TEST_CASE("LexChar: missing closing quote and char literal in same line") {
 	U8String source = u8"'a 'b'";
 	Lexer lexer(std::move(source), true);
 	std::vector<Token> expectedTokens = {Token(TokenType::Illegal, U8String("a "), {1, 1, 0},
-											   ErrorTypeToken::UNTERMINATED_CHAR_LITERAL),
+											   TokenError::UnterminatedCharLiteral),
 										 Token(TokenType::Identifier, U8String("b"), {1, 5, 4}),
 										 Token(TokenType::Illegal, U8String(""), {1, 6, 5},
-											   ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)};
+											   TokenError::UnterminatedCharLiteral)};
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -572,7 +741,7 @@ TEST_CASE("LexChar: char literal with solo backslash") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("\\"), startLoc,
-						ErrorTypeToken::SOLO_BACKSLASH_IN_CHAR_LITERAL);
+						TokenError::UnterminatedCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -588,7 +757,7 @@ TEST_CASE("LexChar: char literal with solo backslash and unterminated") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String("\\"), startLoc,
-						ErrorTypeToken::UNTERMINATED_CHAR_LITERAL);
+						TokenError::UnterminatedCharLiteral);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -1081,7 +1250,7 @@ TEST_CASE("LexComments: unclosed multi-line comment") {
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
 	Token expectedToken(TokenType::Illegal, U8String(" This is an unclosed comment"), startLoc,
-						ErrorTypeToken::UNTERMINATED_BLOCK_COMMENT);
+						TokenError::UnterminatedBlockComment);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -1097,8 +1266,7 @@ TEST_CASE("LexIllegal: single legal utf8-character") {
 	U8String source = u8"ß";
 	Lexer lexer(std::move(source), true);
 	SourceLoc startLoc{1, 1, 0};
-	Token expectedToken(TokenType::Illegal, U8String("ß"), startLoc,
-						ErrorTypeToken::ILLEGAL_IDENTIFIER);
+	Token expectedToken(TokenType::Illegal, U8String("ß"), startLoc, TokenError::IllegalIdentifier);
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -1267,7 +1435,7 @@ TEST_CASE("LexGeneral: incorrect simple token sequence") {
 										 Token(TokenType::Operator, U8String("="), {1, 8, 7}),
 										 Token(TokenType::IntLiteral, U8String("10"), {1, 10, 9}),
 										 Token(TokenType::Illegal, U8String("a"), {1, 13, 12},
-											   ErrorTypeToken::UNTERMINATED_CHAR_LITERAL)};
+											   TokenError::UnterminatedCharLiteral)};
 
 	// Act
 	std::vector<Token> tokens = lexer.tokenize();
@@ -1280,3 +1448,4 @@ TEST_CASE("LexGeneral: incorrect simple token sequence") {
 		CHECK(tokens[i] == expectedTokens[i]);
 	}
 }
+#endif

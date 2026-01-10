@@ -5,12 +5,12 @@
 
 class Parser {
 public:
-	const Vec<Token> &tokens;
+	const Vec<lexer::Token> &tokens;
 	Vec<std::string> errors;
 	size_t index;
 	U8String moduleName;
 
-	Parser(const Vec<Token> &tokens, std::string moduleName)
+	Parser(const Vec<lexer::Token> &tokens, std::string moduleName)
 		: tokens(tokens)
 		, index(0)
 		, moduleName(std::move(moduleName)) {}
@@ -18,9 +18,9 @@ public:
 	Box<ast::Module> parse();
 
 private:
-	Opt<Token> consume(TokenType type, Opt<U8String> string = std::nullopt);
-	void advanceTo(TokenType type, Opt<U8String> string = std::nullopt);
-	Token peek(u8 look_ahead = 0) const;
+	Opt<lexer::Token> consume(lexer::TokenType type, Opt<U8String> string = std::nullopt);
+	void advanceTo(lexer::TokenType type, Opt<U8String> string = std::nullopt);
+	lexer::Token peek(u8 look_ahead = 0) const;
 
 	Box<ast::Module> Module();
 	Opt<Box<ast::FuncDecl>> FunctionDeclaration();

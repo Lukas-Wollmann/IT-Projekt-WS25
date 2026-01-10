@@ -1,7 +1,4 @@
 #pragma once
-#include <array>
-#include <string>
-#include <vector>
 
 #include "Token.h"
 #include "core/U8String.h"
@@ -9,38 +6,35 @@
 namespace lexer {
 	struct Lexer {
 	public:
-		explicit Lexer(U8String &&source, bool inludeComments = false);
-		std::vector<Token> tokenize();
+		static Vec<Token> tokenize(const U8String &source, const U8String &filename,
+								   bool comments = false);
 
 	private:
-		U8String m_Src;
+		const U8String &m_Source;
 		U8String::ConstIterator m_Iter;
-		char32_t m_CurentChar;
-		SourceLoc m_Loc;
-		bool m_includeComments;
+		char32_t m_Current;
+		SourceLoc m_CurrentLoc;
 
-		void advance();
-		bool isCurrentSingleOperator() const;
-		bool isCurrentDoubleOperator() const;
-		bool isCurrentTripleOperator() const;
-		bool isCurrentSeparator() const;
-		bool isKeyword(const U8String &lexeme) const;
-		bool isCurrentComment() const;
-		bool isStartBlockComment() const;
+		Lexer(const U8String &source, U8String filename);
+
+		Token nextToken();
+
 		bool isAtEnd() const;
-		char32_t peek(size_t distance) const;
+		void advance();
 		void skipWhitespace();
-		U8String skipToClosing();
+		char32_t peek() const;
+		bool doesMatch(const U8String &str) const;
 
-		Token lexNumber(SourceLoc startLoc);
-		Token lexString(SourceLoc startLoc);
-		Token lexEscapedChar(SourceLoc startLoc);
-		Token lexChar(SourceLoc startLoc);
-		Token lexSeparator(SourceLoc startLoc);
-		Token lexOperator(SourceLoc startLoc);
-		Token lexIdentifierOrKeyword(SourceLoc startLoc);
-		Token lexComment(SourceLoc startLoc);
-		Token lexBlockComment(SourceLoc startLoc);
-		Token lexIllegal(SourceLoc startLoc);
+		char32_t getEscapedChar(char32_t c);
+
+		Opt<Token> tryLexIdentifier();
+		Opt<Token> tryLexIntLiteral();
+		Opt<Token> tryLexStringLiteral();
+		Opt<Token> tryLexCharLiteral();
+		Opt<Token> tryLexOperator();
+		Opt<Token> tryLexSeparator();
+		Opt<Token> tryLexSingleLineComment();
+		Opt<Token> tryLexMultiLineComment();
+		Token lexIllegal();
 	};
 }

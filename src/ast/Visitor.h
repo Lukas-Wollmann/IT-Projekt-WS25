@@ -1,4 +1,5 @@
 #pragma once
+#include "AST.h"
 #include "Macros.h"
 #include "Typedef.h"
 

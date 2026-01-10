@@ -6,11 +6,12 @@
 #include "Macros.h"
 #include "SyntaxError.h"
 #include "Typedef.h"
-#include "ast/PrintVisitor.h"
+#include "ast/Printer.h"
 #include "lexer/Token.h"
 
 using namespace ast;
 using namespace type;
+using namespace lexer;
 using std::make_unique;
 
 Opt<Token> Parser::consume(TokenType type, Opt<U8String> string) {
@@ -519,7 +520,7 @@ Opt<Box<ast::Expr>> Parser::PrimaryExpression() {
 	if (peek().type == TokenType::CharLiteral)
 		return make_unique<CharLit>(consume(TokenType::CharLiteral).value().lexeme[0]);
 	if (peek().type == TokenType::StringLiteral)
-		return make_unique<StringLit>(consume(TokenType::CharLiteral).value().lexeme);
+		return make_unique<StringLit>(consume(TokenType::StringLiteral).value().lexeme);
 	if (peek().type == TokenType::IntLiteral)
 		return make_unique<IntLit>(std::stoi(reinterpret_cast<const char *>(
 				consume(TokenType::IntLiteral).value().lexeme.ptr())));

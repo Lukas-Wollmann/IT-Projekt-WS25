@@ -8,53 +8,53 @@ namespace lexer {
 		, lexeme(std::move(lexeme))
 		, loc(loc)
 		, error(error) {}
-}
 
-std::ostream &operator<<(std::ostream &os, lexer::TokenType type) {
-	using enum lexer::TokenType;
-
-	switch (type) {
-		case Identifier:	return os << "Identifier";
-		case StringLiteral: return os << "StringLiteral";
-		case IntLiteral:	return os << "IntLiteral";
-		case CharLiteral:	return os << "CharLiteral";
-		case BoolLiteral:	return os << "BoolLiteral";
-		case Keyword:		return os << "Keyword";
-		case Operator:		return os << "Operator";
-		case Separator:		return os << "Separator";
-		case Comment:		return os << "Comment";
-		case Illegal:		return os << "Illegal";
-		case EndOfFile:		return os << "EndOfFile";
-		default:			UNREACHABLE();
+	bool operator==(const Token &left, const Token &right) {
+		return left.type == right.type && left.lexeme == right.lexeme;
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, lexer::TokenError error) {
-	using enum lexer::TokenError;
-
-	switch (error) {
-		case None:						 return os << "None";
-		case UnterminatedString:		 return os << "UnterminatedString";
-		case UnterminatedBlockComment:	 return os << "UnterminatedBlockComment";
-		case UnterminatedCharLiteral:	 return os << "UnterminatedCharLiteral";
-		case EmptyCharLiteral:			 return os << "EmptyCharLiteral";
-		case MultipleCharsInCharLiteral: return os << "MultipleCharsInCharLiteral";
-		case InvalidEscapeSequence:		 return os << "InvalidEscapeSequence";
-		case IllegalIdentifier:			 return os << "IllegalIdentifier";
-		default:						 UNREACHABLE();
+	bool operator!=(const Token &left, const Token &right) {
+		return !(left == right);
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, const lexer::Token &t) {
-	os << "Token(" << t.type << ", " << t.lexeme << ", " << t.loc.line;
-	os << ", " << t.loc.column << ", " << t.loc.index << ", " << t.error;
-	return os << ")";
-}
+	std::ostream &operator<<(std::ostream &os, TokenType type) {
+		using enum TokenType;
 
-bool operator==(const lexer::Token &left, const lexer::Token &right) {
-	return left.type == right.type && left.lexeme == right.lexeme;
-}
+		switch (type) {
+			case Identifier:	return os << "Identifier";
+			case StringLiteral: return os << "StringLiteral";
+			case IntLiteral:	return os << "IntLiteral";
+			case CharLiteral:	return os << "CharLiteral";
+			case BoolLiteral:	return os << "BoolLiteral";
+			case Keyword:		return os << "Keyword";
+			case Operator:		return os << "Operator";
+			case Separator:		return os << "Separator";
+			case Comment:		return os << "Comment";
+			case Illegal:		return os << "Illegal";
+			case EndOfFile:		return os << "EndOfFile";
+			default:			UNREACHABLE();
+		}
+	}
 
-bool operator!=(const lexer::Token &left, const lexer::Token &right) {
-	return !(left == right);
+	std::ostream &operator<<(std::ostream &os, TokenError error) {
+		using enum TokenError;
+
+		switch (error) {
+			case None:						 return os << "None";
+			case UnterminatedStringLiteral:	 return os << "UnterminatedStringLiteral";
+			case UnterminatedBlockComment:	 return os << "UnterminatedBlockComment";
+			case UnterminatedCharLiteral:	 return os << "UnterminatedCharLiteral";
+			case EmptyCharLiteral:			 return os << "EmptyCharLiteral";
+			case MultipleCharsInCharLiteral: return os << "MultipleCharsInCharLiteral";
+			case InvalidEscapeSequence:		 return os << "InvalidEscapeSequence";
+			case IllegalIdentifier:			 return os << "IllegalIdentifier";
+			default:						 UNREACHABLE();
+		}
+	}
+
+	std::ostream &operator<<(std::ostream &os, const Token &token) {
+		os << "Token(" << token.type << ", " << token.lexeme << ", ";
+		os << token.loc << ", " << token.error << ")";
+		return os;
+	}
 }

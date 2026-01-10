@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "ast/PrintVisitor.h"
+#include "ast/Printer.h"
 
 using namespace ast;
 using namespace type;
