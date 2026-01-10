@@ -7,7 +7,7 @@ namespace ast {
 	///
 	/// An interface for all traversing passes over nodes of the Abstract Syntax Tree.
 	/// The visitor uses a dispatch method to call the correct visit method for the
-	/// corresponding node kind. The visited note can be modified.
+	/// corresponding node kind. The visited note can be modified (non-const).
 	///
 	template <typename T, bool IsConst = false>
 	struct Visitor {
@@ -63,7 +63,7 @@ namespace ast {
 			UNREACHABLE();
 		}
 
-        virtual T visit(Constness<UnitLit> &) {
+		virtual T visit(Constness<UnitLit> &) {
 			UNREACHABLE();
 		}
 
@@ -127,7 +127,7 @@ namespace ast {
 	///
 	/// An interface for all traversing passes over nodes of the Abstract Syntax Tree.
 	/// The visitor usesa dispatch method to call the correct visit method for the
-	/// corresponding node kind. The visited note can not be modified.
+	/// corresponding node kind. The visited note can not be modified (const).
 	///
 	template <typename T>
 	using ConstVisitor = Visitor<T, true>;

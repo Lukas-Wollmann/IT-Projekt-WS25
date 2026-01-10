@@ -20,6 +20,7 @@ namespace ast {
 		Assignment,
 		VarRef,
 		FuncCall,
+		Instantiation,
 		BlockStmt,
 		IfStmt,
 		WhileStmt,
@@ -109,7 +110,7 @@ namespace ast {
 		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
 	};
 
-	enum struct UnaryOpKind { Not, Positive, Negative, Dereference };
+	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
 
 	struct UnaryExpr : public Expr {
 	public:
@@ -137,7 +138,8 @@ namespace ast {
 		BitwiseOr,
 		BitwiseXor,
 		LeftShift,
-		RightShift
+		RightShift,
+		Index
 	};
 
 	struct BinaryExpr : public Expr {
@@ -192,6 +194,14 @@ namespace ast {
 		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 	};
 
+	struct Instantiation : public Expr {
+	public:
+		const Box<type::Type> type;
+		const Vec<Box<Expr>> args;
+
+		Instantiation(Box<type::Type> type, Vec<Box<Expr>> args);
+	};
+
 	struct BlockStmt : public Stmt {
 	public:
 		const Vec<Box<Stmt>> stmts;
@@ -202,7 +212,8 @@ namespace ast {
 	struct IfStmt : public Stmt {
 	public:
 		const Box<Expr> cond;
-		const Box<BlockStmt> then, else_;
+		const Box<BlockStmt> then;
+		const Box<BlockStmt> else_;
 
 		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
 	};
@@ -229,7 +240,7 @@ namespace ast {
 		const Box<Expr> value;
 
 	public:
-		VarDef(U8String ident, Box<const type::Type> type, Box<Expr> value);
+		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
 	};
 
 	using Param = Pair<U8String, type::TypePtr>;
@@ -254,6 +265,7 @@ namespace ast {
 }
 
 std::ostream &operator<<(std::ostream &os, ast::NodeKind kind);
-std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind op);
-std::ostream &operator<<(std::ostream &os, ast::AssignmentKind op);
-std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind op);
+std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind);
+std::ostream &operator<<(std::ostream &os, ast::AssignmentKind kind);
+std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind kind);
+std::ostream &operator<<(std::ostream &os, ast::ValueCategory cat);

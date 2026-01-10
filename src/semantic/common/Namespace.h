@@ -46,6 +46,7 @@ namespace semantic {
 
 		void addFunction(U8String name, Ptr<const type::FunctionType> func);
 		Opt<type::FunctionTypePtr> getFunction(const U8String &name) const;
+        size_t getSize() const;
 
 		friend std::ostream & ::operator<<(std::ostream &os, const Namespace &ns);
 	};

@@ -5,11 +5,13 @@
             "includePath": [
                 "${workspaceFolder}/lib",
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/test"
+                "${workspaceFolder}/test",
+                "/usr/include/llvm",
+                "/usr/include/llvm-c"
             ],
             "defines": [],
             "cStandard": "c17",
-            "cppStandard": "c++23",
+            "cppStandard": "c++20",
             "intelliSenseMode": "linux-clang-x64"
         }
     ],

@@ -41,3 +41,7 @@
 *.dwo
 
 bin
+build
+
+out
+out.ll

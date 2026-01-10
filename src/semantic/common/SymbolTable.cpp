@@ -55,7 +55,7 @@ std::ostream &operator<<(std::ostream &os, const semantic::Scope &scope) {
 	os << "====== Scope ======\n";
 
 	for (auto &[name, info] : scope)
-		os << name << ": " << info.getType() << "\n";
+		os << name << ": " << *info.getType() << "\n";
 
 	return os << "===================\n";
 }

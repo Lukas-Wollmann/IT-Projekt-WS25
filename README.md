@@ -27,3 +27,7 @@ Ein Compiler/Transpiler für eine C-ähnliche Sprache, welche einige Probleme de
 - Multithreading
 - Lambda Funktionen
 - Referenzen
+
+# TODO
+add BOOL_LIT in lexer
+two combined emojis like 🖕🏿 do not work: "🖕🏿🏿🏿"

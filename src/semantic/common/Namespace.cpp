@@ -36,6 +36,10 @@ namespace semantic {
 
 		return func->second;
 	}
+
+    size_t Namespace::getSize() const {
+        return m_Functions.size();       
+    }
 }
 
 std::ostream &operator<<(std::ostream &os, const semantic::Namespace &ns) {

@@ -1,5 +1,21 @@
+LLVM_CONFIG := llvm-config-21
+
+LLVM_CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags)
+LLVM_LDFLAGS  := $(shell $(LLVM_CONFIG) --ldflags)
+LLVM_LIBS     := $(shell $(LLVM_CONFIG) --libs all)
+
 CXX := clang++
-CXXFLAGS := -std=c++23 -Wall -Wextra -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -O0 -stdlib=libc++
+
+CXXFLAGS := -O0 \
+            $(LLVM_CXXFLAGS) \
+            -Wall -Wextra -Werror \
+			-Wno-unused-parameter \
+            -Wno-error=unused-parameter \
+            -Wno-error=unused-variable \
+            -Wno-error=deprecated-declarations \
+            -std=c++20 \
+            -fexceptions
+
 
 SRC_DIR := src
 LIB_DIR := lib
@@ -13,25 +29,28 @@ INCLUDES := -I$(SRC_DIR) -I$(TEST_DIR) -I$(LIB_DIR)
 TARGET := $(BIN_DIR)/app
 TEST_TARGET := $(BIN_DIR)/test_runner
 
-SRCS := $(shell find $(SRC_DIR) -name '*.cpp') $(shell find $(LIB_DIR) -name '*.cpp')
-TEST_SRCS := $(filter-out $(SRC_DIR)/main.cpp, $(SRCS) $(shell find $(TEST_DIR) -name '*.cpp'))
+SRCS := $(shell find $(SRC_DIR) -name '*.cpp') \
+        $(shell find $(LIB_DIR) -name '*.cpp')
+
+TEST_SRCS := $(filter-out $(SRC_DIR)/main.cpp, \
+             $(SRCS) $(shell find $(TEST_DIR) -name '*.cpp'))
 
 OBJS := $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 TEST_OBJS := $(TEST_SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
-all: $(TARGET) run
+# ---------- build rules ----------
 
-# Build the app
+all: $(TARGET)
+
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS)
 
-# Build the test_runner
 $(TEST_TARGET): $(TEST_OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+	$(CXX) -o $@ $^ $(LLVM_LDFLAGS) $(LLVM_LIBS)
 
-# Generic rule: compile any .cpp file
+
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
@@ -45,7 +64,10 @@ test: $(TEST_TARGET)
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-.PHONY: all run test clean
+compile: $(TARGET)
+	./$(TARGET)
+	clang out.ll -o out
+	@./out; echo "\033[1;38;5;111mProgram returned: $$?"
 
-# Phony targets
-.PHONY: all clean run test
+
+.PHONY: all run test clean
