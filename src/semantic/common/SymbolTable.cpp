@@ -1,6 +1,6 @@
 #include "SymbolTable.h"
 
-#include "type/PrintVisitor.h"
+#include "type/Printer.h"
 
 namespace semantic {
     using namespace type;

@@ -154,10 +154,6 @@ Opt<Box<Type>> Parser::Type() {
 	}
 	if (peek() == Token(TokenType::Separator, u8"[")) {
 		consume(TokenType::Separator, u8"[");
-		Opt<size_t> size = std::nullopt;
-		if (peek().type == TokenType::IntLiteral) // TODO should be expression here
-			size = std::stoi(
-					reinterpret_cast<const char *>(consume(TokenType::IntLiteral)->lexeme.ptr()));
 		if (peek() != Token(TokenType::Separator, u8"]"))
 			return std::nullopt;
 		if (!consume(TokenType::Separator, u8"]").has_value())
@@ -165,7 +161,7 @@ Opt<Box<Type>> Parser::Type() {
 		auto t = Type();
 		if (!t.has_value())
 			return std::nullopt;
-		return make_unique<ArrayType>(std::move(t.value()), size);
+		return make_unique<ArrayType>(std::move(t.value()));
 	}
 	return std::nullopt;
 }

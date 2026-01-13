@@ -3,7 +3,6 @@
 
 #include "Macros.h"
 #include "Type.h"
-#include "Typedef.h"
 
 namespace type {
 	///
@@ -13,7 +12,6 @@ namespace type {
 	///
 	template <typename T, bool IsConst = false>
 	struct Visitor {
-	public:
 		virtual ~Visitor() = default;
 
 		template <typename U>
