@@ -2,7 +2,7 @@
 #include "type/Visitor.h"
 
 namespace type {
-	struct CompareVisitor : public type::ConstVisitor<bool> {
+	struct CompareVisitor : ConstVisitor<bool> {
 	private:
 		const Type &m_Other;
 
@@ -16,9 +16,9 @@ namespace type {
 		bool visit(const ErrorType &n) override;
 		bool visit(const UnitType &n) override;
 	};
-}
 
-bool operator==(const type::TypeList &left, const type::TypeList &right);
-bool operator!=(const type::TypeList &left, const type::TypeList &right);
-bool operator==(const type::Type &left, const type::Type &right);
-bool operator!=(const type::Type &left, const type::Type &right);
+	bool operator==(const TypeList &left, const TypeList &right);
+	bool operator!=(const TypeList &left, const TypeList &right);
+	bool operator==(const Type &left, const Type &right);
+	bool operator!=(const Type &left, const Type &right);
+}

@@ -1,0 +1,14 @@
+{
+  "name": "C++ Dev Container",
+  "build": {
+    "dockerfile": "../../Dockerfile"
+  },
+
+  "workspaceFolder": "/workspace",
+
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ]
+}

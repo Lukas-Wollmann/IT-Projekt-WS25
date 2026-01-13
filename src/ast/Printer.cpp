@@ -1,6 +1,6 @@
 #include "Printer.h"
 
-#include "type/PrintVisitor.h"
+#include "type/Printer.h"
 
 namespace ast {
 	Printer::Printer(std::ostream &os)

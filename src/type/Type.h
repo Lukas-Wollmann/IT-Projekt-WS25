@@ -1,70 +1,60 @@
 #pragma once
 #include <memory>
-#include <optional>
 #include <vector>
 
 #include "Typedef.h"
-#include "core/U8String.h"
 #include "core/U8String.h"
 
 namespace type {
 	enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
 
 	struct Type {
-	public:
 		const TypeKind kind;
 
 		virtual ~Type() = default;
-		bool isTypeKind(TypeKind other) const;
+		[[nodiscard]] bool isTypeKind(TypeKind other) const;
 
 	protected:
-		explicit Type(const TypeKind kind);
+		explicit Type(TypeKind kind);
 	};
 
 	using TypePtr = Ptr<const Type>;
 	using TypeList = Vec<TypePtr>;
 
-	struct Typename : public Type {
-	public:
+	struct Typename : Type {
 		const U8String typename_;
 
 		explicit Typename(U8String typename_);
 	};
 
-	struct PointerType : public Type {
-	public:
-		const Ptr<const Type> pointeeType;
+	struct PointerType : Type {
+		const TypePtr pointeeType;
 
-		explicit PointerType(Ptr<const Type> pointeeType);
+		explicit PointerType(TypePtr pointeeType);
 	};
 
-	struct ArrayType : public Type {
-	public:
-		const Ptr<const Type> elementType;
-		const Opt<size_t> arraySize;
+	struct ArrayType : Type {
+		const TypePtr elementType;
 
-		explicit ArrayType(Ptr<const Type> elementType, Opt<size_t> arraySize = std::nullopt);
+		explicit ArrayType(TypePtr elementType);
 	};
 
-	struct FunctionType : public Type {
-	public:
+	struct FunctionType : Type {
 		const TypeList paramTypes;
-		const Ptr<const Type> returnType;
+		const TypePtr returnType;
 
-		FunctionType(TypeList paramTypes, Ptr<const Type> returnType);
+		FunctionType(TypeList paramTypes, TypePtr returnType);
 	};
 
 	using FunctionTypePtr = Ptr<const FunctionType>;
 
-	struct ErrorType : public Type {
-	public:
+	struct ErrorType : Type {
 		ErrorType();
 	};
 
-	struct UnitType : public Type {
-	public:
+	struct UnitType : Type {
 		UnitType();
 	};
-}
 
-std::ostream &operator<<(std::ostream &os, type::TypeKind kind);
+	std::ostream &operator<<(std::ostream &os, TypeKind kind);
+}

@@ -5,7 +5,7 @@
 #include "Macros.h"
 #include "semantic/common/ErrorMessages.h"
 #include "type/CompareVisitor.h"
-#include "type/PrintVisitor.h"
+#include "type/Printer.h"
 
 namespace semantic {
 	using namespace type;
@@ -52,23 +52,6 @@ namespace semantic {
 
 	bool TypeCheckingPass::visit(ArrayExpr &n) {
 		UNREACHABLE(); // TODO: Not yet implemented
-        
-        VERIFY(!n.isInferred());
-		VERIFY(!n.elementType->isTypeKind(TypeKind::Error));
-
-		for (auto &expr : n.values) {
-			auto type = checkExpression(*expr);
-
-			if (typesMatch(type, n.elementType))
-				continue;
-
-			ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> err;
-			m_Context.addError(err.str(n.elementType, type));
-		}
-
-		auto arrType = std::make_shared<ArrayType>(n.elementType, n.values.size());
-		n.infer(arrType, ValueCategory::RValue);
-		return false;
 	}
 
 	bool TypeCheckingPass::visit(UnaryExpr &n) {
@@ -139,7 +122,7 @@ namespace semantic {
 	}
 
 	bool TypeCheckingPass::visit(HeapAlloc &n) {
-        // TODO: Not yet implemented
+		// TODO: Not yet implemented
 
 		VERIFY(!n.type->isTypeKind(TypeKind::Error));
 		n.infer(std::make_shared<PointerType>(n.type), ValueCategory::RValue);
@@ -153,10 +136,10 @@ namespace semantic {
 		auto left = checkExpression(*n.left);
 		auto right = checkExpression(*n.right);
 
-        if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
-            return false;
-		
-        if (n.left->valueCategory != ValueCategory::LValue) {
+		if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
+			return false;
+
+		if (n.left->valueCategory != ValueCategory::LValue) {
 			ErrorMessage<ErrorMessageKind::ASSIGN_TO_RVALUE> err;
 			m_Context.addError(err.str());
 			return false;
@@ -181,7 +164,7 @@ namespace semantic {
 		if (!opFunc.has_value()) {
 			ErrorMessage<ErrorMessageKind::BINARY_OPERATOR_NOT_FOUND> err;
 			m_Context.addError(err.str(left, right, compoundOp.value()));
-            return false;
+			return false;
 		}
 
 		auto resultType = opFunc.value().returnType;

@@ -1,4 +1,4 @@
-LLVM_CONFIG := llvm-config-21
+LLVM_CONFIG := llvm-config
 
 LLVM_CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags)
 LLVM_LDFLAGS  := $(shell $(LLVM_CONFIG) --ldflags)
@@ -6,7 +6,8 @@ LLVM_LIBS     := $(shell $(LLVM_CONFIG) --libs all)
 
 CXX := clang++
 
-CXXFLAGS := -O0 \
+CXXFLAGS := -g \
+			-O0 \
             $(LLVM_CXXFLAGS) \
             -Wall -Wextra -Werror \
 			-Wno-unused-parameter \
@@ -63,11 +64,5 @@ test: $(TEST_TARGET)
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
-
-compile: $(TARGET)
-	./$(TARGET)
-	clang out.ll -o out
-	@./out; echo "\033[1;38;5;111mProgram returned: $$?"
-
 
 .PHONY: all run test clean

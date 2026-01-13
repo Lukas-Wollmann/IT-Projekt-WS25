@@ -12,11 +12,13 @@ namespace lexer {
 									u8"+=", u8"-=", u8"*=",	 u8"/=", u8"%=", u8"^=", u8"&=",
 									u8"|=", u8"->", u8"<<=", u8">>="};
 
-	const char32_t s_Separators[] = {U';', U',', U'(', U')', U'{', U'}', U'[', U']', U':', U'.'};
+	constexpr char32_t s_Separators[] = {U';', U',', U'(', U')', U'{',
+										 U'}', U'[', U']', U':', U'.'};
 
 	const U8String s_Keywords[] = {u8"if", u8"else", u8"while", u8"return", u8"func", u8"new"};
 
-	Vec<Token> Lexer::tokenize(const U8String &source, const U8String &filename, bool comments) {
+	Vec<Token> Lexer::tokenize(const U8String &source, const U8String &filename,
+							   const bool comments) {
 		Vec<Token> tokens;
 		Lexer lexer(source, filename);
 
@@ -43,21 +45,19 @@ namespace lexer {
 		skipWhitespace();
 
 		if (isAtEnd())
-			return Token(TokenType::EndOfFile, u8"", m_CurrentLoc);
+			return {TokenType::EndOfFile, u8"", m_CurrentLoc};
 
-		using LexerFunc = Opt<Token> (Lexer::*)();
+		static constexpr std::array funcs = {&Lexer::tryLexSingleLineComment,
+											 &Lexer::tryLexMultiLineComment,
+											 &Lexer::tryLexIdentifier,
+											 &Lexer::tryLexIntLiteral,
+											 &Lexer::tryLexStringLiteral,
+											 &Lexer::tryLexCharLiteral,
+											 &Lexer::tryLexOperator,
+											 &Lexer::tryLexSeparator};
 
-		static constexpr std::array<LexerFunc, 8> funcs = {&Lexer::tryLexSingleLineComment,
-														   &Lexer::tryLexMultiLineComment,
-														   &Lexer::tryLexIdentifier,
-														   &Lexer::tryLexIntLiteral,
-														   &Lexer::tryLexStringLiteral,
-														   &Lexer::tryLexCharLiteral,
-														   &Lexer::tryLexOperator,
-														   &Lexer::tryLexSeparator};
-
-		for (auto f : funcs) {
-			if (auto token = (this->*f)())
+		for (const auto fn : funcs) {
+			if (auto token = (this->*fn)())
 				return token.value();
 		}
 
@@ -106,7 +106,7 @@ namespace lexer {
 	bool Lexer::doesMatch(const U8String &str) const {
 		auto it = m_Iter;
 
-		for (char32_t c : str) {
+		for (const char32_t c : str) {
 			if (it == m_Source.end() || *it != c)
 				return false;
 
@@ -116,7 +116,7 @@ namespace lexer {
 		return true;
 	}
 
-	char32_t Lexer::getEscapedChar(char32_t c) {
+	char32_t Lexer::getEscapedChar(const char32_t c) {
 		switch (c) {
 			case U'\\': return U'\\';
 			case U'\'': return U'\'';
@@ -147,11 +147,10 @@ namespace lexer {
 		if (lexeme == u8"true" || lexeme == u8"false")
 			return Token(TokenType::BoolLiteral, std::move(lexeme), start);
 
-		auto begin = std::begin(s_Keywords);
-		auto end = std::end(s_Keywords);
-		auto it = std::find(begin, end, lexeme);
-
-		auto type = it == end ? TokenType::Identifier : TokenType::Keyword;
+		const auto begin = std::begin(s_Keywords);
+		const auto end = std::end(s_Keywords);
+		const auto it = std::find(begin, end, lexeme);
+		const auto type = it == end ? TokenType::Identifier : TokenType::Keyword;
 
 		return Token(type, std::move(lexeme), start);
 	}
@@ -182,10 +181,9 @@ namespace lexer {
 
 		bool escape = false;
 		while (m_Current != U'"' || escape) {
-			if (isAtEnd() || m_Current == U'\n') {
-				TokenError error = TokenError::UnterminatedStringLiteral;
-				return Token(TokenType::Illegal, std::move(lexeme), start, error);
-			}
+			if (isAtEnd() || m_Current == U'\n')
+				return Token(TokenType::Illegal, std::move(lexeme), start,
+							 TokenError::UnterminatedStringLiteral);
 
 			if (m_Current == U'\\' && !escape) {
 				escape = true;
@@ -194,7 +192,7 @@ namespace lexer {
 				continue;
 			}
 
-			char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
+			const char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
 			escape = false;
 
 			lexeme += escapedChar;
@@ -212,15 +210,14 @@ namespace lexer {
 
 		advance();
 
-		SourceLoc start = m_CurrentLoc;
+		const SourceLoc start = m_CurrentLoc;
 		U8String lexeme;
 
 		bool escape = false;
 		while (m_Current != U'\'' || escape) {
-			if (isAtEnd() || m_Current == U'\n') {
-				TokenError error = TokenError::UnterminatedCharLiteral;
-				return Token(TokenType::Illegal, std::move(lexeme), start, error);
-			}
+			if (isAtEnd() || m_Current == U'\n')
+				return Token(TokenType::Illegal, std::move(lexeme), start,
+							 TokenError::UnterminatedCharLiteral);
 
 			if (m_Current == U'\\' && !escape) {
 				escape = true;
@@ -229,7 +226,7 @@ namespace lexer {
 				continue;
 			}
 
-			char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
+			const char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
 			escape = false;
 
 			lexeme += escapedChar;
@@ -238,28 +235,26 @@ namespace lexer {
 
 		advance();
 
-		if (lexeme.length() == 0) {
-			TokenError error = TokenError::EmptyCharLiteral;
-			return Token(TokenType::Illegal, std::move(lexeme), start, error);
-		}
+		if (lexeme.empty())
+			return Token(TokenType::Illegal, std::move(lexeme), start,
+						 TokenError::EmptyCharLiteral);
 
-		if (lexeme.length() > 1) {
-			TokenError error = TokenError::MultipleCharsInCharLiteral;
-			return Token(TokenType::Illegal, std::move(lexeme), start, error);
-		}
+		if (lexeme.length() > 1)
+			return Token(TokenType::Illegal, std::move(lexeme), start,
+						 TokenError::MultipleCharsInCharLiteral);
 
 		return Token(TokenType::CharLiteral, std::move(lexeme), start);
 	}
 
 	Opt<Token> Lexer::tryLexSeparator() {
-		auto begin = std::begin(s_Separators);
-		auto end = std::end(s_Separators);
+		const auto begin = std::begin(s_Separators);
+		const auto end = std::end(s_Separators);
 
 		if (std::find(begin, end, m_Current) == end)
 			return {};
 
-		SourceLoc start = m_CurrentLoc;
-		char32_t separator = m_Current;
+		const SourceLoc start = m_CurrentLoc;
+		const char32_t separator = m_Current;
 		advance();
 
 		return Token(TokenType::Separator, separator, start);
@@ -272,7 +267,7 @@ namespace lexer {
 		advance();
 		advance();
 
-		SourceLoc start = m_CurrentLoc;
+		const SourceLoc start = m_CurrentLoc;
 		U8String lexeme;
 
 		while (m_Current != U'\n' && !isAtEnd()) {
@@ -290,14 +285,13 @@ namespace lexer {
 		advance();
 		advance();
 
-		SourceLoc start = m_CurrentLoc;
+		const SourceLoc start = m_CurrentLoc;
 		U8String lexeme;
 
 		while (!(m_Current == U'*' && peek() == U'/')) {
-			if (isAtEnd()) {
-				TokenError error = TokenError::UnterminatedBlockComment;
-				return Token(TokenType::Illegal, std::move(lexeme), start, error);
-			}
+			if (isAtEnd())
+				return Token(TokenType::Illegal, std::move(lexeme), start,
+							 TokenError::UnterminatedBlockComment);
 
 			lexeme += m_Current;
 			advance();
@@ -310,7 +304,7 @@ namespace lexer {
 	}
 
 	Opt<Token> Lexer::tryLexOperator() {
-		SourceLoc start = m_CurrentLoc;
+		const SourceLoc start = m_CurrentLoc;
 		Opt<Ref<const U8String>> bestMatch = {};
 
 		for (auto &op : s_Operators) {
@@ -324,7 +318,7 @@ namespace lexer {
 		if (!bestMatch.has_value())
 			return {};
 
-		size_t len = bestMatch.value().get().length();
+		const size_t len = bestMatch.value().get().length();
 
 		for (size_t i = 0; i < len; ++i)
 			advance();
@@ -333,11 +327,11 @@ namespace lexer {
 	}
 
 	Token Lexer::lexIllegal() {
-		SourceLoc start = m_CurrentLoc;
-		U8String lexeme = m_Current;
+		const SourceLoc start = m_CurrentLoc;
+		const U8String lexeme = m_Current;
 
 		advance();
 
-		return Token(TokenType::Illegal, lexeme, start, TokenError::IllegalIdentifier);
+		return {TokenType::Illegal, lexeme, start, TokenError::IllegalIdentifier};
 	}
 }
