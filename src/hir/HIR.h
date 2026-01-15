@@ -1,25 +1,56 @@
 #pragma once
+#include "core/Operators.h"
+#include "type/Type.h"
 
 namespace hir {
-	enum struct NodeKind {
-		IntLit,
-		CharLit,
-		BoolLit,
-		UnitLit,
-		UnaryExpr,
-		BinaryExpr,
-		HeapAlloc,
-		Assignment,
-		VarRef,
-		FuncCall,
-		LifetimeScope,
-		IfStmt,
-		WhileStmt,
-		ReturnStmt,
-		VarDef,
-		FuncDecl,
-		Module
+	using LocalID = size_t;
+
+	struct Slot {
+		LocalID id;
+		type::TypePtr type;
+		Opt<U8String> name;
 	};
-	// This is a expression that needs to free
-	struct TempExpr {};
+
+	struct RValue {
+		type::TypePtr type;
+
+		virtual ~RValue() = default;
+	};
+
+	struct IntLiteral : RValue {
+		i32 value;
+	};
+
+	struct UnaryOp : RValue {
+		UnaryOpKind op;
+		Slot slot;
+	};
+
+	struct BinaryOp : RValue {
+		BinaryOpKind op;
+		Slot left, right;
+	};
+
+	struct Stmt {
+		virtual ~Stmt() = default;
+	};
+
+	struct Assignment : Stmt {
+		Slot slot;
+		Box<RValue> value;
+	};
+
+	struct Drop : Stmt {
+		Slot slot;
+	};
+
+	struct Block {
+		Vec<Box<Stmt>> stmts;
+	};
+
+	struct FuncDecl {
+		U8String name;
+		Vec<Slot> params;
+		Vec<Block> blocks;
+	};
 }
