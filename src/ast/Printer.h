@@ -34,6 +34,6 @@ namespace ast {
 		void visit(const FuncDecl &n) override;
 		void visit(const Module &n) override;
 	};
-}
 
-std::ostream &operator<<(std::ostream &os, const ast::Node &n);
+	std::ostream &operator<<(std::ostream &os, const ast::Node &n);
+}

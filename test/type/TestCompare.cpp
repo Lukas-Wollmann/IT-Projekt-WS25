@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "type/CompareVisitor.h"
+#include "type/Compare.h"
 
 using namespace type;
 

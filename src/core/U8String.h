@@ -11,10 +11,8 @@ std::ostream &operator<<(std::ostream &os, const char8_t *str);
 struct U8String {
 	using ConstIterator = utf8::iterator<std::u8string::const_iterator>;
 
-public:
 	std::u8string m_Data;
 
-public:
 	U8String() = default;
 	U8String(char32_t c);
 	U8String(const char8_t *str);
@@ -29,7 +27,7 @@ public:
 	explicit U8String(const char *str);
 	explicit U8String(const std::string &str);
 
-    std::string asAscii() const;
+	std::string asAscii() const;
 	const char8_t *ptr() const;
 	const std::u8string &data() const;
 	size_t length() const;
@@ -45,7 +43,7 @@ public:
 	U8String &operator=(const U8String &str) = default;
 	U8String &operator=(U8String &&str) = default;
 
-	friend bool operator==(const U8String left, const U8String &right);
+	friend bool operator==(const U8String &left, const U8String &right);
 	friend bool operator!=(const U8String &left, const U8String &right);
 	friend U8String operator+(const U8String &left, const U8String &right);
 	friend std::ostream &operator<<(std::ostream &os, const U8String &str);
@@ -54,14 +52,12 @@ private:
 	void validateUTF8();
 };
 
-namespace std {
-	template <>
-	struct hash<U8String> {
-		size_t operator()(const U8String &s) const noexcept {
-			const std::u8string &u8 = s.data();
-			const char *bytes = reinterpret_cast<const char *>(u8.data());
+template <>
+struct std::hash<U8String> {
+	size_t operator()(const U8String &s) const noexcept {
+		const std::u8string &u8 = s.data();
+		const auto bytes = reinterpret_cast<const char *>(u8.data());
 
-			return std::hash<std::string_view>{}(std::string_view(bytes, u8.size()));
-		}
-	};
-}
+		return std::hash<std::string_view>{}(std::string_view(bytes, u8.size()));
+	}
+};

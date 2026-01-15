@@ -3,7 +3,8 @@
 #include "Macros.h"
 
 namespace lexer {
-	Token::Token(TokenType type, U8String lexeme, SourceLoc loc, TokenError error)
+	Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc,
+				 const TokenError error)
 		: type(type)
 		, lexeme(std::move(lexeme))
 		, loc(loc)

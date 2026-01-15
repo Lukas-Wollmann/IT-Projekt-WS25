@@ -33,13 +33,12 @@ namespace lexer {
 	};
 
 	struct Token {
-	public:
 		TokenType type;
 		U8String lexeme;
 		SourceLoc loc;
 		TokenError error;
 
-		Token(TokenType type, U8String lexeme, SourceLoc loc = {0, 0, 0},
+		Token(TokenType type, U8String lexeme, const SourceLoc &loc = {0, 0, 0},
 			  TokenError error = TokenError::None);
 	};
 

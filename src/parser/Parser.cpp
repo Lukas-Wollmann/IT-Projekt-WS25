@@ -4,7 +4,6 @@
 #include <string>
 
 #include "Macros.h"
-#include "SyntaxError.h"
 #include "Typedef.h"
 #include "ast/Printer.h"
 #include "lexer/Token.h"
@@ -530,13 +529,10 @@ Opt<Box<ast::Expr>> Parser::PrimaryExpression() {
 	}
 	if (peek().lexeme == u8"new") {
 		consume(TokenType::Keyword, u8"new");
-		auto type = Type();
-		if (!type.has_value())
+		auto expr = Expression();
+		if (!expr.has_value())
 			return std::nullopt;
-		consume(TokenType::Separator, u8"(");
-		auto args = ExpressionList();
-		consume(TokenType::Separator, u8")");
-		return make_unique<Instantiation>(std::move(type.value()), std::move(args));
+		return make_unique<HeapAlloc>(std::move(expr.value()));
 	}
 	if (peek().lexeme == u8"[") {
 		auto type = Type();

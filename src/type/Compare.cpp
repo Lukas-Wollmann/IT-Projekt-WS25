@@ -1,10 +1,10 @@
-#include "CompareVisitor.h"
+#include "Compare.h"
 
 namespace type {
-	CompareVisitor::CompareVisitor(const Type &other)
+	Compare::Compare(const Type &other)
 		: m_Other(other) {}
 
-	bool CompareVisitor::visit(const Typename &n) {
+	bool Compare::visit(const Typename &n) {
 		if (m_Other.kind != TypeKind::Typename)
 			return false;
 
@@ -13,7 +13,7 @@ namespace type {
 		return n.typename_ == other.typename_;
 	}
 
-	bool CompareVisitor::visit(const PointerType &n) {
+	bool Compare::visit(const PointerType &n) {
 		if (m_Other.kind != TypeKind::Pointer)
 			return false;
 
@@ -22,7 +22,7 @@ namespace type {
 		return *n.pointeeType == *other.pointeeType;
 	}
 
-	bool CompareVisitor::visit(const ArrayType &n) {
+	bool Compare::visit(const ArrayType &n) {
 		if (m_Other.kind != TypeKind::Array)
 			return false;
 
@@ -31,7 +31,7 @@ namespace type {
 		return *n.elementType == *other.elementType;
 	}
 
-	bool CompareVisitor::visit(const FunctionType &n) {
+	bool Compare::visit(const FunctionType &n) {
 		if (m_Other.kind != TypeKind::Function)
 			return false;
 
@@ -48,11 +48,11 @@ namespace type {
 		return *n.returnType == *other.returnType;
 	}
 
-	bool CompareVisitor::visit(const ErrorType &) {
+	bool Compare::visit(const ErrorType &) {
 		return m_Other.kind == TypeKind::Error;
 	}
 
-	bool CompareVisitor::visit(const UnitType &) {
+	bool Compare::visit(const UnitType &) {
 		return m_Other.kind == TypeKind::Unit;
 	}
 
@@ -73,7 +73,7 @@ namespace type {
 	}
 
 	bool operator==(const Type &left, const Type &right) {
-		return CompareVisitor(right).dispatch(left);
+		return Compare(right).dispatch(left);
 	}
 
 	bool operator!=(const Type &left, const Type &right) {

@@ -3,8 +3,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_os_ostream.h>
 
-#include "type/CompareVisitor.h"
 #include "CodeGenContext.h"
+#include "type/Compare.h"
 
 namespace codegen {
 	using namespace type;

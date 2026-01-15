@@ -2,12 +2,12 @@
 #include "type/Visitor.h"
 
 namespace type {
-	struct CompareVisitor : ConstVisitor<bool> {
+	struct Compare : ConstVisitor<bool> {
 	private:
 		const Type &m_Other;
 
 	public:
-		explicit CompareVisitor(const Type &other);
+		explicit Compare(const Type &other);
 
 		bool visit(const Typename &n) override;
 		bool visit(const PointerType &n) override;

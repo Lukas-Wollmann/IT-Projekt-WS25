@@ -1,6 +1,4 @@
 #pragma once
-#include <iostream>
-
 #include "Typedef.h"
 #include "core/U8String.h"
 #include "type/Type.h"
@@ -20,7 +18,6 @@ namespace ast {
 		Assignment,
 		VarRef,
 		FuncCall,
-		Instantiation,
 		BlockStmt,
 		IfStmt,
 		WhileStmt,
@@ -36,7 +33,6 @@ namespace ast {
 	};
 
 	struct Node {
-	public:
 		const NodeKind kind;
 
 		virtual ~Node() = default;
@@ -45,65 +41,57 @@ namespace ast {
 		explicit Node(NodeKind kind);
 	};
 
-	struct Stmt : public Node {
+	struct Stmt : Node {
 	protected:
 		explicit Stmt(NodeKind kind);
 	};
 
-	struct Expr : public Stmt {
-	public:
+	struct Expr : Stmt {
 		Opt<type::TypePtr> inferredType;
 		Opt<ValueCategory> valueCategory;
 
 		void infer(type::TypePtr type, ValueCategory category);
-		bool isInferred() const;
+		[[nodiscard]] bool isInferred() const;
 
 	protected:
 		explicit Expr(NodeKind kind);
 	};
 
-	struct IntLit : public Expr {
-	public:
+	struct IntLit : Expr {
 		const i32 value;
 
 		explicit IntLit(i32 value);
 	};
 
-	struct FloatLit : public Expr {
-	public:
+	struct FloatLit : Expr {
 		const f32 value;
 
 		explicit FloatLit(f32 value);
 	};
 
-	struct CharLit : public Expr {
-	public:
+	struct CharLit : Expr {
 		const char32_t value;
 
 		explicit CharLit(char32_t value);
 	};
 
-	struct BoolLit : public Expr {
-	public:
+	struct BoolLit : Expr {
 		const bool value;
 
 		explicit BoolLit(bool value);
 	};
 
-	struct StringLit : public Expr {
-	public:
+	struct StringLit : Expr {
 		const U8String value;
 
 		explicit StringLit(U8String value);
 	};
 
-	struct UnitLit : public Expr {
-	public:
+	struct UnitLit : Expr {
 		UnitLit();
 	};
 
-	struct ArrayExpr : public Expr {
-	public:
+	struct ArrayExpr : Expr {
 		const type::TypePtr elementType;
 		const Vec<Box<Expr>> values;
 
@@ -112,8 +100,7 @@ namespace ast {
 
 	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
 
-	struct UnaryExpr : public Expr {
-	public:
+	struct UnaryExpr : Expr {
 		const UnaryOpKind op;
 		const Box<Expr> operand;
 
@@ -142,8 +129,7 @@ namespace ast {
 		Index
 	};
 
-	struct BinaryExpr : public Expr {
-	public:
+	struct BinaryExpr : Expr {
 		const BinaryOpKind op;
 		const Box<Expr> left, right;
 
@@ -164,53 +150,39 @@ namespace ast {
 		RightShift,
 	};
 
-	struct HeapAlloc : public Expr {
-	public:
-		const type::TypePtr type;
+	struct HeapAlloc : Expr {
+		const Box<Expr> expr;
 
-		explicit HeapAlloc(type::TypePtr type);
+		explicit HeapAlloc(Box<Expr> expr);
 	};
 
-	struct Assignment : public Expr {
-	public:
+	struct Assignment : Expr {
 		const AssignmentKind assignmentKind;
 		const Box<Expr> left, right;
 
 		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
 	};
 
-	struct VarRef : public Expr {
-	public:
+	struct VarRef : Expr {
 		const U8String ident;
 
 		explicit VarRef(U8String ident);
 	};
 
-	struct FuncCall : public Expr {
-	public:
+	struct FuncCall : Expr {
 		const Box<Expr> expr;
 		const Vec<Box<Expr>> args;
 
 		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 	};
 
-	struct Instantiation : public Expr {
-	public:
-		const Box<type::Type> type;
-		const Vec<Box<Expr>> args;
-
-		Instantiation(Box<type::Type> type, Vec<Box<Expr>> args);
-	};
-
-	struct BlockStmt : public Stmt {
-	public:
+	struct BlockStmt : Stmt {
 		const Vec<Box<Stmt>> stmts;
 
 		explicit BlockStmt(Vec<Box<Stmt>> stmts);
 	};
 
-	struct IfStmt : public Stmt {
-	public:
+	struct IfStmt : Stmt {
 		const Box<Expr> cond;
 		const Box<BlockStmt> then;
 		const Box<BlockStmt> else_;
@@ -218,35 +190,30 @@ namespace ast {
 		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
 	};
 
-	struct WhileStmt : public Stmt {
-	public:
+	struct WhileStmt : Stmt {
 		const Box<Expr> cond;
 		const Box<BlockStmt> body;
 
 		WhileStmt(Box<Expr> cond, Box<BlockStmt> body);
 	};
 
-	struct ReturnStmt : public Stmt {
-	public:
+	struct ReturnStmt : Stmt {
 		const Opt<Box<Expr>> expr;
 
 		explicit ReturnStmt(Opt<Box<Expr>> expr = std::nullopt);
 	};
 
-	struct VarDef : public Stmt {
-	public:
+	struct VarDef : Stmt {
 		const U8String ident;
 		const type::TypePtr type;
 		const Box<Expr> value;
 
-	public:
 		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
 	};
 
 	using Param = Pair<U8String, type::TypePtr>;
 
-	struct FuncDecl : public Node {
-	public:
+	struct FuncDecl : Node {
 		const U8String ident;
 		const Vec<Param> params;
 		const type::TypePtr returnType;
@@ -255,17 +222,16 @@ namespace ast {
 		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
 	};
 
-	struct Module : public Node {
-	public:
+	struct Module : Node {
 		const U8String name;
 		const Vec<Box<FuncDecl>> decls;
 
 		Module(U8String name, Vec<Box<FuncDecl>> decls);
 	};
-}
 
-std::ostream &operator<<(std::ostream &os, ast::NodeKind kind);
-std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind);
-std::ostream &operator<<(std::ostream &os, ast::AssignmentKind kind);
-std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind kind);
-std::ostream &operator<<(std::ostream &os, ast::ValueCategory cat);
+	std::ostream &operator<<(std::ostream &os, NodeKind kind);
+	std::ostream &operator<<(std::ostream &os, UnaryOpKind kind);
+	std::ostream &operator<<(std::ostream &os, AssignmentKind kind);
+	std::ostream &operator<<(std::ostream &os, BinaryOpKind kind);
+	std::ostream &operator<<(std::ostream &os, ValueCategory cat);
+}

@@ -135,8 +135,8 @@ TEST_CASE("BinaryExpr: toString works") {
 
 TEST_CASE("HeapAlloc: toString works") {
 	// Arrange
-	auto type = std::make_shared<Typename>(u8"i32");
-	auto heapAlloc = std::make_unique<HeapAlloc>(type);
+	auto expr = std::make_unique<IntLit>(10);
+	auto heapAlloc = std::make_unique<HeapAlloc>(std::move(expr));
 	std::stringstream ss;
 
 	// Act
@@ -144,7 +144,7 @@ TEST_CASE("HeapAlloc: toString works") {
 	std::string result = ss.str();
 
 	// Assert
-	CHECK(result == "HeapAlloc(i32)");
+	CHECK(result == "HeapAlloc(IntLit(10))");
 }
 
 TEST_CASE("Assignment: toString works") {

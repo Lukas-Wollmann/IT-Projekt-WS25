@@ -63,7 +63,7 @@ namespace ast {
 	}
 
 	void Printer::visit(const HeapAlloc &n) {
-		m_OStream << "HeapAlloc(" << *n.type << ")";
+		m_OStream << "HeapAlloc(" << *n.expr << ")";
 	}
 
 	void Printer::visit(const FuncCall &n) {
@@ -144,9 +144,9 @@ namespace ast {
 
 		m_OStream << "})";
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, const ast::Node &n) {
-	ast::Printer(os).dispatch(n);
-	return os;
+	std::ostream &operator<<(std::ostream &os, const Node &n) {
+		Printer(os).dispatch(n);
+		return os;
+	}
 }

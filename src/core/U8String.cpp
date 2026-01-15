@@ -1,4 +1,5 @@
 #include "U8String.h"
+
 #include "Macros.h"
 
 std::ostream &operator<<(std::ostream &os, const char8_t *str) {
@@ -57,7 +58,7 @@ std::string U8String::asAscii() const {
 	result.reserve(m_Data.size());
 
 	for (char8_t c : m_Data) {
-        VERIFY(static_cast<unsigned char>(c) <= 0x80);
+		VERIFY(static_cast<unsigned char>(c) <= 0x80);
 		result.push_back(static_cast<char>(c));
 	}
 
@@ -77,18 +78,18 @@ size_t U8String::length() const {
 }
 
 U8String::ConstIterator U8String::begin() const {
-	return U8String::ConstIterator(m_Data.begin(), m_Data.begin(), m_Data.end());
+	return ConstIterator(m_Data.begin(), m_Data.begin(), m_Data.end());
 }
 
 U8String::ConstIterator U8String::end() const {
-	return U8String::ConstIterator(m_Data.end(), m_Data.begin(), m_Data.end());
+	return ConstIterator(m_Data.end(), m_Data.begin(), m_Data.end());
 }
 
 bool U8String::empty() const {
 	return m_Data.empty();
 }
 
-bool operator==(const U8String left, const U8String &right) {
+bool operator==(const U8String &left, const U8String &right) {
 	return left.m_Data == right.m_Data;
 }
 
@@ -103,13 +104,13 @@ U8String operator+(const U8String &left, const U8String &right) {
 	return result;
 }
 
-char32_t U8String::operator[](size_t idx) const {
+char32_t U8String::operator[](const size_t idx) const {
 	auto it = m_Data.begin();
-	auto end = m_Data.end();
+	const auto end = m_Data.end();
 	size_t i = 0;
 
 	while (it != end) {
-		char32_t codepoint = utf8::next(it, end);
+		const char32_t codepoint = utf8::next(it, end);
 
 		if (i == idx)
 			return codepoint;
@@ -131,8 +132,6 @@ std::ostream &operator<<(std::ostream &os, const U8String &str) {
 }
 
 void U8String::validateUTF8() {
-	auto it = utf8::find_invalid(m_Data.begin(), m_Data.end());
-
-	if (it != m_Data.end())
+	if (utf8::find_invalid(m_Data.begin(), m_Data.end()) != m_Data.end())
 		throw std::runtime_error("Invalid UTF-8 sequence");
 }

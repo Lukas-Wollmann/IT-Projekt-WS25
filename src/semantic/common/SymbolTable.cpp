@@ -1,68 +1,53 @@
 #include "SymbolTable.h"
 
+#include <ranges>
+
 #include "type/Printer.h"
 
 namespace semantic {
-    using namespace type;
+	using namespace type;
 
-	SymbolInfo::SymbolInfo(TypePtr type)
-		: m_Type(std::move(type)) {}
-
-    TypePtr SymbolInfo::getType() const {
-		return m_Type;
+	SymbolTable::SymbolTable() {
+		enterScope();
 	}
 
-    SymbolTable::SymbolTable() {
-        enterScope();
-    }
-
 	Scope &SymbolTable::enterScope() {
-		m_Scopes.push_back({});
+		m_Scopes.emplace_back();
 
 		return m_Scopes.back();
 	}
 
 	void SymbolTable::exitScope() {
-		if (m_Scopes.empty())
-			throw std::runtime_error("Cannot exit the global scope");
+		VERIFY(!m_Scopes.empty());
 
 		m_Scopes.pop_back();
 	}
 
-	void SymbolTable::addSymbol(U8String name, SymbolInfo symbol) {
-		m_Scopes.back().emplace(std::move(name), std::move(symbol));
+	void SymbolTable::addSymbol(U8String name, TypePtr type) {
+		m_Scopes.back().emplace(std::move(name), std::move(type));
 	}
 
-	Opt<Ref<const SymbolInfo>> SymbolTable::getSymbol(const U8String &name) const {
-		for (auto scope = m_Scopes.rbegin(); scope != m_Scopes.rend(); ++scope) {
-			auto it = scope->find(name);
-
-			if (it != scope->end())
+	Opt<TypePtr> SymbolTable::getSymbol(const U8String &name) const {
+		for (const auto &m_Scope : std::ranges::reverse_view(m_Scopes)) {
+			if (const auto it = m_Scope.find(name); it != m_Scope.end())
 				return it->second;
 		}
 
-		return std::nullopt;
+		return {};
 	}
 
 	bool SymbolTable::isSymbolDefinedInCurrentScope(const U8String &name) const {
-		const Scope &scope = m_Scopes.back();
+		VERIFY(!m_Scopes.empty());
 
-		return scope.find(name) != scope.end();
+		return m_Scopes.back().contains(name);
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, const semantic::Scope &scope) {
-	os << "====== Scope ======\n";
+	std::ostream &operator<<(std::ostream &os, const Scope &scope) {
+		os << "====== Scope ======\n";
 
-	for (auto &[name, info] : scope)
-		os << name << ": " << *info.getType() << "\n";
+		for (auto &[name, type] : scope)
+			os << name << ": " << *type << "\n";
 
-	return os << "===================\n";
-}
-
-std::ostream &operator<<(std::ostream &os, const semantic::SymbolTable &table) {
-	for (auto &scope : table.m_Scopes)
-		os << scope;
-
-	return os;
+		return os << "===================\n";
+	}
 }

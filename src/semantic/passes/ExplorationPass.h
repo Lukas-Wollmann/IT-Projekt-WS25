@@ -9,12 +9,12 @@ namespace semantic {
 	/// not possible to nest a declaration inside another one. This
 	/// has to be ensured by using correct parsing rules.
 	///
-	struct ExplorationPass : public ast::ConstVisitor<void> {
+	struct ExplorationPass : ast::ConstVisitor<void> {
 	private:
 		TypeCheckerContext &m_Context;
 
 	public:
-		ExplorationPass(TypeCheckerContext &context);
+		explicit ExplorationPass(TypeCheckerContext &context);
 
 	private:
 		void visit(const ast::Module &n) override;

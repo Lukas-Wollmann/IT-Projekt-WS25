@@ -1,7 +1,7 @@
 #include "ExprCodeGen.h"
 
 #include "CodeGenContext.h"
-#include "type/CompareVisitor.h"
+#include "type/Compare.h"
 
 namespace codegen {
 	using namespace ast;

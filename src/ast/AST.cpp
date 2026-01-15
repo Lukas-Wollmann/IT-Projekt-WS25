@@ -3,37 +3,37 @@
 #include "Macros.h"
 
 namespace ast {
-	Node::Node(NodeKind kind)
+	Node::Node(const NodeKind kind)
 		: kind(kind) {}
 
-	Stmt::Stmt(NodeKind kind)
+	Stmt::Stmt(const NodeKind kind)
 		: Node(kind) {}
 
-	Expr::Expr(NodeKind kind)
+	Expr::Expr(const NodeKind kind)
 		: Stmt(kind) {}
 
 	void Expr::infer(type::TypePtr type, ValueCategory category) {
-		inferredType = type;
+		inferredType = std::move(type);
 		valueCategory = category;
 	}
 
 	bool Expr::isInferred() const {
-		return inferredType.has_value() || valueCategory.has_value();
+		return inferredType.has_value() && valueCategory.has_value();
 	}
 
-	IntLit::IntLit(i32 value)
+	IntLit::IntLit(const i32 value)
 		: Expr(NodeKind::IntLit)
 		, value(value) {}
 
-	FloatLit::FloatLit(f32 value)
+	FloatLit::FloatLit(const f32 value)
 		: Expr(NodeKind::FloatLit)
 		, value(value) {}
 
-	CharLit::CharLit(char32_t value)
+	CharLit::CharLit(const char32_t value)
 		: Expr(NodeKind::CharLit)
 		, value(value) {}
 
-	BoolLit::BoolLit(bool value)
+	BoolLit::BoolLit(const bool value)
 		: Expr(NodeKind::BoolLit)
 		, value(value) {}
 
@@ -46,25 +46,25 @@ namespace ast {
 
 	ArrayExpr::ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values)
 		: Expr(NodeKind::ArrayExpr)
-		, elementType(elementType)
+		, elementType(std::move(elementType))
 		, values(std::move(values)) {}
 
-	UnaryExpr::UnaryExpr(UnaryOpKind op, Box<Expr> operand)
+	UnaryExpr::UnaryExpr(const UnaryOpKind op, Box<Expr> operand)
 		: Expr(NodeKind::UnaryExpr)
 		, op(op)
 		, operand(std::move(operand)) {}
 
-	BinaryExpr::BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right)
+	BinaryExpr::BinaryExpr(const BinaryOpKind op, Box<Expr> left, Box<Expr> right)
 		: Expr(NodeKind::BinaryExpr)
 		, op(op)
 		, left(std::move(left))
 		, right(std::move(right)) {}
 
-	HeapAlloc::HeapAlloc(type::TypePtr type)
+	HeapAlloc::HeapAlloc(Box<Expr> expr)
 		: Expr(NodeKind::HeapAlloc)
-		, type(type) {}
+		, expr(std::move(expr)) {}
 
-	Assignment::Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
+	Assignment::Assignment(const AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right)
 		: Expr(NodeKind::Assignment)
 		, assignmentKind(assignmentKind)
 		, left(std::move(left))
@@ -77,11 +77,6 @@ namespace ast {
 	FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
 		: Expr(NodeKind::FuncCall)
 		, expr(std::move(expr))
-		, args(std::move(args)) {}
-
-	Instantiation::Instantiation(Box<type::Type> type, Vec<Box<Expr>> args)
-		: Expr(NodeKind::Instantiation)
-		, type(std::move(type))
 		, args(std::move(args)) {}
 
 	BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
@@ -106,7 +101,7 @@ namespace ast {
 	VarDef::VarDef(U8String ident, type::TypePtr type, Box<Expr> value)
 		: Stmt(NodeKind::VarDef)
 		, ident(std::move(ident))
-		, type(type)
+		, type(std::move(type))
 		, value(std::move(value)) {}
 
 	FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType,
@@ -114,104 +109,104 @@ namespace ast {
 		: Node(NodeKind::FuncDecl)
 		, ident(std::move(ident))
 		, params(std::move(params))
-		, returnType(returnType)
+		, returnType(std::move(returnType))
 		, body(std::move(body)) {}
 
 	Module::Module(U8String name, Vec<Box<FuncDecl>> decls)
 		: Node(NodeKind::Module)
 		, name(std::move(name))
 		, decls(std::move(decls)) {}
-}
 
-std::ostream &operator<<(std::ostream &os, ast::NodeKind kind) {
-	using enum ast::NodeKind;
+	std::ostream &operator<<(std::ostream &os, const NodeKind kind) {
+		using enum NodeKind;
 
-	switch (kind) {
-		case IntLit:	 return os << "IntLit";
-		case FloatLit:	 return os << "FloatLit";
-		case CharLit:	 return os << "CharLit";
-		case BoolLit:	 return os << "BoolLit";
-		case StringLit:	 return os << "StringLit";
-		case ArrayExpr:	 return os << "ArrayExpr";
-		case UnaryExpr:	 return os << "UnaryExpr";
-		case BinaryExpr: return os << "BinaryExpr";
-		case FuncCall:	 return os << "FuncCall";
-		case VarRef:	 return os << "VarRef";
-		case BlockStmt:	 return os << "BlockStmt";
-		case IfStmt:	 return os << "IfStmt";
-		case WhileStmt:	 return os << "WhileStmt";
-		case ReturnStmt: return os << "ReturnStmt";
-		case VarDef:	 return os << "VarDef";
-		case FuncDecl:	 return os << "FuncDecl";
-		case Module:	 return os << "Module";
-		default:		 UNREACHABLE();
+		switch (kind) {
+			case IntLit:	 return os << "IntLit";
+			case FloatLit:	 return os << "FloatLit";
+			case CharLit:	 return os << "CharLit";
+			case BoolLit:	 return os << "BoolLit";
+			case StringLit:	 return os << "StringLit";
+			case ArrayExpr:	 return os << "ArrayExpr";
+			case UnaryExpr:	 return os << "UnaryExpr";
+			case BinaryExpr: return os << "BinaryExpr";
+			case FuncCall:	 return os << "FuncCall";
+			case VarRef:	 return os << "VarRef";
+			case BlockStmt:	 return os << "BlockStmt";
+			case IfStmt:	 return os << "IfStmt";
+			case WhileStmt:	 return os << "WhileStmt";
+			case ReturnStmt: return os << "ReturnStmt";
+			case VarDef:	 return os << "VarDef";
+			case FuncDecl:	 return os << "FuncDecl";
+			case Module:	 return os << "Module";
+			default:		 UNREACHABLE();
+		}
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, ast::UnaryOpKind kind) {
-	using enum ast::UnaryOpKind;
+	std::ostream &operator<<(std::ostream &os, const UnaryOpKind kind) {
+		using enum UnaryOpKind;
 
-	switch (kind) {
-		case LogicalNot:  return os << "!";
-		case BitwiseNot:  return os << "~";
-		case Positive:	  return os << "+";
-		case Negative:	  return os << "-";
-		case Dereference: return os << "*";
-		default:		  UNREACHABLE();
+		switch (kind) {
+			case LogicalNot:  return os << "!";
+			case BitwiseNot:  return os << "~";
+			case Positive:	  return os << "+";
+			case Negative:	  return os << "-";
+			case Dereference: return os << "*";
+			default:		  UNREACHABLE();
+		}
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, ast::AssignmentKind kind) {
-	using enum ast::AssignmentKind;
+	std::ostream &operator<<(std::ostream &os, const AssignmentKind kind) {
+		using enum AssignmentKind;
 
-	switch (kind) {
-		case Simple:		 return os << "=";
-		case Addition:		 return os << "+=";
-		case Subtraction:	 return os << "-=";
-		case Multiplication: return os << "*=";
-		case Division:		 return os << "/=";
-		case Modulo:		 return os << "%=";
-		case BitwiseAnd:	 return os << "&=";
-		case BitwiseOr:		 return os << "|=";
-		case BitwiseXor:	 return os << "^=";
-		case LeftShift:		 return os << "<<=";
-		case RightShift:	 return os << ">>=";
-		default:			 UNREACHABLE();
+		switch (kind) {
+			case Simple:		 return os << "=";
+			case Addition:		 return os << "+=";
+			case Subtraction:	 return os << "-=";
+			case Multiplication: return os << "*=";
+			case Division:		 return os << "/=";
+			case Modulo:		 return os << "%=";
+			case BitwiseAnd:	 return os << "&=";
+			case BitwiseOr:		 return os << "|=";
+			case BitwiseXor:	 return os << "^=";
+			case LeftShift:		 return os << "<<=";
+			case RightShift:	 return os << ">>=";
+			default:			 UNREACHABLE();
+		}
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, ast::BinaryOpKind kind) {
-	using enum ast::BinaryOpKind;
+	std::ostream &operator<<(std::ostream &os, const BinaryOpKind kind) {
+		using enum BinaryOpKind;
 
-	switch (kind) {
-		case Addition:			 return os << "+";
-		case Subtraction:		 return os << "-";
-		case Multiplication:	 return os << "*";
-		case Division:			 return os << "/";
-		case Modulo:			 return os << "%";
-		case Equality:			 return os << "==";
-		case Inequality:		 return os << "!=";
-		case LessThan:			 return os << "<";
-		case GreaterThan:		 return os << ">";
-		case LessThanOrEqual:	 return os << "<=";
-		case GreaterThanOrEqual: return os << ">=";
-		case LogicalAnd:		 return os << "&&";
-		case LogicalOr:			 return os << "||";
-		case BitwiseAnd:		 return os << "&";
-		case BitwiseOr:			 return os << "|";
-		case BitwiseXor:		 return os << "^";
-		case LeftShift:			 return os << "<<";
-		case RightShift:		 return os << ">>";
-		default:				 UNREACHABLE();
+		switch (kind) {
+			case Addition:			 return os << "+";
+			case Subtraction:		 return os << "-";
+			case Multiplication:	 return os << "*";
+			case Division:			 return os << "/";
+			case Modulo:			 return os << "%";
+			case Equality:			 return os << "==";
+			case Inequality:		 return os << "!=";
+			case LessThan:			 return os << "<";
+			case GreaterThan:		 return os << ">";
+			case LessThanOrEqual:	 return os << "<=";
+			case GreaterThanOrEqual: return os << ">=";
+			case LogicalAnd:		 return os << "&&";
+			case LogicalOr:			 return os << "||";
+			case BitwiseAnd:		 return os << "&";
+			case BitwiseOr:			 return os << "|";
+			case BitwiseXor:		 return os << "^";
+			case LeftShift:			 return os << "<<";
+			case RightShift:		 return os << ">>";
+			default:				 UNREACHABLE();
+		}
 	}
-}
 
-std::ostream &operator<<(std::ostream &os, ast::ValueCategory cat) {
-	using enum ast::ValueCategory;
+	std::ostream &operator<<(std::ostream &os, const ValueCategory cat) {
+		using enum ValueCategory;
 
-	switch (cat) {
-		case LValue: return os << "LValue";
-		case RValue: return os << "RValue";
-		default:	 UNREACHABLE();
+		switch (cat) {
+			case LValue: return os << "LValue";
+			case RValue: return os << "RValue";
+			default:	 UNREACHABLE();
+		}
 	}
 }

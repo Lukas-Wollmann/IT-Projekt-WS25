@@ -7,10 +7,10 @@
 namespace semantic {
 	///
 	/// Type check all nodes of the AST, we use a recursive, bottom up appreach to infer
-    /// all types and value categories. If a type error happenes, report it and propagate
+	/// all types and value categories. If a type error happenes, report it and propagate
 	/// it upwards inside the tree. Error messages are stored as template specializations
-    /// inside ErrorMessages.h.
-    ///
+	/// inside ErrorMessages.h.
+	///
 	struct TypeCheckingPass : public ast::Visitor<bool> {
 	private:
 		TypeCheckerContext &m_Context;
@@ -42,10 +42,11 @@ namespace semantic {
 		bool visit(ast::VarDef &n) override;
 		bool visit(ast::FuncDecl &n) override;
 
-	private:
-        type::TypePtr checkExpression(ast::Expr &n);
-        bool typesMatch(type::TypePtr left, type::TypePtr right) const;
-		bool canArgsCallFunc(const type::TypeList &args, type::FunctionTypePtr func) const;
-		Opt<ast::BinaryOpKind> getBinaryOpFromAssignment(ast::AssignmentKind kind) const;
+		type::TypePtr checkExpression(ast::Expr &n);
+		[[nodiscard]] static bool typesMatch(const type::TypePtr &left, const type::TypePtr &right);
+		void checkIfArgsCanCallFunction(const type::TypeList &args,
+										const type::FunctionTypePtr &func) const;
+		[[nodiscard]] static Opt<ast::BinaryOpKind>
+		getBinaryOpFromAssignment(ast::AssignmentKind kind);
 	};
 }
