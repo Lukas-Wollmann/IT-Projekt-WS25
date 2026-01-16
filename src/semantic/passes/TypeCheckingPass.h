@@ -1,5 +1,6 @@
 #pragma once
 #include "ast/Visitor.h"
+#include "core/Operators.h"
 #include "semantic/common/SymbolTable.h"
 #include "semantic/common/TypeCheckerContext.h"
 #include "type/Type.h"
@@ -46,7 +47,6 @@ namespace semantic {
 		[[nodiscard]] static bool typesMatch(const type::TypePtr &left, const type::TypePtr &right);
 		void checkIfArgsCanCallFunction(const type::TypeList &args,
 										const type::FunctionTypePtr &func) const;
-		[[nodiscard]] static Opt<ast::BinaryOpKind>
-		getBinaryOpFromAssignment(ast::AssignmentKind kind);
+		[[nodiscard]] static Opt<BinaryOpKind> getBinaryOpFromAssignment(ast::AssignmentKind kind);
 	};
 }

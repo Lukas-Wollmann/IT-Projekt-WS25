@@ -2,6 +2,7 @@
 #include <sstream>
 
 #include "ast/AST.h"
+#include "core/Operators.h"
 #include "type/Printer.h"
 #include "type/Type.h"
 
@@ -47,7 +48,7 @@ namespace semantic {
 
 	template <>
 	struct ErrorMessage<ErrorMessageKind::UnaryOperatorNotFound> {
-		[[nodiscard]] static U8String str(const type::TypePtr &type, const ast::UnaryOpKind op) {
+		[[nodiscard]] static U8String str(const type::TypePtr &type, const UnaryOpKind op) {
 			std::stringstream ss;
 			ss << "Cannot use unary operator '" << op << "' on a value of type '" << *type << "'.";
 
@@ -58,7 +59,7 @@ namespace semantic {
 	template <>
 	struct ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound> {
 		[[nodiscard]] static U8String str(const type::TypePtr &left, const type::TypePtr &right,
-										  const ast::BinaryOpKind op) {
+										  const BinaryOpKind op) {
 			std::stringstream ss;
 			ss << "Cannot use binary operator '" << op << "' on values of type '";
 			ss << *left << "' and '" << *right << "'.";

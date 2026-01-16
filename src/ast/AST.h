@@ -1,5 +1,6 @@
 #pragma once
 #include "Typedef.h"
+#include "core/Operators.h"
 #include "core/U8String.h"
 #include "type/Type.h"
 
@@ -98,35 +99,11 @@ namespace ast {
 		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
 	};
 
-	enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
-
 	struct UnaryExpr : Expr {
 		const UnaryOpKind op;
 		const Box<Expr> operand;
 
 		UnaryExpr(UnaryOpKind op, Box<Expr> operand);
-	};
-
-	enum struct BinaryOpKind {
-		Addition,
-		Subtraction,
-		Multiplication,
-		Division,
-		Modulo,
-		Equality,
-		Inequality,
-		LessThan,
-		GreaterThan,
-		LessThanOrEqual,
-		GreaterThanOrEqual,
-		LogicalAnd,
-		LogicalOr,
-		BitwiseAnd,
-		BitwiseOr,
-		BitwiseXor,
-		LeftShift,
-		RightShift,
-		Index
 	};
 
 	struct BinaryExpr : Expr {
@@ -230,8 +207,6 @@ namespace ast {
 	};
 
 	std::ostream &operator<<(std::ostream &os, NodeKind kind);
-	std::ostream &operator<<(std::ostream &os, UnaryOpKind kind);
 	std::ostream &operator<<(std::ostream &os, AssignmentKind kind);
-	std::ostream &operator<<(std::ostream &os, BinaryOpKind kind);
 	std::ostream &operator<<(std::ostream &os, ValueCategory cat);
 }

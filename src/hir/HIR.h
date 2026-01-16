@@ -5,52 +5,136 @@
 namespace hir {
 	using LocalID = size_t;
 
-	struct Slot {
+	struct Local {
 		LocalID id;
 		type::TypePtr type;
-		Opt<U8String> name;
 	};
 
-	struct RValue {
-		type::TypePtr type;
-
-		virtual ~RValue() = default;
+	struct Operand {
+		virtual ~Operand() = default;
+		virtual void toString(std::ostream &os) const = 0;
 	};
 
-	struct IntLiteral : RValue {
+	struct LocalRef : Operand {
+		LocalID id;
+
+		explicit LocalRef(LocalID id);
+
+		virtual void toString(std::ostream &os) const override;
+	};
+
+	struct IntLit : Operand {
 		i32 value;
-	};
 
-	struct UnaryOp : RValue {
-		UnaryOpKind op;
-		Slot slot;
-	};
+		explicit IntLit(i32 value);
 
-	struct BinaryOp : RValue {
-		BinaryOpKind op;
-		Slot left, right;
+		virtual void toString(std::ostream &os) const override;
 	};
 
 	struct Stmt {
 		virtual ~Stmt() = default;
+		virtual void toString(std::ostream &os) const = 0;
 	};
 
-	struct Assignment : Stmt {
-		Slot slot;
-		Box<RValue> value;
+	struct StackAlloc : Stmt {
+		LocalID dest;
+		type::TypePtr type;
+
+		StackAlloc(LocalID dest, type::TypePtr type);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct HeapAlloc : Stmt {
+		LocalID dest;
+		Box<Operand> value;
+		type::TypePtr type;
+
+		HeapAlloc(LocalID dest, Box<Operand> value, type::TypePtr type);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct Copy : Stmt {
+		LocalID dest;
+		Box<Operand> src;
+
+		Copy(LocalID dest, Box<Operand> src);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct Store : Stmt {
+		Box<Operand> dest;
+		Box<Operand> value;
+
+		Store(Box<Operand> dest, Box<Operand> value);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct UnaryOp : Stmt {
+		LocalID dest;
+		Box<Operand> src;
+		UnaryOpKind op;
+
+		UnaryOp(LocalID dest, Box<Operand> src, UnaryOpKind op);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct BinaryOp : Stmt {
+		LocalID dest;
+		Box<Operand> left, right;
+		BinaryOpKind op;
+
+		BinaryOp(LocalID dest, Box<Operand> left, Box<Operand> right, BinaryOpKind op);
+
+		void toString(std::ostream &os) const override;
 	};
 
 	struct Drop : Stmt {
-		Slot slot;
+		LocalID target;
+
+		explicit Drop(LocalID target);
+
+		void toString(std::ostream &os) const override;
+	};
+
+	struct Terminator {
+		virtual ~Terminator() = default;
+	};
+
+	struct Return : Terminator {
+		Box<Operand> value;
+	};
+
+	struct Block;
+
+	struct Jump : Terminator {
+		Ptr<Block> target;
+	};
+
+	struct CondJump : Terminator {
+		LocalID cond;
+		Ptr<Block> then, else_;
 	};
 
 	struct Block {
 		Vec<Box<Stmt>> stmts;
+		Box<Terminator> term;
+
+		void addStmt(Box<Stmt> stmt) {
+			stmts.push_back(std::move(stmt));
+		}
 	};
 
-	struct FuncDecl {
+	struct Function {
 		U8String name;
-		Vec<Slot> params;
-		Vec<Block> blocks;
+		type::TypePtr returnType;
+		Vec<Local> locals;
+		Vec<Ptr<Block>> blocks;
+
+		LocalID newLocal(type::TypePtr type);
 	};
 }
