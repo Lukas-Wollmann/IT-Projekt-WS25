@@ -24,6 +24,7 @@ private:
 
 	U8String getLineFromSource(size_t lineNumber) const;
 	void printError(const ErrorMessage &error) const;
+	size_t getLineNumberWidth() const;
 
 public:
 	ErrorHandler(U8String filename, U8String sourceCode);

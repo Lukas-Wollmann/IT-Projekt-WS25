@@ -55,7 +55,33 @@ U8String ErrorHandler::getLineFromSource(size_t lineNumber) const {
 	return U8String("");
 }
 
+size_t ErrorHandler::getLineNumberWidth() const {
+	if (errors.empty()) {
+		return 1;
+	}
+
+	// Find maximum line number
+	size_t maxLine = 0;
+	for (const auto &error : errors) {
+		if (error.location.line > maxLine) {
+			maxLine = error.location.line;
+		}
+	}
+
+	// Calculate number of digits
+	size_t width = 0;
+	size_t temp = maxLine;
+	do {
+		++width;
+		temp /= 10;
+	} while (temp > 0);
+
+	return width;
+}
+
 void ErrorHandler::printError(const ErrorMessage &error) const {
+	size_t lineWidth = getLineNumberWidth();
+
 	// Bestimme Farbe und Level-String
 	std::string colorCode;
 	std::string levelStr;
@@ -77,18 +103,22 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 
 	// Header: "error: message"
 	std::cerr << colorCode << BOLD << levelStr << RESET << BOLD << ": " << RESET << error.message
-			  << "\n"; // Dateiname und Position: "--> file.cpp:2:11"
+			  << "\n";
+
+	// Dateiname und Position: "--> file.cpp:2:11" (1-based)
 	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
 			  << (error.location.column + 1) << "\n";
 
 	// Leere Zeile mit Pipe
-	std::cerr << BOLD << BLUE << "  |" << RESET << "\n";
+	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " |" << RESET << "\n";
 
 	// Code-Zeile
 	U8String snippet = getLineFromSource(error.location.line);
-	std::cerr << BOLD << BLUE << std::setw(3) << error.location.line << " | " << RESET << snippet
-			  << "\n"; // Markierung (^^^^^)
-	std::cerr << BOLD << BLUE << "  | " << RESET;
+	std::cerr << BOLD << BLUE << std::setw(lineWidth) << error.location.line << " | " << RESET
+			  << snippet << "\n";
+
+	// Markierung (^^^^^) - use 0-based column for spacing
+	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " | " << RESET;
 	for (size_t i = 0; i < error.location.column; ++i) {
 		std::cerr << " ";
 	}
