@@ -32,7 +32,7 @@ public:
 	void addError(ErrorLevel level, U8String message, SourceLoc location,
 				  size_t highlightLength = 1);
 
-	void addTokenError(const Token &token, U8String message);
+	void addTokenError(const lexer::Token &token, U8String message);
 
 	void printErrors() const;
 

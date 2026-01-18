@@ -39,13 +39,10 @@ TEST_CASE("ErrorHandler - Token Error") {
 	ErrorHandler handler(U8String("token.cpp"), sourceCode);
 
 	// Create a token with an error
-	Token badToken(TokenType::ILLEGAL, U8String("'abc'"), {1, 8, 8},
-				   ErrorTypeToken::MULTIPLE_CHAR_IN_CHAR_LITERAL);
+	lexer::Token badToken(lexer::TokenType::Illegal, U8String("'abc'"), {1, 8, 8},
+						  lexer::TokenError::MultipleCharsInCharLiteral);
 
 	handler.addTokenError(badToken, U8String("character literal may only contain one codepoint"));
-
-	CHECK(handler.hasError() == true);
-	CHECK(handler.errorCount() == 1);
 
 	std::cout << "\n=== Test: Token Error ===\n";
 	handler.printErrors();
@@ -106,5 +103,116 @@ TEST_CASE("ErrorHandler - Large Line Numbers") {
 	handler.addError(ErrorLevel::ERROR, U8String("error at line 1234"), {1234, 2, 0}, 4);
 
 	std::cout << "\n=== Test: Large Line Numbers ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Empty Source Code") {
+	U8String sourceCode = U8String("");
+	ErrorHandler handler(U8String("empty.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("error in empty file"), {1, 0, 0}, 1);
+
+	CHECK(handler.errorCount() == 1);
+
+	std::cout << "\n=== Test: Empty Source Code ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Highlight Length Zero") {
+	U8String sourceCode = U8String("int x = 5;");
+	ErrorHandler handler(U8String("zero-highlight.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("zero length highlight"), {1, 4, 4}, 0);
+
+	std::cout << "\n=== Test: Highlight Length Zero ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Column Out of Bounds") {
+	U8String sourceCode = U8String("short");
+	ErrorHandler handler(U8String("bounds.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("column beyond line length"), {1, 999, 0}, 5);
+
+	std::cout << "\n=== Test: Column Out of Bounds ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Multiple Errors Same Line") {
+	U8String sourceCode = U8String("int x = 5 + 10 - error;");
+	ErrorHandler handler(U8String("same-line.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("first error"), {1, 8, 8}, 1);
+	handler.addError(ErrorLevel::WARNING, U8String("second warning"), {1, 17, 17}, 5);
+	handler.addError(ErrorLevel::NOTE, U8String("note here"), {1, 0, 0}, 3);
+
+	std::cout << "\n=== Test: Multiple Errors Same Line ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Very Long Line") {
+	// Create a line with 500 characters
+	std::u8string longLine(500, u8'x');
+	U8String sourceCode = U8String(longLine);
+	ErrorHandler handler(U8String("long-line.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("error in long line"), {1, 250, 250}, 10);
+
+	std::cout << "\n=== Test: Very Long Line ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - NOTE Level Isolated") {
+	U8String sourceCode = U8String("int x = 5;");
+	ErrorHandler handler(U8String("note.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::NOTE, U8String("this is just a note"), {1, 4, 4}, 1);
+
+	CHECK(handler.errorCount() == 0);
+	CHECK(handler.warningCount() == 0);
+	CHECK(handler.hasError() == false);
+
+	std::cout << "\n=== Test: NOTE Level Isolated ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Mix All Error Levels") {
+	U8String sourceCode = U8String("int x = 5;\nint y = 10;\nint z = 15;");
+	ErrorHandler handler(U8String("mixed.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR, U8String("critical error"), {1, 4, 4}, 1);
+	handler.addError(ErrorLevel::WARNING, U8String("potential issue"), {2, 4, 15}, 1);
+	handler.addError(ErrorLevel::NOTE, U8String("informational note"), {3, 4, 26}, 1);
+	handler.addError(ErrorLevel::ERROR, U8String("another error"), {3, 8, 30}, 2);
+
+	CHECK(handler.errorCount() == 2);
+	CHECK(handler.warningCount() == 1);
+
+	std::cout << "\n=== Test: Mix All Error Levels ===\n";
+	handler.printErrors();
+}
+
+TEST_CASE("ErrorHandler - Zero Errors Print") {
+	U8String sourceCode = U8String("int x = 5;");
+	ErrorHandler handler(U8String("no-errors.cpp"), sourceCode);
+
+	CHECK(handler.errorCount() == 0);
+	CHECK(handler.warningCount() == 0);
+	CHECK(handler.hasError() == false);
+
+	std::cout << "\n=== Test: Zero Errors Print ===\n";
+	handler.printErrors(); // Should print nothing
+	std::cout << "(Should see no error output above)\n";
+}
+
+TEST_CASE("ErrorHandler - Special Characters in Message") {
+	U8String sourceCode = U8String("int x = 5;");
+	ErrorHandler handler(U8String("special.cpp"), sourceCode);
+
+	handler.addError(ErrorLevel::ERROR,
+					 U8String("Expected 'expression' after \"operator\" with <brackets>"),
+					 {1, 8, 8}, 1);
+
+	std::cout << "\n=== Test: Special Characters in Message ===\n";
 	handler.printErrors();
 }

@@ -25,7 +25,7 @@ void ErrorHandler::addError(ErrorLevel level, U8String message, SourceLoc locati
 	errors.push_back({level, std::move(message), location, highlightLength});
 }
 
-void ErrorHandler::addTokenError(const Token &token, U8String message) {
+void ErrorHandler::addTokenError(const lexer::Token &token, U8String message) {
 	addError(ErrorLevel::ERROR, std::move(message), token.loc, token.lexeme.length());
 }
 
@@ -119,11 +119,27 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 
 	// Markierung (^^^^^) - use 0-based column for spacing
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " | " << RESET;
-	for (size_t i = 0; i < error.location.column; ++i) {
+
+	// Bounds check: column sollte nicht über die Zeilenlänge hinausgehen
+	size_t snippetLength = snippet.length();
+	size_t safeColumn =
+			(error.location.column < snippetLength) ? error.location.column : snippetLength;
+
+	for (size_t i = 0; i < safeColumn; ++i) {
 		std::cerr << " ";
 	}
+
+	// Minimum highlight length von 1
+	size_t safeHighlightLength = (error.highlightLength == 0) ? 1 : error.highlightLength;
+
+	// Highlight sollte nicht über die Zeilenlänge hinausgehen
+	size_t remainingLength = snippetLength - safeColumn;
+	if (safeHighlightLength > remainingLength && remainingLength > 0) {
+		safeHighlightLength = remainingLength;
+	}
+
 	std::cerr << colorCode << BOLD;
-	for (size_t i = 0; i < error.highlightLength; ++i) {
+	for (size_t i = 0; i < safeHighlightLength; ++i) {
 		std::cerr << "^";
 	}
 	std::cerr << RESET << "\n";
