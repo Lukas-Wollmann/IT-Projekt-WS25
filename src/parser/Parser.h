@@ -17,7 +17,6 @@ public:
 
 	Box<ast::Module> parse();
 
-private:
 	Opt<lexer::Token> consume(lexer::TokenType type, Opt<U8String> string = std::nullopt);
 	void advanceTo(lexer::TokenType type, Opt<U8String> string = std::nullopt);
 	lexer::Token peek(u8 look_ahead = 0) const;
