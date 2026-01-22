@@ -5,8 +5,7 @@
 
 namespace lexer {
 	struct Lexer {
-		static Vec<Token> tokenize(const U8String &source, const U8String &filename,
-								   bool comments = false);
+		static Vec<Token> tokenize(const U8String &source, bool comments = false);
 
 	private:
 		const U8String &m_Source;
@@ -14,7 +13,7 @@ namespace lexer {
 		char32_t m_Current;
 		SourceLoc m_CurrentLoc;
 
-		Lexer(const U8String &source, U8String filename);
+		explicit Lexer(const U8String &source);
 
 		Token nextToken();
 

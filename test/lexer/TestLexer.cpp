@@ -109,7 +109,7 @@ TEST_CASE("Lexer: Single line comment") {
 						   {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, true);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -124,7 +124,7 @@ TEST_CASE("Lexer: Multi line comment") {
 						   {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, true);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -137,7 +137,7 @@ TEST_CASE("Lexer: Multi line comment unterminated") {
 	Vec<Token> expected = {{Illegal, u8" Test 1\n Test 2"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, true);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -150,7 +150,7 @@ TEST_CASE("Lexer: Illegal identifier") {
 	Vec<Token> expected = {{Identifier, u8"hallo"}, {Illegal, u8"ß"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, true);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());

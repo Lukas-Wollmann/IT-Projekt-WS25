@@ -20,8 +20,7 @@ enum struct BinaryOpKind {
 	BitwiseOr,
 	BitwiseXor,
 	LeftShift,
-	RightShift,
-	Index
+	RightShift
 };
 
 enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };

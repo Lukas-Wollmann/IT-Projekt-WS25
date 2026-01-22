@@ -33,3 +33,6 @@ using Vec = std::vector<T>;
 
 template <typename U, typename V>
 using Pair = std::pair<U, V>;
+
+template <typename U, typename V>
+using Map = std::unordered_map<U, V>;

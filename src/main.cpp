@@ -20,6 +20,7 @@ using namespace type;
 using namespace semantic;
 using namespace codegen;
 using namespace lexer;
+using namespace parser;
 
 #define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
 #define MOVE(t)		 std::move(t)
@@ -71,34 +72,33 @@ int main(const int argc, const char *argv[]) {
 	U8String source(buffer.str());
 	file.close();
 
-	auto tokens = Lexer::tokenize(source, U8String(filename));
+	auto tokens = Lexer::tokenize(source);
 
 	if (debug) {
 		for (auto tok : tokens)
 			std::cout << tok << "\n";
 	}
 
-	Parser parser(tokens, "test-module");
-	auto ast = parser.parse();
+	auto [module, errs] = Parser::parse(tokens, u8"test-module");
 
-	for (auto err : parser.errors)
+	for (auto err : errs)
 		std::cout << err << "\n";
 
 	std::cout.flush();
 
-	if (!parser.errors.empty())
+	if (!errs.empty())
 		return 1;
 
 	if (debug)
-		std::cout << *ast << std::endl;
+		std::cout << *module << std::endl;
 
 	TypeCheckerContext ctx;
 
 	ExplorationPass pass1(ctx);
-	pass1.dispatch(*ast);
+	pass1.dispatch(*module);
 
 	TypeCheckingPass pass2(ctx);
-	pass2.dispatch(*ast);
+	pass2.dispatch(*module);
 
 	for (auto err : ctx.getErrors())
 		std::cout << err << "\n";
@@ -108,14 +108,14 @@ int main(const int argc, const char *argv[]) {
 	if (!ctx.getErrors().empty())
 		return 2;
 
-    std::string llFilename = outputFilename + ".ll";
+	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
-	CodeGen::generate(output, *ast);
+	CodeGen::generate(output, *module);
 	output.close();
 
 	pid_t pid = fork();
-	
-    if (pid == 0) {
+
+	if (pid == 0) {
 		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(), "-o",
 											   outputFilename.c_str(), nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));

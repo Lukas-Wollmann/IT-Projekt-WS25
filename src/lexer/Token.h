@@ -38,8 +38,10 @@ namespace lexer {
 		SourceLoc loc;
 		TokenError error;
 
-		Token(TokenType type, U8String lexeme, const SourceLoc &loc = {0, 0, 0},
+		Token(TokenType type, U8String = u8"", const SourceLoc &loc = {0, 0, 0},
 			  TokenError error = TokenError::None);
+
+		bool matches(TokenType otherType, Opt<U8String> otherLexeme = {}) const;
 	};
 
 	bool operator==(const Token &left, const Token &right);

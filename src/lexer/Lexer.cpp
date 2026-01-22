@@ -17,10 +17,9 @@ namespace lexer {
 
 	const U8String s_Keywords[] = {u8"if", u8"else", u8"while", u8"return", u8"func", u8"new"};
 
-	Vec<Token> Lexer::tokenize(const U8String &source, const U8String &filename,
-							   const bool comments) {
+	Vec<Token> Lexer::tokenize(const U8String &source, const bool comments) {
 		Vec<Token> tokens;
-		Lexer lexer(source, filename);
+		Lexer lexer(source);
 
 		while (true) {
 			Token token = lexer.nextToken();
@@ -35,11 +34,11 @@ namespace lexer {
 		return tokens;
 	}
 
-	Lexer::Lexer(const U8String &source, U8String filename)
+	Lexer::Lexer(const U8String &source)
 		: m_Source(source)
 		, m_Iter(m_Source.begin())
 		, m_Current(m_Source.empty() ? '\0' : *m_Iter)
-		, m_CurrentLoc(1, 1, 0, std::move(filename)) {}
+		, m_CurrentLoc(1, 1, 0) {}
 
 	Token Lexer::nextToken() {
 		skipWhitespace();

@@ -10,6 +10,16 @@ namespace lexer {
 		, loc(loc)
 		, error(error) {}
 
+	bool Token::matches(TokenType otherType, Opt<U8String> otherLexeme) const {
+		if (type != otherType)
+			return false;
+
+		if (otherLexeme.has_value())
+			return lexeme == otherLexeme.value();
+
+		return true;
+	}
+
 	bool operator==(const Token &left, const Token &right) {
 		return left.type == right.type && left.lexeme == right.lexeme;
 	}
