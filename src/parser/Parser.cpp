@@ -40,7 +40,7 @@ namespace parser {
 	const Token &Parser::consume(TokenType type, U8String lexeme) {
 		if (!m_Current->matches(type, lexeme)) {
 			std::stringstream err;
-			err << "Expected '" << lexeme << "' but found " << m_Current->str() << " instead";
+			err << "Expected '" << lexeme << "' but found " << m_Current->str() << " instead.";
 
 			throw ParsingError(U8String(err.str()));
 		}
@@ -54,7 +54,7 @@ namespace parser {
 	const Token &Parser::consume(TokenType type) {
 		if (!m_Current->matches(type)) {
 			std::stringstream err;
-			err << "Expected " << type << " but found " << m_Current->str() << " instead";
+			err << "Expected " << type << " but found " << m_Current->str() << " instead.";
 
 			throw ParsingError(U8String(err.str()));
 		}
@@ -349,7 +349,7 @@ namespace parser {
 
 		while (m_Current->matches(TokenType::Operator)) {
 			Opt<BinaryOpKind> kind = {};
-			const auto &op = consume(TokenType::Operator).lexeme;
+			const auto &op = m_Current->lexeme;
 
 			if (op == u8"<")
 				kind = BinaryOpKind::LessThan;
@@ -438,7 +438,7 @@ namespace parser {
 			kind = UnaryOpKind::Dereference;
 		else {
 			std::stringstream err;
-			err << "Operator " << op << " can not be used as unary operator.";
+			err << "Operator '" << op << "' can not be used as unary operator.";
 
 			throw ParsingError(U8String(err.str()));
 		}
