@@ -41,7 +41,9 @@ namespace lexer {
 		Token(TokenType type, U8String = u8"", const SourceLoc &loc = {0, 0, 0},
 			  TokenError error = TokenError::None);
 
-		bool matches(TokenType otherType, Opt<U8String> otherLexeme = {}) const;
+		bool matches(TokenType otherType, U8String otherLexeme) const;
+		bool matches(TokenType otherType) const;
+		U8String str() const;
 	};
 
 	bool operator==(const Token &left, const Token &right);

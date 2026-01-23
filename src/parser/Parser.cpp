@@ -37,41 +37,39 @@ namespace parser {
 		VERIFY(m_Current != m_Tokens.end());
 	}
 
-	Token Parser::consume(TokenType type, U8String lexeme) {
+	const Token &Parser::consume(TokenType type, U8String lexeme) {
 		if (!m_Current->matches(type, lexeme)) {
 			std::stringstream err;
-			err << "Expected token " << Token(type, lexeme);
-			err << " but found " << *m_Current << " instead.";
+			err << "Expected '" << lexeme << "' but found " << m_Current->str() << " instead";
 
 			throw ParsingError(U8String(err.str()));
 		}
 
-		auto oldCurrent = *m_Current;
+		auto oldCurrent = m_Current;
 		m_Current++;
 
-		return oldCurrent;
+		return *oldCurrent;
 	}
 
-	Token Parser::consume(TokenType type) {
+	const Token &Parser::consume(TokenType type) {
 		if (!m_Current->matches(type)) {
 			std::stringstream err;
-			err << "Expected token if type " << type;
-			err << " but found " << *m_Current << " instead.";
+			err << "Expected '" << type << "' but found " << m_Current->str() << " instead";
 
 			throw ParsingError(U8String(err.str()));
 		}
 
-		auto oldCurrent = *m_Current;
+		auto oldCurrent = m_Current;
 		m_Current++;
 
-		return oldCurrent;
+		return *oldCurrent;
 	}
 
 	void Parser::reportError(const ParsingError &e) {
 		m_Errors.push_back(std::move(e.message));
 	}
 
-	void Parser::advanceToNext(lexer::TokenType type, Opt<U8String> lexeme) {
+	void Parser::advanceToNext(lexer::TokenType type, U8String lexeme) {
 		while (!m_Current->matches(TokenType::EndOfFile)) {
 			if (m_Current->matches(type, lexeme))
 				return;
@@ -117,7 +115,7 @@ namespace parser {
 		Vec<Param> params;
 		consume(TokenType::Separator, u8"(");
 
-		while (!m_Current->matches(TokenType::Separator, u8")")) {
+		while (m_Current->matches(TokenType::Identifier)) {
 			auto ident = consume(TokenType::Identifier).lexeme;
 			consume(TokenType::Separator, u8":");
 			auto type = parseType();
@@ -194,9 +192,8 @@ namespace parser {
 			return parseWhileStmt();
 
 		bool isCurrentIdent = m_Current->matches(TokenType::Identifier);
-		bool isNextColon = peek().matches(TokenType::Separator, u8":");
 
-		if (isCurrentIdent && isNextColon) {
+		if (isCurrentIdent && peek().matches(TokenType::Separator, u8":")) {
 			auto varDef = parseVarDef();
 			consume(TokenType::Separator, u8";");
 
@@ -214,6 +211,13 @@ namespace parser {
 		consume(TokenType::Separator, u8"{");
 
 		while (!m_Current->matches(TokenType::Separator, u8"}")) {
+			if (m_Current->matches(TokenType::EndOfFile)) {
+				std::stringstream err;
+				err << "Previously opened block was never closed, forgot a '}'?";
+
+				throw ParsingError(U8String(err.str()));
+			}
+
 			auto stmt = parseStmt();
 			stmts.push_back(std::move(stmt));
 		}
@@ -434,7 +438,7 @@ namespace parser {
 			kind = UnaryOpKind::Dereference;
 		else {
 			std::stringstream err;
-			err << "Operator " << op << " can not be used as unary operator." << std::endl;
+			err << "Operator " << op << " can not be used as unary operator.";
 
 			throw ParsingError(U8String(err.str()));
 		}
@@ -525,7 +529,7 @@ namespace parser {
 		}
 
 		std::stringstream err;
-		err << "Expected an expression, found " << *m_Current << " instead.";
+		err << "Expected an expression, found " << m_Current->str() << " instead.";
 
 		throw ParsingError(U8String(err.str()));
 	}

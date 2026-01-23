@@ -10,14 +10,23 @@ namespace lexer {
 		, loc(loc)
 		, error(error) {}
 
-	bool Token::matches(TokenType otherType, Opt<U8String> otherLexeme) const {
-		if (type != otherType)
-			return false;
+	bool Token::matches(TokenType otherType, U8String otherLexeme) const {
+		return type == otherType && lexeme == otherLexeme;
+	}
 
-		if (otherLexeme.has_value())
-			return lexeme == otherLexeme.value();
+	bool Token::matches(TokenType otherType) const {
+		return type == otherType;
+	}
 
-		return true;
+	U8String Token::str() const {
+		std::stringstream ss;
+
+		if (lexeme == u8"")
+			ss << type;
+		else
+			ss << "'" << lexeme << "'";
+
+		return U8String(ss.str());
 	}
 
 	bool operator==(const Token &left, const Token &right) {

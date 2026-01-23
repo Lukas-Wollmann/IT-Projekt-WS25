@@ -23,10 +23,10 @@ namespace parser {
 
 		const lexer::Token &peek() const;
 		void advance();
-		lexer::Token consume(lexer::TokenType type, U8String lexeme);
-		lexer::Token consume(lexer::TokenType type);
+		const lexer::Token &consume(lexer::TokenType type, U8String lexeme);
+		const lexer::Token &consume(lexer::TokenType type);
 		void reportError(const ParsingError &e);
-		void advanceToNext(lexer::TokenType type, Opt<U8String> lexeme = {});
+		void advanceToNext(lexer::TokenType type, U8String lexeme);
 
 		Box<ast::Module> parseModule();
 		Box<ast::FuncDecl> parseFuncDecl();
@@ -49,27 +49,5 @@ namespace parser {
 		Vec<Box<ast::Expr>> parseExprList();
 
 		ast::AssignmentKind getAssignmentKindFromString(const U8String &str) const;
-
-		/*
-		void advanceTo(lexer::TokenType type, Opt<U8String> string = std::nullopt);
-			Box<ast::Module> Module();
-			Opt<Box<ast::FuncDecl>> FunctionDeclaration();
-			Opt<Box<type::Type>> Type();
-			Opt<Box<ast::BlockStmt>> CodeBlock();
-			Opt<Box<ast::Stmt>> Statement();
-			Opt<Box<ast::WhileStmt>> Loop();
-			Opt<Box<ast::IfStmt>> IfBlock();
-			Opt<Box<ast::VarDef>> Declaration();
-			Vec<Box<ast::Expr>> ExpressionList();
-			Opt<Box<ast::Expr>> Expression();
-			Opt<Box<ast::Expr>> AssignmentExpression();
-			Opt<Box<ast::Expr>> EqualityExpression();
-			Opt<Box<ast::Expr>> RelationalExpression();
-			Opt<Box<ast::Expr>> AdditiveExpression();
-			Opt<Box<ast::Expr>> MultiplicativeExpression();
-			Opt<Box<ast::Expr>> UnaryExpression();
-			Opt<Box<ast::Expr>> PostfixExpression();
-			Opt<Box<ast::Expr>> PrimaryExpression();
-			*/
 	};
 }

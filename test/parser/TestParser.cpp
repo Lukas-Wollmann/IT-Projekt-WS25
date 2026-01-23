@@ -107,7 +107,8 @@ TEST_CASE("Parser: advanceToNext() finds next occurance of token") {
 }
 
 TEST_CASE("Parser: Sandbox") {
-	U8String src = u8"func main(a: T, b: *T) { while(1) {} }";
+	U8String src = u8"func a() { if (2) { *a**if*+*a; } else {} }func b() { if (2) { *a*a; } "
+				   u8"else {} }func c() { if (2) { *a*a; } else {} }";
 
 	auto tokens = Lexer::tokenize(src, u8"");
 	auto module = Parser::parse(tokens, u8"test-module");
