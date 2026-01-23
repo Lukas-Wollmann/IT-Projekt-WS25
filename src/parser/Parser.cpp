@@ -54,7 +54,7 @@ namespace parser {
 	const Token &Parser::consume(TokenType type) {
 		if (!m_Current->matches(type)) {
 			std::stringstream err;
-			err << "Expected '" << type << "' but found " << m_Current->str() << " instead";
+			err << "Expected " << type << " but found " << m_Current->str() << " instead";
 
 			throw ParsingError(U8String(err.str()));
 		}
