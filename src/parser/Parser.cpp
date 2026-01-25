@@ -452,7 +452,7 @@ namespace parser {
 		Vec<Box<ast::Expr>> exprs;
 		consume(TokenType::Separator, u8"(");
 
-		while (true) {
+		while (!m_Current->matches(TokenType::Separator, u8")")) {
 			auto expr = parseExpr();
 			exprs.push_back(std::move(expr));
 
@@ -505,7 +505,7 @@ namespace parser {
 			const auto &ident = consume(TokenType::CharLiteral).lexeme;
 			VERIFY(ident.length() == 1);
 
-			return std::make_unique<VarRef>(ident[0]);
+			return std::make_unique<CharLit>(ident[0]);
 		}
 
 		if (m_Current->matches(TokenType::StringLiteral)) {
