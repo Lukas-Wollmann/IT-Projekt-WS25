@@ -1,5 +1,5 @@
-func main() -> i32 {
-	a: () = ();
-	b = a + 2;//:
-	return 2 + 2 * 3 % 40;
+func main(a: ()) -> i32 {
+	a: i32 = 20;
+	b: i32 = a + 2;
+	return b + 2 * 3 % 40;
 }

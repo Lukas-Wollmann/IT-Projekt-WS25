@@ -22,4 +22,5 @@ namespace type {
 
 	std::ostream &operator<<(std::ostream &os, const TypeList &p);
 	std::ostream &operator<<(std::ostream &os, const Type &n);
+	U8String str(const Type &n);
 }

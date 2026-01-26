@@ -80,6 +80,13 @@ int main(const int argc, const char *argv[]) {
 			std::cout << tok << "\n";
 	}
 
+	for (auto tok : tokens) {
+		if (tok.error != TokenError::None) {
+			std::cout << "Illegal token: " << tok << std::endl;
+			return 1;
+		}
+	}
+
 	auto [module, errs] = Parser::parse(tokens, u8"test-module");
 
 	for (auto err : errs)
@@ -88,7 +95,7 @@ int main(const int argc, const char *argv[]) {
 	std::cout.flush();
 
 	if (!errs.empty())
-		return 1;
+		return 2;
 
 	if (debug)
 		std::cout << *module << std::endl;
@@ -107,7 +114,7 @@ int main(const int argc, const char *argv[]) {
 	std::cout.flush();
 
 	if (!ctx.getErrors().empty())
-		return 2;
+		return 3;
 
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
@@ -121,7 +128,7 @@ int main(const int argc, const char *argv[]) {
 											   outputFilename.c_str(), nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
-		return 3;
+		return 4;
 	} else if (pid > 0) {
 		int status;
 		waitpid(pid, &status, 0);
@@ -135,7 +142,7 @@ int main(const int argc, const char *argv[]) {
 		std::cout << "Clang exited with " << status << "\n";
 	} else {
 		perror("fork failed");
-		return 4;
+		return 5;
 	}
 
 	std::cout << "Build finished sucessfully." << std::endl;

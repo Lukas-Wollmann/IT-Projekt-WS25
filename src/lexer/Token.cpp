@@ -13,7 +13,7 @@ namespace lexer {
 		, error(error) {}
 
 	bool Token::matches(TokenType otherType, U8String otherLexeme) const {
-		return type == otherType && lexeme == otherLexeme;
+		return type == otherType && lexeme == otherLexeme && error == TokenError::None;
 	}
 
 	bool Token::matches(TokenType otherType) const {

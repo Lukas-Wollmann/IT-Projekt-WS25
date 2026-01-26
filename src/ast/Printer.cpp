@@ -1,5 +1,7 @@
 #include "Printer.h"
 
+#include "type/Printer.h"
+
 namespace ast {
 	ASTPrinter::ASTPrinter(std::ostream &os)
 		: m_OStream(os)
@@ -45,7 +47,7 @@ namespace ast {
 	}
 
 	void ASTPrinter::visit(const VarRef &n) {
-		printLine(u8"VarRef(" + n.ident + u8")");
+		printLine(u8"VarRef(\"" + n.ident + u8"\")");
 	}
 
 	void ASTPrinter::visit(const UnaryExpr &n) {
@@ -105,23 +107,23 @@ namespace ast {
 	}
 
 	void ASTPrinter::visit(const VarDef &n) {
-		printLine(u8"VarDef(" + n.ident + u8")");
+		printLine(u8"VarDef(\"" + n.ident + u8"\")");
 		printLabeledChild(u8"Value", *n.value, true);
 	}
 
 	void ASTPrinter::visit(const FuncDecl &n) {
-		printLine(u8"FuncDecl(" + n.ident + u8")");
+		printLine(u8"FuncDecl(\"" + n.ident + u8"\")");
 
 		auto params = child();
 		params.printLine(u8"Params");
 
 		for (size_t i = 0; i < n.params.size(); ++i) {
 			const auto &[name, type] = n.params[i];
-			params.child(i + 1 == n.params.size()).printLine(name + u8": TODO");
+			params.child(i + 1 == n.params.size()).printLine(name + u8": " + type::str(*type));
 		}
 
 		auto ret = child();
-		ret.printLine(u8"ReturnType : TODO");
+		ret.printLine(u8"ReturnType: " + type::str(*n.returnType));
 
 		auto body = child(true);
 		body.printLine(u8"Body");

@@ -1,5 +1,7 @@
 #include "Printer.h"
 
+#include <sstream>
+
 namespace type {
 	Printer::Printer(std::ostream &os)
 		: m_OStream(os) {}
@@ -38,5 +40,11 @@ namespace type {
 	std::ostream &operator<<(std::ostream &os, const Type &n) {
 		Printer(os).dispatch(n);
 		return os;
+	}
+
+	U8String str(const Type &n) {
+		std::ostringstream oss;
+		Printer(oss).dispatch(n);
+		return oss.str();
 	}
 }
