@@ -18,6 +18,7 @@ struct U8String {
 	U8String(const char8_t *str);
 	U8String(const std::u8string &str);
 	U8String(std::u8string &&str);
+	U8String(const std::string &str);
 
 	U8String(const U8String &) = default;
 	U8String(U8String &&) noexcept = default;
@@ -25,7 +26,6 @@ struct U8String {
 	// const char * literals do not guarantee utf-8 encoding
 	// you should always use c++20 u8 string literals to do so.
 	explicit U8String(const char *str);
-	explicit U8String(const std::string &str);
 
 	std::string asAscii() const;
 	const char8_t *ptr() const;

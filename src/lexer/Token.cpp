@@ -1,5 +1,7 @@
 #include "Token.h"
 
+#include <sstream>
+
 #include "Macros.h"
 
 namespace lexer {

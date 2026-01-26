@@ -511,6 +511,13 @@ namespace parser {
 
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
 			consume(TokenType::Separator, u8"(");
+
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				consume(TokenType::Separator, u8")");
+
+				return std::make_unique<UnitLit>();
+			}
+
 			auto expr = parseExpr();
 			consume(TokenType::Separator, u8")");
 

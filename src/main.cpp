@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 #include "ast/AST.h"
 #include "ast/Printer.h"

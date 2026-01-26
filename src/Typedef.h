@@ -1,7 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 typedef int8_t i8;
 typedef int16_t i16;

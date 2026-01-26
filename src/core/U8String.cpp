@@ -39,6 +39,9 @@ U8String::U8String(std::u8string &&str)
 	validateUTF8();
 }
 
+U8String::U8String(const std::string &str)
+	: U8String(str.data()) {}
+
 U8String::U8String(const char *str) {
 	if (!str)
 		throw std::invalid_argument("Can't construct U8String with nullptr.");
@@ -49,9 +52,6 @@ U8String::U8String(const char *str) {
 	std::memcpy(m_Data.data(), str, len);
 	validateUTF8();
 }
-
-U8String::U8String(const std::string &str)
-	: U8String(str.data()) {}
 
 std::string U8String::asAscii() const {
 	std::string result;

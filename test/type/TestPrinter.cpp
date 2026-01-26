@@ -1,4 +1,5 @@
 #include "Doctest.h"
+#include "sstream"
 #include "type/Printer.h"
 
 using namespace type;

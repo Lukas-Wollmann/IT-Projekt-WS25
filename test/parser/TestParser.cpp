@@ -1,4 +1,5 @@
 #include "Doctest.h"
+#include "ast/Printer.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 
@@ -106,7 +107,8 @@ TEST_CASE("Parser: advanceToNext() finds next occurance of token") {
 }
 
 TEST_CASE("Parser: Sandbox") {
-	U8String src = u8"func a() { b<a;}";
+	U8String src = u8"func a() { 1<'b';}func a() { 1<'b';}func a() { 1<'b';}func a() { 1<'b';}func "
+				   u8"a() { 1<'b';}";
 
 	auto tokens = Lexer::tokenize(src, u8"");
 	auto module = Parser::parse(tokens, u8"test-module");

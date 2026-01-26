@@ -1,40 +1,40 @@
 #include "Operators.h"
 
-std::ostream &operator<<(std::ostream &os, const BinaryOpKind kind) {
+U8String str(BinaryOpKind kind) {
 	using enum BinaryOpKind;
 
 	switch (kind) {
-		case Addition:			 return os << "+";
-		case Subtraction:		 return os << "-";
-		case Multiplication:	 return os << "*";
-		case Division:			 return os << "/";
-		case Modulo:			 return os << "%";
-		case Equality:			 return os << "==";
-		case Inequality:		 return os << "!=";
-		case LessThan:			 return os << "<";
-		case GreaterThan:		 return os << ">";
-		case LessThanOrEqual:	 return os << "<=";
-		case GreaterThanOrEqual: return os << ">=";
-		case LogicalAnd:		 return os << "&&";
-		case LogicalOr:			 return os << "||";
-		case BitwiseAnd:		 return os << "&";
-		case BitwiseOr:			 return os << "|";
-		case BitwiseXor:		 return os << "^";
-		case LeftShift:			 return os << "<<";
-		case RightShift:		 return os << ">>";
+		case Addition:			 return u8"+";
+		case Subtraction:		 return u8"-";
+		case Multiplication:	 return u8"*";
+		case Division:			 return u8"/";
+		case Modulo:			 return u8"%";
+		case Equality:			 return u8"==";
+		case Inequality:		 return u8"!=";
+		case LessThan:			 return u8"<";
+		case GreaterThan:		 return u8">";
+		case LessThanOrEqual:	 return u8"<=";
+		case GreaterThanOrEqual: return u8">=";
+		case LogicalAnd:		 return u8"&&";
+		case LogicalOr:			 return u8"||";
+		case BitwiseAnd:		 return u8"&";
+		case BitwiseOr:			 return u8"|";
+		case BitwiseXor:		 return u8"^";
+		case LeftShift:			 return u8"<<";
+		case RightShift:		 return u8">>";
 		default:				 UNREACHABLE();
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, const UnaryOpKind kind) {
+U8String str(UnaryOpKind kind) {
 	using enum UnaryOpKind;
 
 	switch (kind) {
-		case LogicalNot:  return os << "!";
-		case BitwiseNot:  return os << "~";
-		case Positive:	  return os << "+";
-		case Negative:	  return os << "-";
-		case Dereference: return os << "*";
+		case LogicalNot:  return u8"!";
+		case BitwiseNot:  return u8"~";
+		case Positive:	  return u8"+";
+		case Negative:	  return u8"-";
+		case Dereference: return u8"*";
 		default:		  UNREACHABLE();
 	}
 }

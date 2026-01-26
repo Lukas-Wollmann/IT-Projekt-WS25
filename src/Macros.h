@@ -1,18 +1,15 @@
-#include <sstream>
 #include <stdexcept>
 
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 #define UNREACHABLE()                                                                              \
-	do {                                                                                           \
-		std::stringstream ss;                                                                      \
-		ss << __func__ << " in " << __FILE__ << ":" << __LINE__ << " should never be reachable";   \
-		throw std::logic_error(ss.str());                                                          \
-	} while (0)
+	throw std::logic_error(std::string(__func__) + " in " __FILE__                                 \
+												   ":" STR(__LINE__) " should be unreachable")
 
 #define VERIFY(expr)                                                                               \
 	do {                                                                                           \
-		if (!(expr)) {                                                                             \
-			std::stringstream ss;                                                                  \
-			ss << "Assertion failed: " << #expr << " at " << __FILE__ << ":" << __LINE__;          \
-			throw std::runtime_error(ss.str());                                                    \
-		}                                                                                          \
+		if (!(expr))                                                                               \
+			throw std::runtime_error("Assertion failed: " #expr " at " __FILE__                    \
+									 ":" STR(__LINE__));                                           \
 	} while (0)

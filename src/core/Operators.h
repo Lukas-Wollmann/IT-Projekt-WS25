@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Macros.h"
+#include "U8String.h"
 
 enum struct BinaryOpKind {
 	Addition,
@@ -25,5 +26,5 @@ enum struct BinaryOpKind {
 
 enum struct UnaryOpKind { LogicalNot, BitwiseNot, Positive, Negative, Dereference };
 
-std::ostream &operator<<(std::ostream &os, UnaryOpKind kind);
-std::ostream &operator<<(std::ostream &os, BinaryOpKind kind);
+U8String str(UnaryOpKind kind);
+U8String str(BinaryOpKind kind);
