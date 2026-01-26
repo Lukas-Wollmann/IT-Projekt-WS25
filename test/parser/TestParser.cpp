@@ -1,5 +1,4 @@
 #include "Doctest.h"
-#include "ast/Printer.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 

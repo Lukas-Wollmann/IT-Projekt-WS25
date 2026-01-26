@@ -1,5 +1,4 @@
 #include "Doctest.h"
-#include "ast/Printer.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
 #include "type/Compare.h"

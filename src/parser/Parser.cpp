@@ -5,7 +5,6 @@
 
 #include "Macros.h"
 #include "Typedef.h"
-#include "ast/Printer.h"
 #include "lexer/Token.h"
 
 using namespace ast;
@@ -13,7 +12,6 @@ using namespace type;
 using namespace lexer;
 
 namespace parser {
-
 	Parser::Parser(const Vec<Token> &tokens, U8String moduleName)
 		: m_Tokens(std::move(tokens))
 		, m_ModuleName(std::move(moduleName))
@@ -163,23 +161,20 @@ namespace parser {
 		if (m_Current->matches(TokenType::Separator, u8";")) {
 			consume(TokenType::Separator, u8";");
 
-			// TODO: Implement EmptyStmt and return here instead
-			UNREACHABLE();
+			return std::make_unique<UnitLit>();
 		}
 
 		if (m_Current->matches(TokenType::Keyword, u8"return")) {
 			consume(TokenType::Keyword, u8"return");
 
-			if (m_Current->matches(TokenType::Separator, u8";")) {
-				consume(TokenType::Separator, u8";");
+			Box<Expr> returnValue = std::make_unique<UnitLit>();
 
-				return std::make_unique<ReturnStmt>();
-			}
+			if (!m_Current->matches(TokenType::Separator, u8";"))
+				returnValue = parseExpr();
 
-			auto expr = parseExpr();
 			consume(TokenType::Separator, u8";");
 
-			return std::make_unique<ReturnStmt>(std::move(expr));
+			return std::make_unique<ReturnStmt>(std::move(returnValue));
 		}
 
 		if (m_Current->matches(TokenType::Separator, u8"{"))
@@ -506,12 +501,6 @@ namespace parser {
 			VERIFY(ident.length() == 1);
 
 			return std::make_unique<CharLit>(ident[0]);
-		}
-
-		if (m_Current->matches(TokenType::StringLiteral)) {
-			const auto &lit = consume(TokenType::StringLiteral).lexeme;
-
-			return std::make_unique<StringLit>(lit);
 		}
 
 		if (m_Current->matches(TokenType::IntLiteral)) {

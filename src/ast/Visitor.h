@@ -20,15 +20,11 @@ namespace ast {
 		T dispatch(Constness<Node> &node) {
 			switch (node.kind) {
 				case NodeKind::IntLit:	   return visit(static_cast<Constness<IntLit> &>(node));
-				case NodeKind::FloatLit:   return visit(static_cast<Constness<FloatLit> &>(node));
 				case NodeKind::CharLit:	   return visit(static_cast<Constness<CharLit> &>(node));
 				case NodeKind::BoolLit:	   return visit(static_cast<Constness<BoolLit> &>(node));
-				case NodeKind::StringLit:  return visit(static_cast<Constness<StringLit> &>(node));
 				case NodeKind::UnitLit:	   return visit(static_cast<Constness<UnitLit> &>(node));
-				case NodeKind::ArrayExpr:  return visit(static_cast<Constness<ArrayExpr> &>(node));
 				case NodeKind::UnaryExpr:  return visit(static_cast<Constness<UnaryExpr> &>(node));
 				case NodeKind::BinaryExpr: return visit(static_cast<Constness<BinaryExpr> &>(node));
-				case NodeKind::HeapAlloc:  return visit(static_cast<Constness<HeapAlloc> &>(node));
 				case NodeKind::Assignment: return visit(static_cast<Constness<Assignment> &>(node));
 				case NodeKind::FuncCall:   return visit(static_cast<Constness<FuncCall> &>(node));
 				case NodeKind::VarRef:	   return visit(static_cast<Constness<VarRef> &>(node));
@@ -47,10 +43,6 @@ namespace ast {
 			UNREACHABLE();
 		}
 
-		virtual T visit(Constness<FloatLit> &) {
-			UNREACHABLE();
-		}
-
 		virtual T visit(Constness<CharLit> &) {
 			UNREACHABLE();
 		}
@@ -59,15 +51,7 @@ namespace ast {
 			UNREACHABLE();
 		}
 
-		virtual T visit(Constness<StringLit> &) {
-			UNREACHABLE();
-		}
-
 		virtual T visit(Constness<UnitLit> &) {
-			UNREACHABLE();
-		}
-
-		virtual T visit(Constness<ArrayExpr> &) {
 			UNREACHABLE();
 		}
 
@@ -76,10 +60,6 @@ namespace ast {
 		}
 
 		virtual T visit(Constness<BinaryExpr> &) {
-			UNREACHABLE();
-		}
-
-		virtual T visit(Constness<HeapAlloc> &) {
 			UNREACHABLE();
 		}
 

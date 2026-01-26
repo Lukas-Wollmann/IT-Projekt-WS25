@@ -15,11 +15,6 @@ namespace codegen {
 		return llvm::ConstantInt::get(type, n.value);
 	}
 
-	llvm::Value *RValueCodeGen::visit(const FloatLit &n) {
-		auto type = llvm::Type::getFloatTy(m_Context.getLLVMContext());
-		return llvm::ConstantFP::get(type, n.value);
-	}
-
 	llvm::Value *RValueCodeGen::visit(const BoolLit &n) {
 		auto type = llvm::Type::getInt1Ty(m_Context.getLLVMContext());
 		return llvm::ConstantInt::get(type, n.value);
@@ -55,9 +50,9 @@ namespace codegen {
 			case LogicalNot:
 				if (*type == Typename(u8"bool"))
 					return builder.CreateNot(value);
-                UNREACHABLE();
+				UNREACHABLE();
 
-            case BitwiseNot:
+			case BitwiseNot:
 				if (*type == Typename(u8"i32"))
 					return builder.CreateNot(value);
 				if (*type == Typename(u8"u32"))

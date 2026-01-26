@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Typedef.h"
 #include "core/Operators.h"
 #include "core/U8String.h"
@@ -7,15 +8,11 @@
 namespace ast {
 	enum struct NodeKind {
 		IntLit,
-		FloatLit,
 		CharLit,
 		BoolLit,
-		StringLit,
 		UnitLit,
-		ArrayExpr,
 		UnaryExpr,
 		BinaryExpr,
-		HeapAlloc,
 		Assignment,
 		VarRef,
 		FuncCall,
@@ -37,6 +34,9 @@ namespace ast {
 		const NodeKind kind;
 
 		virtual ~Node() = default;
+
+		virtual void print(std::ostream &os, const U8String &prefix = u8"",
+						   bool isLast = true) const = 0;
 
 	protected:
 		explicit Node(NodeKind kind);
@@ -62,41 +62,34 @@ namespace ast {
 		const i32 value;
 
 		explicit IntLit(i32 value);
-	};
 
-	struct FloatLit : Expr {
-		const f32 value;
-
-		explicit FloatLit(f32 value);
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct CharLit : Expr {
 		const char32_t value;
 
 		explicit CharLit(char32_t value);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct BoolLit : Expr {
 		const bool value;
 
 		explicit BoolLit(bool value);
-	};
 
-	struct StringLit : Expr {
-		const U8String value;
-
-		explicit StringLit(U8String value);
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct UnitLit : Expr {
 		UnitLit();
-	};
 
-	struct ArrayExpr : Expr {
-		const type::TypePtr elementType;
-		const Vec<Box<Expr>> values;
-
-		ArrayExpr(type::TypePtr elementType, Vec<Box<Expr>> values);
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct UnaryExpr : Expr {
@@ -104,6 +97,9 @@ namespace ast {
 		const Box<Expr> operand;
 
 		UnaryExpr(UnaryOpKind op, Box<Expr> operand);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct BinaryExpr : Expr {
@@ -111,6 +107,9 @@ namespace ast {
 		const Box<Expr> left, right;
 
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	enum struct AssignmentKind {
@@ -127,23 +126,23 @@ namespace ast {
 		RightShift,
 	};
 
-	struct HeapAlloc : Expr {
-		const Box<Expr> expr;
-
-		explicit HeapAlloc(Box<Expr> expr);
-	};
-
 	struct Assignment : Expr {
 		const AssignmentKind assignmentKind;
 		const Box<Expr> left, right;
 
 		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct VarRef : Expr {
 		const U8String ident;
 
 		explicit VarRef(U8String ident);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct FuncCall : Expr {
@@ -151,12 +150,18 @@ namespace ast {
 		const Vec<Box<Expr>> args;
 
 		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct BlockStmt : Stmt {
 		const Vec<Box<Stmt>> stmts;
 
 		explicit BlockStmt(Vec<Box<Stmt>> stmts);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct IfStmt : Stmt {
@@ -165,6 +170,9 @@ namespace ast {
 		const Box<BlockStmt> else_;
 
 		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct WhileStmt : Stmt {
@@ -172,12 +180,18 @@ namespace ast {
 		const Box<BlockStmt> body;
 
 		WhileStmt(Box<Expr> cond, Box<BlockStmt> body);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct ReturnStmt : Stmt {
-		const Opt<Box<Expr>> expr;
+		const Box<Expr> expr;
 
-		explicit ReturnStmt(Opt<Box<Expr>> expr = std::nullopt);
+		explicit ReturnStmt(Box<Expr> expr);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct VarDef : Stmt {
@@ -186,6 +200,9 @@ namespace ast {
 		const Box<Expr> value;
 
 		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	using Param = Pair<U8String, type::TypePtr>;
@@ -197,6 +214,9 @@ namespace ast {
 		const Box<BlockStmt> body;
 
 		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	struct Module : Node {
@@ -204,9 +224,13 @@ namespace ast {
 		const Vec<Box<FuncDecl>> decls;
 
 		Module(U8String name, Vec<Box<FuncDecl>> decls);
+
+		void print(std::ostream &os, const U8String &prefix = u8"",
+				   bool isLast = true) const override;
 	};
 
 	std::ostream &operator<<(std::ostream &os, NodeKind kind);
 	std::ostream &operator<<(std::ostream &os, AssignmentKind kind);
 	std::ostream &operator<<(std::ostream &os, ValueCategory cat);
+	std::ostream &operator<<(std::ostream &os, const Node &n);
 }

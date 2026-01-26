@@ -22,12 +22,6 @@ namespace semantic {
 		addBinaryOperator(u8"i32", u8"i32", Division, u8"i32");
 		addBinaryOperator(u8"i32", u8"i32", Modulo, u8"i32");
 
-		addBinaryOperator(u8"u32", u8"u32", Addition, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", Subtraction, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", Multiplication, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", Division, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", Modulo, u8"u32");
-
 		// Comparison Binary Operators
 		addBinaryOperator(u8"bool", u8"bool", Equality, u8"bool");
 		addBinaryOperator(u8"bool", u8"bool", Inequality, u8"bool");
@@ -41,13 +35,6 @@ namespace semantic {
 		addBinaryOperator(u8"i32", u8"i32", GreaterThan, u8"bool");
 		addBinaryOperator(u8"i32", u8"i32", GreaterThanOrEqual, u8"bool");
 
-		addBinaryOperator(u8"u32", u8"u32", Equality, u8"bool");
-		addBinaryOperator(u8"u32", u8"u32", Inequality, u8"bool");
-		addBinaryOperator(u8"u32", u8"u32", LessThan, u8"bool");
-		addBinaryOperator(u8"u32", u8"u32", LessThanOrEqual, u8"bool");
-		addBinaryOperator(u8"u32", u8"u32", GreaterThan, u8"bool");
-		addBinaryOperator(u8"u32", u8"u32", GreaterThanOrEqual, u8"bool");
-
 		// Logical Binary Operators
 		addBinaryOperator(u8"bool", u8"bool", LogicalAnd, u8"bool");
 		addBinaryOperator(u8"bool", u8"bool", LogicalOr, u8"bool");
@@ -59,24 +46,15 @@ namespace semantic {
 		addBinaryOperator(u8"i32", u8"i32", LeftShift, u8"i32");
 		addBinaryOperator(u8"i32", u8"i32", RightShift, u8"i32");
 
-		addBinaryOperator(u8"u32", u8"u32", BitwiseAnd, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", BitwiseOr, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", BitwiseXor, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", LeftShift, u8"u32");
-		addBinaryOperator(u8"u32", u8"u32", RightShift, u8"u32");
-
 		// Unary Arithmetic Operators
 		addUnaryOperator(u8"i32", Positive, u8"i32");
 		addUnaryOperator(u8"i32", Negative, u8"i32");
-
-		addUnaryOperator(u8"u32", Positive, u8"u32");
 
 		// Unary Logical Operators
 		addUnaryOperator(u8"bool", LogicalNot, u8"bool");
 
 		// Unary Bitwise Operators
 		addUnaryOperator(u8"i32", BitwiseNot, u8"i32");
-		addUnaryOperator(u8"u32", BitwiseNot, u8"u32");
 
 		// Dereference handled in type-checker explicitly, it is not a normal
 		// operator as it works on all operand types that are a PointerType.

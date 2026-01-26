@@ -10,52 +10,51 @@ namespace codegen {
 	using namespace type;
 	using namespace ast;
 
-    void CodeGen::generate(std::ostream &os, const ast::Module &module) {
-        CodeGenContext ctx(module.name);
-        CodeGen gen(ctx);
+	void CodeGen::generate(std::ostream &os, const ast::Module &module) {
+		CodeGenContext ctx(module.name);
+		CodeGen gen(ctx);
 
-        gen.dispatch(module);
+		gen.dispatch(module);
 
-        llvm::raw_os_ostream llvmOS(os);
+		llvm::raw_os_ostream llvmOS(os);
 		ctx.getLLVMModule().print(llvmOS, nullptr);
-    }
+	}
 
-    CodeGen::CodeGen(CodeGenContext &ctx)
-    : m_Context(ctx)
-    , m_RValueCodeGen(m_Context)
-    , m_LValueCodeGen(m_Context) {}
+	CodeGen::CodeGen(CodeGenContext &ctx)
+		: m_Context(ctx)
+		, m_RValueCodeGen(m_Context)
+		, m_LValueCodeGen(m_Context) {}
 
-    // a[1] =a[1] *  1;
+	// a[1] =a[1] *  1;
 
 	void CodeGen::visit(const Assignment &n) {
 		using enum AssignmentKind;
-        
-        auto left = m_LValueCodeGen.dispatch(*n.left);
-        auto rvalueLeft = m_RValueCodeGen.dispatch(*n.left);
-		
-        auto right = m_RValueCodeGen.dispatch(*n.right);
 
-        auto leftType = n.left->inferredType.value();
-        auto &builder = m_Context.getIRBuilder();
+		auto left = m_LValueCodeGen.dispatch(*n.left);
+		auto rvalueLeft = m_RValueCodeGen.dispatch(*n.left);
 
-        llvm::Value *res = nullptr;
+		auto right = m_RValueCodeGen.dispatch(*n.right);
 
-        switch (n.assignmentKind) {
-            case Simple:
-                res = left;
-                break;
-            
-            case Addition:
+		auto leftType = n.left->inferredType.value();
+		auto &builder = m_Context.getIRBuilder();
+
+		llvm::Value *res = nullptr;
+
+		switch (n.assignmentKind) {
+			case Simple: res = left; break;
+
+			case Addition:
 				if (*leftType == Typename(u8"i32"))
-					res = builder.CreateAdd(rvalueLeft , right);
+					res = builder.CreateAdd(rvalueLeft, right);
 				else if (*leftType == Typename(u8"u32"))
 					res = builder.CreateAdd(rvalueLeft, right);
 				else if (*leftType == Typename(u8"f32"))
 					res = builder.CreateFAdd(rvalueLeft, right);
 				else if (*leftType == Typename(u8"string"))
 					UNREACHABLE(); // TODO: Implement string concatination here
-				else UNREACHABLE();
-                break;
+				else
+					UNREACHABLE();
+				break;
 
 			case Subtraction:
 				if (*leftType == Typename(u8"i32"))
@@ -64,8 +63,9 @@ namespace codegen {
 					res = builder.CreateSub(rvalueLeft, right);
 				else if (*leftType == Typename(u8"f32"))
 					res = builder.CreateFSub(rvalueLeft, right);
-				else UNREACHABLE();
-                break;
+				else
+					UNREACHABLE();
+				break;
 
 			case Multiplication:
 				if (*leftType == Typename(u8"i32"))
@@ -74,8 +74,9 @@ namespace codegen {
 					res = builder.CreateMul(rvalueLeft, right);
 				else if (*leftType == Typename(u8"f32"))
 					res = builder.CreateFMul(rvalueLeft, right);
-				else UNREACHABLE();
-                break;
+				else
+					UNREACHABLE();
+				break;
 
 			case Division:
 				if (*leftType == Typename(u8"i32"))
@@ -84,28 +85,29 @@ namespace codegen {
 					res = builder.CreateUDiv(rvalueLeft, right);
 				else if (*leftType == Typename(u8"f32"))
 					res = builder.CreateFDiv(rvalueLeft, right);
-				else UNREACHABLE();
-                break;
+				else
+					UNREACHABLE();
+				break;
 
 			case Modulo:
 				if (*leftType == Typename(u8"i32"))
 					res = builder.CreateSRem(rvalueLeft, right);
 				else if (*leftType == Typename(u8"u32"))
 					res = builder.CreateURem(rvalueLeft, right);
-				else UNREACHABLE();
-                break;
+				else
+					UNREACHABLE();
+				break;
 
-		    case BitwiseAnd:
-		    case BitwiseOr:
-		    case BitwiseXor:
-		    case LeftShift:
-		    case RightShift:
-                UNREACHABLE(); // TODO: Implement this stuff
+			case BitwiseAnd:
+			case BitwiseOr:
+			case BitwiseXor:
+			case LeftShift:
+			case RightShift: UNREACHABLE(); // TODO: Implement this stuff
 
-            default: UNREACHABLE();
-        }
+			default:		 UNREACHABLE();
+		}
 
-        builder.CreateStore(res, left);
+		builder.CreateStore(res, left);
 	}
 
 	void CodeGen::visit(const BlockStmt &n) {
@@ -180,15 +182,8 @@ namespace codegen {
 
 	void CodeGen::visit(const ReturnStmt &n) {
 		auto &builder = m_Context.getIRBuilder();
-
-		if (n.expr.has_value()) {
-			auto returnValue = m_RValueCodeGen.dispatch(*n.expr.value());
-			builder.CreateRet(returnValue);
-		} else {
-			// We need to return a Unit,
-			auto unitType = llvm::Type::getInt1Ty(m_Context.getLLVMContext());
-			builder.CreateRet(llvm::ConstantInt::get(unitType, 0));
-		}
+		auto returnValue = m_RValueCodeGen.dispatch(*n.expr);
+		builder.CreateRet(returnValue);
 	}
 
 	void CodeGen::visit(const VarDef &n) {

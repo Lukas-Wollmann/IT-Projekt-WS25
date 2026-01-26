@@ -24,15 +24,11 @@ namespace semantic {
 	private:
 		bool visit(ast::Module &n) override;
 		bool visit(ast::IntLit &n) override;
-		bool visit(ast::FloatLit &n) override;
 		bool visit(ast::CharLit &n) override;
 		bool visit(ast::BoolLit &n) override;
-		bool visit(ast::StringLit &n) override;
 		bool visit(ast::UnitLit &n) override;
-		bool visit(ast::ArrayExpr &n) override;
 		bool visit(ast::UnaryExpr &n) override;
 		bool visit(ast::BinaryExpr &n) override;
-		bool visit(ast::HeapAlloc &n) override;
 		bool visit(ast::Assignment &n) override;
 		bool visit(ast::FuncCall &n) override;
 		bool visit(ast::VarRef &n) override;

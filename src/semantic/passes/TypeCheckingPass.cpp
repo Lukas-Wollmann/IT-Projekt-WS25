@@ -19,10 +19,6 @@ namespace semantic {
 		return false;
 	}
 
-	bool TypeCheckingPass::visit(FloatLit &n) {
-		UNREACHABLE(); // TODO: Not yet implemented
-	}
-
 	bool TypeCheckingPass::visit(CharLit &n) {
 		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<Typename>(u8"char"), ValueCategory::RValue);
@@ -35,18 +31,10 @@ namespace semantic {
 		return false;
 	}
 
-	bool TypeCheckingPass::visit(StringLit &n) {
-		UNREACHABLE(); // TODO: Not yet implemented
-	}
-
 	bool TypeCheckingPass::visit(UnitLit &n) {
 		VERIFY(!n.isInferred());
 		n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
 		return false;
-	}
-
-	bool TypeCheckingPass::visit(ArrayExpr &n) {
-		UNREACHABLE(); // TODO: Not yet implemented
 	}
 
 	bool TypeCheckingPass::visit(UnaryExpr &n) {
@@ -110,11 +98,6 @@ namespace semantic {
 
 		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
-	}
-
-	bool TypeCheckingPass::visit(HeapAlloc &n) {
-		// TODO: Not yet implemented
-		UNREACHABLE();
 	}
 
 	bool TypeCheckingPass::visit(Assignment &n) {
@@ -256,13 +239,7 @@ namespace semantic {
 	bool TypeCheckingPass::visit(ReturnStmt &n) {
 		VERIFY(m_CurrentFunctionReturnType.has_value());
 		const auto currentFuncRetType = m_CurrentFunctionReturnType.value();
-
-		// The function has a Unit return type, and we returned with no value.
-		if (currentFuncRetType->isTypeKind(TypeKind::Unit) && !n.expr.has_value())
-			return true;
-
-		auto &expr = *n.expr.value();
-		const auto type = checkExpression(expr);
+		const auto type = checkExpression(*n.expr);
 
 		// If the type is <error-type> or if the return type matches
 		// the function declaration, it's okay and a valid return.
