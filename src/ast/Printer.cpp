@@ -93,7 +93,7 @@ namespace ast {
 
 		for (size_t i = 0; i < n.stmts.size(); ++i) {
 			const auto isLast = i + 1 == n.stmts.size();
-			child(i + 1 == n.stmts.size()).printNode(*n.stmts[i]);
+			child(isLast).printNode(*n.stmts[i]);
 		}
 	}
 
