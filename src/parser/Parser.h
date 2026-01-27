@@ -1,5 +1,6 @@
 #pragma once
 #include "ast/AST.h"
+#include "core/Operators.h"
 #include "lexer/Token.h"
 #include "type/Type.h"
 
@@ -48,6 +49,6 @@ namespace parser {
 		Box<ast::Expr> parsePrimaryExpr();
 		Vec<Box<ast::Expr>> parseExprList();
 
-		ast::AssignmentKind getAssignmentKindFromString(const U8String &str) const;
+		AssignmentKind getAssignmentKindFromString(const U8String &str) const;
 	};
 }

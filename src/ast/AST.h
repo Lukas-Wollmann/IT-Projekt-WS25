@@ -91,20 +91,6 @@ namespace ast {
 		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
 	};
 
-	enum struct AssignmentKind {
-		Simple,
-		Addition,
-		Subtraction,
-		Multiplication,
-		Division,
-		Modulo,
-		BitwiseAnd,
-		BitwiseOr,
-		BitwiseXor,
-		LeftShift,
-		RightShift,
-	};
-
 	struct Assignment : Expr {
 		const AssignmentKind assignmentKind;
 		const Box<Expr> left, right;
@@ -177,8 +163,4 @@ namespace ast {
 
 		Module(U8String name, Vec<Box<FuncDecl>> decls);
 	};
-
-	U8String str(NodeKind kind);
-	U8String str(AssignmentKind kind);
-	U8String str(ValueCategory cat);
 }

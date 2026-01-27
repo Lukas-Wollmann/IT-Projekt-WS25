@@ -1,6 +1,7 @@
 #pragma once
 #include <utf8cpp/utf8.h>
 
+#include <format>
 #include <iostream>
 #include <string>
 
@@ -59,5 +60,17 @@ struct std::hash<U8String> {
 		const auto bytes = reinterpret_cast<const char *>(u8.data());
 
 		return std::hash<std::string_view>{}(std::string_view(bytes, u8.size()));
+	}
+};
+
+template <>
+struct std::formatter<U8String> {
+	constexpr auto parse(std::format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const U8String &s, std::format_context &ctx) const {
+		const auto &data = s.data();
+		return std::copy(data.begin(), data.end(), ctx.out());
 	}
 };

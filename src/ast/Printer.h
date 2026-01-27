@@ -1,19 +1,23 @@
 #pragma once
 
+#include <format>
+
 #include "AST.h"
 #include "Visitor.h"
 
 namespace ast {
 	struct ASTPrinter : public ConstVisitor<void> {
+		using Iterator = std::format_context::iterator;
+
 	private:
-		std::ostream &m_OStream;
+		Iterator m_Out;
 		U8String m_Prefix;
 		bool m_IsLast;
 
 	public:
-		ASTPrinter(std::ostream &os);
+		ASTPrinter(Iterator out);
 
-		void print(const Node &node);
+		Iterator printNode(const Node &n);
 
 	private:
 		void printLine(const U8String &text);
@@ -40,3 +44,14 @@ namespace ast {
 
 	std::ostream &operator<<(std::ostream &os, const Node &n);
 }
+
+template <>
+struct std::formatter<ast::Node> {
+	constexpr auto parse(format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const ast::Node &n, format_context &ctx) const {
+		return ast::ASTPrinter(ctx.out()).printNode(n);
+	}
+};
