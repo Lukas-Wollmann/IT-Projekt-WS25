@@ -1,5 +1,6 @@
 #pragma once
 #include "ast/AST.h"
+#include "core/ErrorHandler.h"
 #include "core/Operators.h"
 #include "lexer/Token.h"
 #include "type/Type.h"
@@ -11,16 +12,16 @@ namespace parser {
 
 	struct Parser {
 		using TokenIter = Vec<lexer::Token>::const_iterator;
-		using ParsingRes = Pair<Box<ast::Module>, Vec<U8String>>;
 
 		const Vec<lexer::Token> &m_Tokens;
 		const U8String m_ModuleName;
-		Vec<U8String> m_Errors;
+		ErrorHandler &m_ErrorHandler;
 		TokenIter m_Current;
 
-		Parser(const Vec<lexer::Token> &tokens, U8String moduleName);
+		Parser(const Vec<lexer::Token> &tokens, ErrorHandler &err, U8String moduleName);
 
-		static ParsingRes parse(const Vec<lexer::Token> &tokens, U8String moduleName);
+		static Box<ast::Module> parse(const Vec<lexer::Token> &tokens, ErrorHandler &err,
+									  U8String moduleName);
 
 		const lexer::Token &peek() const;
 		void advance();

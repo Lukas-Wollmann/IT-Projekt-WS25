@@ -6,16 +6,10 @@ LLVM_LIBS     := $(shell $(LLVM_CONFIG) --libs all)
 
 CXX := clang++
 
-CXXFLAGS := -g \
-			-O0 \
-            $(LLVM_CXXFLAGS) \
-            -Wall -Wextra -Werror \
-			-Wno-unused-parameter \
-            -Wno-error=unused-parameter \
-            -Wno-error=unused-variable \
-            -Wno-error=deprecated-declarations \
-            -std=c++20 \
-            -fexceptions
+CXXFLAGS := -g -O0 $(LLVM_CXXFLAGS) -Wall -Wextra -Werror \
+			-Wno-unused-parameter -Wno-error=unused-parameter \
+            -Wno-error=unused-variable -Wno-error=deprecated-declarations \
+            -std=c++20 -fexceptions -MMD -MP
 
 
 SRC_DIR := src
@@ -37,6 +31,7 @@ TEST_SRCS := $(filter-out $(SRC_DIR)/main.cpp, \
              $(SRCS) $(shell find $(TEST_DIR) -name '*.cpp'))
 
 OBJS := $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
+DEPS := $(OBJS:.o=.d) $(TEST_OBJS:.o=.d)
 TEST_OBJS := $(TEST_SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 # ---------- build rules ----------
@@ -66,3 +61,5 @@ clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 .PHONY: all run test clean
+
+-include $(DEPS)

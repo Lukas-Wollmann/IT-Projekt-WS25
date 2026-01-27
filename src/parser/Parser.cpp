@@ -12,15 +12,17 @@ using namespace type;
 using namespace lexer;
 
 namespace parser {
-	Parser::Parser(const Vec<Token> &tokens, U8String moduleName)
+	Parser::Parser(const Vec<Token> &tokens, ErrorHandler &err, U8String moduleName)
 		: m_Tokens(std::move(tokens))
 		, m_ModuleName(std::move(moduleName))
+		, m_ErrorHandler(err)
 		, m_Current(tokens.begin()) {}
 
-	Parser::ParsingRes Parser::parse(const Vec<lexer::Token> &tokens, U8String moduleName) {
-		Parser parser(tokens, std::move(moduleName));
+	Box<Module> Parser::parse(const Vec<lexer::Token> &tokens, ErrorHandler &err,
+							  U8String moduleName) {
+		Parser parser(tokens, err, std::move(moduleName));
 
-		return ParsingRes(parser.parseModule(), parser.m_Errors);
+		return parser.parseModule();
 	}
 
 	const Token &Parser::peek() const {
@@ -64,7 +66,7 @@ namespace parser {
 	}
 
 	void Parser::reportError(const ParsingError &e) {
-		m_Errors.push_back(std::move(e.message));
+		m_ErrorHandler.addError(ErrorLevel::ERROR, std::move(e.message), {});
 	}
 
 	void Parser::advanceToNext(lexer::TokenType type, U8String lexeme) {

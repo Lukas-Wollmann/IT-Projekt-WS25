@@ -5,15 +5,13 @@
 #include "Macros.h"
 
 namespace lexer {
-	Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc,
-				 const TokenError error)
+	Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc)
 		: type(type)
 		, lexeme(std::move(lexeme))
-		, loc(loc)
-		, error(error) {}
+		, loc(loc) {}
 
 	bool Token::matches(TokenType otherType, U8String otherLexeme) const {
-		return type == otherType && lexeme == otherLexeme && error == TokenError::None;
+		return type == otherType && lexeme == otherLexeme;
 	}
 
 	bool Token::matches(TokenType otherType) const {
@@ -58,25 +56,7 @@ namespace lexer {
 		}
 	}
 
-	std::ostream &operator<<(std::ostream &os, TokenError error) {
-		using enum TokenError;
-
-		switch (error) {
-			case None:						 return os << "None";
-			case UnterminatedStringLiteral:	 return os << "UnterminatedStringLiteral";
-			case UnterminatedBlockComment:	 return os << "UnterminatedBlockComment";
-			case UnterminatedCharLiteral:	 return os << "UnterminatedCharLiteral";
-			case EmptyCharLiteral:			 return os << "EmptyCharLiteral";
-			case MultipleCharsInCharLiteral: return os << "MultipleCharsInCharLiteral";
-			case InvalidEscapeSequence:		 return os << "InvalidEscapeSequence";
-			case IllegalIdentifier:			 return os << "IllegalIdentifier";
-			default:						 UNREACHABLE();
-		}
-	}
-
 	std::ostream &operator<<(std::ostream &os, const Token &token) {
-		os << "Token(" << token.type << ", " << token.lexeme << ", ";
-		os << token.loc << ", " << token.error << ")";
-		return os;
+		return os << "Token(" << token.type << ", " << token.lexeme << ", " << token.loc << ")";
 	}
 }

@@ -17,18 +17,24 @@ namespace lexer {
 
 	const U8String s_Keywords[] = {u8"if", u8"else", u8"while", u8"return", u8"func", u8"new"};
 
-	Vec<Token> Lexer::tokenize(const U8String &source, const bool comments) {
+	Vec<Token> Lexer::tokenize(const U8String &source, ErrorHandler &err) {
 		Vec<Token> tokens;
 		Lexer lexer(source);
 
 		while (true) {
-			Token token = lexer.nextToken();
+			try {
+				const auto token = lexer.nextToken();
 
-			if (comments || token.type != TokenType::Comment)
-				tokens.push_back(token);
+				if (!token.matches(TokenType::Comment))
+					tokens.push_back(token);
 
-			if (token.type == TokenType::EndOfFile)
-				break;
+				if (token.matches(TokenType::EndOfFile))
+					break;
+
+			} catch (const LexerError &e) {
+				tokens.push_back(e.token);
+				err.addTokenError(e.token, e.message);
+			}
 		}
 
 		return tokens;
@@ -38,7 +44,7 @@ namespace lexer {
 		: m_Source(source)
 		, m_Iter(m_Source.begin())
 		, m_Current(m_Source.empty() ? '\0' : *m_Iter)
-		, m_CurrentLoc(1, 1, 0) {}
+		, m_CurrentLoc(1, 1, 0, 0) {}
 
 	Token Lexer::nextToken() {
 		skipWhitespace();
@@ -56,11 +62,18 @@ namespace lexer {
 											 &Lexer::tryLexSeparator};
 
 		for (const auto fn : funcs) {
-			if (auto token = (this->*fn)())
+			if (const auto token = (this->*fn)())
 				return token.value();
 		}
 
 		return lexIllegal();
+	}
+
+	SourceLoc Lexer::offset(SourceLoc loc) const {
+		VERIFY(loc.index <= m_CurrentLoc.index);
+		loc.length = m_CurrentLoc.index - loc.index;
+
+		return loc;
 	}
 
 	bool Lexer::isAtEnd() const {
@@ -132,10 +145,9 @@ namespace lexer {
 		if (!(util::isAlpha(m_Current) || m_Current == U'_'))
 			return {};
 
-		SourceLoc start = m_CurrentLoc;
-		U8String lexeme;
+		const auto start = m_CurrentLoc;
+		U8String lexeme = m_Current;
 
-		lexeme += m_Current;
 		advance();
 
 		while (util::isAlNum(m_Current) || m_Current == U'_') {
@@ -143,46 +155,50 @@ namespace lexer {
 			advance();
 		}
 
+		const auto loc = offset(start);
+
 		if (lexeme == u8"true" || lexeme == u8"false")
-			return Token(TokenType::BoolLiteral, std::move(lexeme), start);
+			return Token(TokenType::BoolLiteral, std::move(lexeme), loc);
 
 		const auto begin = std::begin(s_Keywords);
 		const auto end = std::end(s_Keywords);
 		const auto it = std::find(begin, end, lexeme);
 		const auto type = it == end ? TokenType::Identifier : TokenType::Keyword;
 
-		return Token(type, std::move(lexeme), start);
+		return Token(type, std::move(lexeme), loc);
 	}
 
 	Opt<Token> Lexer::tryLexIntLiteral() {
 		if (!util::isNum(m_Current))
 			return {};
 
-		SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		U8String lexeme;
 
 		while (util::isNum(m_Current)) {
-			lexeme += U8String(m_Current);
+			lexeme += m_Current;
 			advance();
 		}
 
-		return Token(TokenType::IntLiteral, std::move(lexeme), start);
+		return Token(TokenType::IntLiteral, std::move(lexeme), offset(start));
 	}
 
 	Opt<Token> Lexer::tryLexStringLiteral() {
 		if (m_Current != U'"')
 			return {};
 
-		advance();
-
-		SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		U8String lexeme;
+
+		advance();
 
 		bool escape = false;
 		while (m_Current != U'"' || escape) {
-			if (isAtEnd() || m_Current == U'\n')
-				return Token(TokenType::Illegal, std::move(lexeme), start,
-							 TokenError::UnterminatedStringLiteral);
+			if (isAtEnd() || m_Current == U'\n') {
+				Token token(TokenType::Illegal, std::move(lexeme), offset(start));
+
+				throw LexerError(u8"String literal was never terminated.", token);
+			}
 
 			if (m_Current == U'\\' && !escape) {
 				escape = true;
@@ -191,7 +207,7 @@ namespace lexer {
 				continue;
 			}
 
-			const char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
+			const auto escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
 			escape = false;
 
 			lexeme += escapedChar;
@@ -200,7 +216,7 @@ namespace lexer {
 
 		advance();
 
-		return Token(TokenType::StringLiteral, std::move(lexeme), start);
+		return Token(TokenType::StringLiteral, std::move(lexeme), offset(start));
 	}
 
 	Opt<Token> Lexer::tryLexCharLiteral() {
@@ -209,14 +225,16 @@ namespace lexer {
 
 		advance();
 
-		const SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		U8String lexeme;
 
 		bool escape = false;
 		while (m_Current != U'\'' || escape) {
-			if (isAtEnd() || m_Current == U'\n')
-				return Token(TokenType::Illegal, std::move(lexeme), start,
-							 TokenError::UnterminatedCharLiteral);
+			if (isAtEnd() || m_Current == U'\n') {
+				Token token(TokenType::Illegal, std::move(lexeme), offset(start));
+
+				throw LexerError(u8"Char literal was never terminated.", token);
+			}
 
 			if (m_Current == U'\\' && !escape) {
 				escape = true;
@@ -225,7 +243,7 @@ namespace lexer {
 				continue;
 			}
 
-			const char32_t escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
+			const auto escapedChar = escape ? getEscapedChar(m_Current) : m_Current;
 			escape = false;
 
 			lexeme += escapedChar;
@@ -233,16 +251,18 @@ namespace lexer {
 		}
 
 		advance();
+		const auto loc = offset(start);
 
 		if (lexeme.empty())
-			return Token(TokenType::Illegal, std::move(lexeme), start,
-						 TokenError::EmptyCharLiteral);
+			throw LexerError(u8"Char literal is empty.", {TokenType::Illegal, u8"", loc});
 
-		if (lexeme.length() > 1)
-			return Token(TokenType::Illegal, std::move(lexeme), start,
-						 TokenError::MultipleCharsInCharLiteral);
+		if (lexeme.length() > 1) {
+			Token token(TokenType::Illegal, std::move(lexeme), loc);
 
-		return Token(TokenType::CharLiteral, std::move(lexeme), start);
+			throw LexerError(u8"Char literal has multiple chars.", token);
+		}
+
+		return Token(TokenType::CharLiteral, std::move(lexeme), loc);
 	}
 
 	Opt<Token> Lexer::tryLexSeparator() {
@@ -252,45 +272,47 @@ namespace lexer {
 		if (std::find(begin, end, m_Current) == end)
 			return {};
 
-		const SourceLoc start = m_CurrentLoc;
-		const char32_t separator = m_Current;
+		const auto start = m_CurrentLoc;
+		const auto separator = m_Current;
 		advance();
 
-		return Token(TokenType::Separator, separator, start);
+		return Token(TokenType::Separator, separator, offset(start));
 	}
 
 	Opt<Token> Lexer::tryLexSingleLineComment() {
 		if (!(m_Current == U'/' && peek() == U'/'))
 			return {};
 
-		advance();
-		advance();
-
-		const SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		U8String lexeme;
+
+		advance();
+		advance();
 
 		while (m_Current != U'\n' && !isAtEnd()) {
 			lexeme += m_Current;
 			advance();
 		}
 
-		return Token(TokenType::Comment, std::move(lexeme), start);
+		return Token(TokenType::Comment, std::move(lexeme), offset(start));
 	}
 
 	Opt<Token> Lexer::tryLexMultiLineComment() {
 		if (!(m_Current == U'/' && peek() == U'*'))
 			return {};
 
-		advance();
-		advance();
-
-		const SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		U8String lexeme;
 
+		advance();
+		advance();
+
 		while (!(m_Current == U'*' && peek() == U'/')) {
-			if (isAtEnd())
-				return Token(TokenType::Illegal, std::move(lexeme), start,
-							 TokenError::UnterminatedBlockComment);
+			if (isAtEnd()) {
+				Token token(TokenType::Illegal, std::move(lexeme), offset(start));
+
+				throw LexerError(u8"Multiline comment was never closed.", token);
+			}
 
 			lexeme += m_Current;
 			advance();
@@ -299,14 +321,14 @@ namespace lexer {
 		advance();
 		advance();
 
-		return Token(TokenType::Comment, std::move(lexeme), start);
+		return Token(TokenType::Comment, std::move(lexeme), offset(start));
 	}
 
 	Opt<Token> Lexer::tryLexOperator() {
-		const SourceLoc start = m_CurrentLoc;
+		const auto start = m_CurrentLoc;
 		Opt<Ref<const U8String>> bestMatch = {};
 
-		for (auto &op : s_Operators) {
+		for (const auto &op : s_Operators) {
 			if (!doesMatch(op))
 				continue;
 
@@ -317,20 +339,20 @@ namespace lexer {
 		if (!bestMatch.has_value())
 			return {};
 
-		const size_t len = bestMatch.value().get().length();
+		const auto len = bestMatch.value().get().length();
 
 		for (size_t i = 0; i < len; ++i)
 			advance();
 
-		return Token(TokenType::Operator, bestMatch.value().get(), start);
+		return Token(TokenType::Operator, bestMatch.value().get(), offset(start));
 	}
 
 	Token Lexer::lexIllegal() {
-		const SourceLoc start = m_CurrentLoc;
-		const U8String lexeme = m_Current;
+		const auto start = m_CurrentLoc;
+		const auto lexeme = m_Current;
 
 		advance();
 
-		return {TokenType::Illegal, lexeme, start, TokenError::IllegalIdentifier};
+		throw LexerError(u8"Illegal identifier.", {TokenType::Illegal, lexeme, offset(start)});
 	}
 }

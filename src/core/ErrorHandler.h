@@ -27,7 +27,7 @@ private:
 	size_t getLineNumberWidth() const;
 
 public:
-	ErrorHandler(U8String filename, U8String sourceCode);
+	ErrorHandler(U8String filename, const U8String &sourceCode);
 
 	void addError(ErrorLevel level, U8String message, SourceLoc location,
 				  size_t highlightLength = 1);

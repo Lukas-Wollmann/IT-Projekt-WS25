@@ -11,6 +11,7 @@
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
 #include "codegen/CodeGenContext.h"
+#include "core/ErrorHandler.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
@@ -73,29 +74,26 @@ int main(const int argc, const char *argv[]) {
 	U8String source(buffer.str());
 	file.close();
 
-	auto tokens = Lexer::tokenize(source);
+	ErrorHandler err(filename, source);
+
+	auto tokens = Lexer::tokenize(source, err);
 
 	if (debug) {
 		for (auto tok : tokens)
 			std::cout << tok << "\n";
 	}
 
-	for (auto tok : tokens) {
-		if (tok.error != TokenError::None) {
-			std::cout << "Illegal token: " << tok << std::endl;
-			return 1;
-		}
+	if (err.hasError()) {
+		err.printErrors();
+		return 1;
 	}
 
-	auto [module, errs] = Parser::parse(tokens, u8"test-module");
+	auto module = Parser::parse(tokens, err, u8"test-module");
 
-	for (auto err : errs)
-		std::cout << err << "\n";
-
-	std::cout.flush();
-
-	if (!errs.empty())
+	if (err.hasError()) {
+		err.printErrors();
 		return 2;
+	}
 
 	if (debug)
 		std::cout << *module << std::endl;

@@ -1,11 +1,17 @@
 #pragma once
 
 #include "Token.h"
+#include "core/ErrorHandler.h"
 #include "core/U8String.h"
 
 namespace lexer {
+	struct LexerError {
+		U8String message;
+		Token token;
+	};
+
 	struct Lexer {
-		static Vec<Token> tokenize(const U8String &source, bool comments = false);
+		static Vec<Token> tokenize(const U8String &source, ErrorHandler &err);
 
 	private:
 		const U8String &m_Source;
@@ -17,6 +23,7 @@ namespace lexer {
 
 		Token nextToken();
 
+		SourceLoc offset(SourceLoc loc) const;
 		[[nodiscard]] bool isAtEnd() const;
 		void advance();
 		void skipWhitespace();

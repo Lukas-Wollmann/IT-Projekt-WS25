@@ -11,7 +11,7 @@
 #define BLUE   "\033[34m"
 #define CYAN   "\033[36m"
 
-ErrorHandler::ErrorHandler(U8String filename, U8String sourceCode)
+ErrorHandler::ErrorHandler(U8String filename, const U8String &sourceCode)
 	: sourceCode(std::move(sourceCode))
 	, filename(std::move(filename))
 	, hasErrors(false) {}
@@ -26,7 +26,7 @@ void ErrorHandler::addError(ErrorLevel level, U8String message, SourceLoc locati
 }
 
 void ErrorHandler::addTokenError(const lexer::Token &token, U8String message) {
-	addError(ErrorLevel::ERROR, std::move(message), token.loc, token.lexeme.length());
+	addError(ErrorLevel::ERROR, std::move(message), token.loc, token.loc.length);
 }
 
 U8String ErrorHandler::getLineFromSource(size_t lineNumber) const {
@@ -89,21 +89,20 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	switch (error.level) {
 		case ErrorLevel::ERROR:
 			colorCode = RED;
-			levelStr = "error";
+			levelStr = "ERROR";
 			break;
 		case ErrorLevel::WARNING:
 			colorCode = YELLOW;
-			levelStr = "warning";
+			levelStr = "WARNING";
 			break;
 		case ErrorLevel::NOTE:
 			colorCode = CYAN;
-			levelStr = "note";
+			levelStr = "NOTE";
 			break;
 	}
 
 	// Header: "error: message"
-	std::cerr << colorCode << BOLD << levelStr << RESET << BOLD << ": " << RESET << error.message
-			  << "\n";
+	std::cerr << colorCode << BOLD << levelStr << RESET << BOLD << ": " << error.message << "\n";
 
 	// Dateiname und Position: "--> file.cpp:2:11" (1-based)
 	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
@@ -120,12 +119,16 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	// Markierung (^^^^^) - use 0-based column for spacing
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " | " << RESET;
 
-	// Bounds check: column sollte nicht über die Zeilenlänge hinausgehen
+	// Column is 1-based, so subtract 1 to get 0-based position for spacing
 	size_t snippetLength = snippet.length();
-	size_t safeColumn =
-			(error.location.column < snippetLength) ? error.location.column : snippetLength;
+	size_t zeroBasedColumn = (error.location.column > 0) ? error.location.column - 1 : 0;
 
-	for (size_t i = 0; i < safeColumn; ++i) {
+	// Bounds check: don't go past the end of the line
+	if (zeroBasedColumn > snippetLength) {
+		zeroBasedColumn = snippetLength;
+	}
+
+	for (size_t i = 0; i < zeroBasedColumn; ++i) {
 		std::cerr << " ";
 	}
 
@@ -133,7 +136,7 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	size_t safeHighlightLength = (error.highlightLength == 0) ? 1 : error.highlightLength;
 
 	// Highlight sollte nicht über die Zeilenlänge hinausgehen
-	size_t remainingLength = snippetLength - safeColumn;
+	size_t remainingLength = snippetLength - zeroBasedColumn;
 	if (safeHighlightLength > remainingLength && remainingLength > 0) {
 		safeHighlightLength = remainingLength;
 	}
@@ -157,14 +160,14 @@ void ErrorHandler::printErrors() const {
 	if (errCount > 0 || warnCount > 0) {
 		std::cout << BOLD;
 		if (errCount > 0) {
-			std::cout << RED << "error" << RESET << BOLD << ": could not compile due to "
-					  << errCount << " error" << (errCount > 1 ? "s" : "");
+			std::cout << RED << "ERROR" << RESET << BOLD << ": Could not compile due to "
+					  << errCount << " error" << (errCount > 1 ? "s" : "") << "!";
 		}
 		if (warnCount > 0) {
 			if (errCount > 0)
 				std::cout << "; ";
-			std::cout << YELLOW << warnCount << " warning" << (warnCount > 1 ? "s" : "")
-					  << " emitted" << RESET;
+			std::cout << YELLOW << warnCount << " Warning" << (warnCount > 1 ? "s" : "")
+					  << " emitted" << RESET << ".";
 		}
 		std::cout << RESET << "\n";
 	}
