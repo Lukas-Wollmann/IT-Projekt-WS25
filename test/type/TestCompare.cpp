@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "type/CompareVisitor.h"
+#include "type/Compare.h"
 
 using namespace type;
 
@@ -55,67 +55,11 @@ TEST_CASE("PointerType: different underlying types means not equal") {
 	CHECK(!equal);
 }
 
-TEST_CASE("ArrayType: equal size and equal type means equal") {
+TEST_CASE("ArrayType: different element type means not equal") {
 	// Arrange
 	auto primitiveType1 = std::make_shared<Typename>(u8"i32");
-	auto primitiveType2 = std::make_shared<Typename>(u8"i32");
-	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1), 42);
-	auto arrType2 = std::make_shared<ArrayType>(std::move(primitiveType2), 42);
-
-	// Act
-	bool equal = *arrType1 == *arrType2;
-
-	// Assert
-	CHECK(equal);
-}
-
-TEST_CASE("ArrayType: different size and equal type means not equal") {
-	// Arrange
-	auto primitiveType1 = std::make_shared<Typename>(u8"i32");
-	auto primitiveType2 = std::make_shared<Typename>(u8"i32");
-	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1), 42);
-	auto arrType2 = std::make_shared<ArrayType>(std::move(primitiveType2), 67);
-
-	// Act
-	bool equal = *arrType1 == *arrType2;
-
-	// Assert
-	CHECK(!equal);
-}
-
-TEST_CASE("ArrayType: equal size and different type means not equal") {
-	// Arrange
-	auto primitiveType1 = std::make_shared<Typename>(u8"i32");
-	auto primitiveType2 = std::make_shared<Typename>(u8"f32");
-	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1), 42);
-	auto arrType2 = std::make_shared<ArrayType>(std::move(primitiveType2), 42);
-
-	// Act
-	bool equal = *arrType1 == *arrType2;
-
-	// Assert
-	CHECK(!equal);
-}
-
-TEST_CASE("ArrayType: different size and different type means not equal") {
-	// Arrange
-	auto primitiveType1 = std::make_shared<Typename>(u8"i32");
-	auto primitiveType2 = std::make_shared<Typename>(u8"f32");
-	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1), 42);
-	auto arrType2 = std::make_shared<ArrayType>(std::move(primitiveType2), 67);
-
-	// Act
-	bool equal = *arrType1 == *arrType2;
-
-	// Assert
-	CHECK(!equal);
-}
-
-TEST_CASE("ArrayType: unsized and sized array means not equal") {
-	// Arrange
-	auto primitiveType1 = std::make_shared<Typename>(u8"i32");
-	auto primitiveType2 = std::make_shared<Typename>(u8"i32");
-	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1), 42);
+	auto primitiveType2 = std::make_shared<Typename>(u8"u32");
+	auto arrType1 = std::make_shared<ArrayType>(std::move(primitiveType1));
 	auto arrType2 = std::make_shared<ArrayType>(std::move(primitiveType2));
 
 	// Act

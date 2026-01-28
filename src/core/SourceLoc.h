@@ -2,11 +2,17 @@
 #include "U8String.h"
 
 struct SourceLoc {
-	size_t line, column, index;
-	U8String filename = u8"";
+	size_t line, column, index, length;
 };
 
-inline std::ostream &operator<<(std::ostream &os, const SourceLoc &loc) {
-	os << "{" << loc.filename << ":" << loc.line << ":" << loc.column;
-	return os << ", " << loc.index << "}";
-}
+template <>
+struct std::formatter<SourceLoc> {
+	constexpr auto parse(format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const SourceLoc &loc, format_context &ctx) const {
+		return std::format_to(ctx.out(), "{{{}:{}, {}, {}}}", loc.line, loc.column, loc.index,
+							  loc.length);
+	}
+};

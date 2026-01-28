@@ -1,31 +1,37 @@
 #pragma once
-#include "AST.h"
+
+#include <format>
+
 #include "Visitor.h"
 
 namespace ast {
-	///
-	/// Turn a node into a string representation for debug purposes.
-	///
 	struct Printer : public ConstVisitor<void> {
+		using Iterator = std::format_context::iterator;
+
 	private:
-		std::ostream &m_OStream;
+		Iterator m_Out;
+		U8String m_Prefix;
+		bool m_IsLast;
 
 	public:
-		Printer(std::ostream &os);
+		explicit Printer(Iterator out);
+
+		Iterator printNode(const Node &n);
+
+	private:
+		void printLine(const U8String &text);
+		Printer child(bool isLast = false) const;
+		void printLabeledChild(const U8String &label, const Node &node, bool isLast = false) const;
 
 		void visit(const IntLit &n) override;
-		void visit(const FloatLit &n) override;
 		void visit(const CharLit &n) override;
 		void visit(const BoolLit &n) override;
-		void visit(const StringLit &n) override;
 		void visit(const UnitLit &n) override;
-		void visit(const ArrayExpr &n) override;
 		void visit(const UnaryExpr &n) override;
 		void visit(const BinaryExpr &n) override;
 		void visit(const Assignment &n) override;
-		void visit(const HeapAlloc &n) override;
-		void visit(const FuncCall &n) override;
 		void visit(const VarRef &n) override;
+		void visit(const FuncCall &n) override;
 		void visit(const BlockStmt &n) override;
 		void visit(const IfStmt &n) override;
 		void visit(const WhileStmt &n) override;
@@ -36,4 +42,14 @@ namespace ast {
 	};
 }
 
-std::ostream &operator<<(std::ostream &os, const ast::Node &n);
+template <typename T>
+	requires std::derived_from<T, ast::Node>
+struct std::formatter<T> {
+	constexpr auto parse(format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const T &n, format_context &ctx) const {
+		return ast::Printer(ctx.out()).printNode(n);
+	}
+};

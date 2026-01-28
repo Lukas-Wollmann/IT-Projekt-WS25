@@ -1,152 +1,151 @@
 #include "Printer.h"
 
-#include "type/PrintVisitor.h"
+#include "type/Printer.h"
 
 namespace ast {
-	Printer::Printer(std::ostream &os)
-		: m_OStream(os) {}
+	Printer::Printer(Iterator out)
+		: m_Out(out)
+		, m_Prefix(u8"")
+		, m_IsLast(true) {}
 
-	void Printer::visit(const IntLit &n) {
-		m_OStream << "IntLit(" << n.value << ")";
+	Printer::Iterator Printer::printNode(const Node &n) {
+		dispatch(n);
+
+		return m_Out;
 	}
 
-	void Printer::visit(const FloatLit &n) {
-		m_OStream << "FloatLit(" << n.value << ")";
+	void Printer::printLine(const U8String &text) {
+		U8String connector = m_IsLast ? u8"└─ " : u8"├─ ";
+		m_Out = std::format_to(m_Out, "{}{}{}\n", m_Prefix, connector, text);
+	}
+
+	Printer Printer::child(bool isLast) const {
+		Printer p(m_Out);
+		U8String prefix = m_IsLast ? u8"   " : u8"│  ";
+
+		p.m_Prefix = m_Prefix + prefix;
+		p.m_IsLast = isLast;
+
+		return p;
+	}
+
+	void Printer::printLabeledChild(const U8String &label, const Node &node, bool isLast) const {
+		auto p = child(isLast);
+		p.printLine(label);
+		p.child(true).printNode(node);
+	}
+
+	void Printer::visit(const IntLit &n) {
+		printLine(std::format("IntLit({})", n.value));
 	}
 
 	void Printer::visit(const CharLit &n) {
-		m_OStream << "CharLit('" << U8String(n.value) << "')";
+		printLine(std::format("CharLit('{}')", U8String(n.value)));
 	}
 
 	void Printer::visit(const BoolLit &n) {
-		m_OStream << "BoolLit(" << (n.value ? "true" : "false") << ")";
+		printLine(std::format("BoolLit({})", n.value));
 	}
 
-	void Printer::visit(const StringLit &n) {
-		m_OStream << "StringLit(\"" << n.value << "\")";
-	}
-
-	void Printer::visit(const UnitLit &) {
-		m_OStream << "UnitLit()";
-	}
-
-	void Printer::visit(const ArrayExpr &n) {
-		m_OStream << "ArrayExpr(" << *n.elementType << ", {";
-
-		for (size_t i = 0; i < n.values.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.values[i];
-
-		m_OStream << "})";
-	}
-
-	void Printer::visit(const UnaryExpr &n) {
-		m_OStream << "UnaryExpr(" << n.op << ", ";
-		dispatch(*n.operand);
-		m_OStream << ")";
-	}
-
-	void Printer::visit(const BinaryExpr &n) {
-		m_OStream << "BinaryExpr(";
-		dispatch(*n.left);
-		m_OStream << ", " << n.op << ", ";
-		dispatch(*n.right);
-		m_OStream << ")";
-	}
-
-	void Printer::visit(const Assignment &n) {
-		m_OStream << "Assignment(";
-		dispatch(*n.left);
-		m_OStream << ", ";
-		m_OStream << n.assignmentKind << ", ";
-		dispatch(*n.right);
-		m_OStream << ")";
-	}
-
-	void Printer::visit(const HeapAlloc &n) {
-		m_OStream << "HeapAlloc(" << *n.type << ")";
-	}
-
-	void Printer::visit(const FuncCall &n) {
-		m_OStream << "FuncCall(";
-		dispatch(*n.expr);
-		m_OStream << ", {";
-
-		for (size_t i = 0; i < n.args.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.args[i];
-
-		m_OStream << "})";
+	void Printer::visit(const UnitLit &n) {
+		printLine(u8"UnitLit");
 	}
 
 	void Printer::visit(const VarRef &n) {
-		m_OStream << "VarRef(" << n.ident << ")";
+		printLine(std::format("VarRef(\"{}\")", n.ident));
+	}
+
+	void Printer::visit(const UnaryExpr &n) {
+		printLine(std::format("UnaryExpr({})", n.op));
+		child(true).printNode(*n.operand);
+	}
+
+	void Printer::visit(const BinaryExpr &n) {
+		printLine(std::format("BinaryExpr({})", n.op));
+		child(false).printNode(*n.left);
+		child(true).printNode(*n.right);
+	}
+
+	void Printer::visit(const Assignment &n) {
+		printLine(std::format("Assignment({})", n.assignmentKind));
+		child(false).printNode(*n.left);
+		child(true).printNode(*n.right);
+	}
+
+	void Printer::visit(const FuncCall &n) {
+		printLine(u8"FuncCall");
+
+		auto callee = child();
+		callee.printLine(u8"Callee");
+		callee.child(true).printNode(*n.expr);
+
+		auto args = child(true);
+		args.printLine(u8"Args");
+
+		for (size_t i = 0; i < n.args.size(); ++i) {
+			const auto isLast = i + 1 == n.args.size();
+			args.child(isLast).printNode(*n.args[i]);
+		}
 	}
 
 	void Printer::visit(const BlockStmt &n) {
-		m_OStream << "BlockStmt({";
+		printLine(u8"BlockStmt");
 
-		for (size_t i = 0; i < n.stmts.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.stmts[i];
-
-		m_OStream << "})";
+		for (size_t i = 0; i < n.stmts.size(); ++i) {
+			const auto isLast = i + 1 == n.stmts.size();
+			child(isLast).printNode(*n.stmts[i]);
+		}
 	}
 
 	void Printer::visit(const IfStmt &n) {
-		m_OStream << "IfStmt(";
-		dispatch(*n.cond);
-		m_OStream << ", ";
-		dispatch(*n.then);
-		m_OStream << ", ";
-		dispatch(*n.else_);
-		m_OStream << ")";
+		printLine(u8"IfStmt");
+		printLabeledChild(u8"Cond", *n.cond);
+		printLabeledChild(u8"Then", *n.then);
+		printLabeledChild(u8"Else", *n.else_, true);
 	}
 
 	void Printer::visit(const WhileStmt &n) {
-		m_OStream << "WhileStmt(";
-		dispatch(*n.cond);
-		m_OStream << ", ";
-		dispatch(*n.body);
-		m_OStream << ")";
+		printLine(u8"WhileStmt");
+		printLabeledChild(u8"Cond", *n.cond);
+		printLabeledChild(u8"Body", *n.body, true);
 	}
 
 	void Printer::visit(const ReturnStmt &n) {
-		m_OStream << "ReturnStmt(";
-
-		if (n.expr)
-			dispatch(**n.expr);
-
-		m_OStream << ")";
+		printLine(u8"ReturnStmt");
+		child(true).printNode(*n.expr);
 	}
 
 	void Printer::visit(const VarDef &n) {
-		m_OStream << "VarDef(" << n.ident << ", ";
-		m_OStream << *n.type << ", ";
-		dispatch(*n.value);
-		m_OStream << ")";
+		printLine(u8"VarDef(\"" + n.ident + u8"\")");
+		printLabeledChild(u8"Value", *n.value, true);
 	}
 
 	void Printer::visit(const FuncDecl &n) {
-		m_OStream << "FuncDecl(" << n.ident << ", {";
+		printLine(u8"FuncDecl(\"" + n.ident + u8"\")");
 
-		for (size_t i = 0; i < n.params.size(); ++i)
-			m_OStream << (i ? ", " : "") << n.params[i].first << ": " << *n.params[i].second;
+		auto params = child();
+		params.printLine(u8"Params");
 
-		m_OStream << "}, " << *n.returnType;
-		m_OStream << ", ";
-		dispatch(*n.body);
-		m_OStream << ")";
+		for (size_t i = 0; i < n.params.size(); ++i) {
+			const auto &[name, type] = n.params[i];
+			const auto isLast = i + 1 == n.params.size();
+			params.child(isLast).printLine(std::format("{}: {}", name, *type));
+		}
+
+		auto ret = child();
+		ret.printLine(std::format("ReturnType: {}", *n.returnType));
+
+		auto body = child(true);
+		body.printLine(u8"Body");
+		body.child(true).printNode(*n.body);
 	}
 
 	void Printer::visit(const Module &n) {
-		m_OStream << "Module(" << n.name << ", {";
+		printLine(u8"Module(\"" + n.name + u8"\")");
 
-		for (size_t i = 0; i < n.decls.size(); ++i)
-			m_OStream << (i ? ", " : "") << *n.decls[i];
-
-		m_OStream << "})";
+		for (size_t i = 0; i < n.decls.size(); ++i) {
+			const auto isLast = i + 1 == n.decls.size();
+			child(isLast).printNode(*n.decls[i]);
+		}
 	}
-}
-
-std::ostream &operator<<(std::ostream &os, const ast::Node &n) {
-	ast::Printer(os).dispatch(n);
-	return os;
 }

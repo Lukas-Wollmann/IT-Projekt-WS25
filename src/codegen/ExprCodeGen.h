@@ -2,23 +2,22 @@
 #include "ast/Visitor.h"
 
 namespace llvm {
-    class Value;
+	class Value;
 }
 
 namespace codegen {
 
-    struct CodeGenContext;
+	struct CodeGenContext;
 
 	struct RValueCodeGen : public ast::ConstVisitor<llvm::Value *> {
 	private:
-        CodeGenContext &m_Context;
+		CodeGenContext &m_Context;
 
 	public:
 		RValueCodeGen(CodeGenContext &ctx);
 
 	private:
 		llvm::Value *visit(const ast::IntLit &n) override;
-		llvm::Value *visit(const ast::FloatLit &n) override;
 		llvm::Value *visit(const ast::BoolLit &n) override;
 		llvm::Value *visit(const ast::UnitLit &n) override;
 		llvm::Value *visit(const ast::CharLit &n) override;

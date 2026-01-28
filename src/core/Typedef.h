@@ -1,11 +1,11 @@
 #pragma once
-#include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <expected>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -37,3 +37,6 @@ using Vec = std::vector<T>;
 
 template <typename U, typename V>
 using Pair = std::pair<U, V>;
+
+template <typename U, typename V>
+using Map = std::unordered_map<U, V>;

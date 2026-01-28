@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "PrintUtil.h"
+#include "core/PrintUtil.h"
 #include "core/U8String.h"
 #include "lexer/Lexer.h"
 
@@ -9,10 +9,11 @@ using enum TokenType;
 TEST_CASE("Lexer: Empty source") {
 	// Arrange
 	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -22,10 +23,11 @@ TEST_CASE("Lexer: Empty source") {
 TEST_CASE("Lexer: Single identifier") {
 	// Arrange
 	U8String source = u8"hallo";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Identifier, u8"hallo"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -35,10 +37,11 @@ TEST_CASE("Lexer: Single identifier") {
 TEST_CASE("Lexer: Single keyword") {
 	// Arrange
 	U8String source = u8"if";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Keyword, u8"if"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -48,10 +51,11 @@ TEST_CASE("Lexer: Single keyword") {
 TEST_CASE("Lexer: Single bool literal") {
 	// Arrange
 	U8String source = u8"true";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{BoolLiteral, u8"true"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -61,10 +65,11 @@ TEST_CASE("Lexer: Single bool literal") {
 TEST_CASE("Lexer: Single integer literal") {
 	// Arrange
 	U8String source = u8"67";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{IntLiteral, u8"67"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -74,10 +79,11 @@ TEST_CASE("Lexer: Single integer literal") {
 TEST_CASE("Lexer: Single string literal") {
 	// Arrange
 	U8String source = u8"\"Hall\\o\\n\\\\\"";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{StringLiteral, u8"Hallo\n\\"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -87,13 +93,14 @@ TEST_CASE("Lexer: Single string literal") {
 TEST_CASE("Lexer: Single separator") {
 	// Arrange
 	U8String source = u8"i32,bool";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Identifier, u8"i32"},
 						   {Separator, u8","},
 						   {Identifier, u8"bool"},
 						   {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -103,13 +110,11 @@ TEST_CASE("Lexer: Single separator") {
 TEST_CASE("Lexer: Single line comment") {
 	// Arrange
 	U8String source = u8"// Test 1\nabc\n//Test 2 ";
-	Vec<Token> expected = {{Comment, u8" Test 1"},
-						   {Identifier, u8"abc"},
-						   {Comment, u8"Test 2 "},
-						   {EndOfFile, u8""}};
+	ErrorHandler err(u8"", source);
+	Vec<Token> expected = {{Identifier, u8"abc"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -119,12 +124,11 @@ TEST_CASE("Lexer: Single line comment") {
 TEST_CASE("Lexer: Multi line comment") {
 	// Arrange
 	U8String source = u8"/* Test 1\n Test 2 */ abc";
-	Vec<Token> expected = {{Comment, u8" Test 1\n Test 2 "},
-						   {Identifier, u8"abc"},
-						   {EndOfFile, u8""}};
+	ErrorHandler err(u8"", source);
+	Vec<Token> expected = {{Identifier, u8"abc"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -134,10 +138,11 @@ TEST_CASE("Lexer: Multi line comment") {
 TEST_CASE("Lexer: Multi line comment unterminated") {
 	// Arrange
 	U8String source = u8"/* Test 1\n Test 2";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Illegal, u8" Test 1\n Test 2"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -147,10 +152,11 @@ TEST_CASE("Lexer: Multi line comment unterminated") {
 TEST_CASE("Lexer: Illegal identifier") {
 	// Arrange
 	U8String source = u8"halloß";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Identifier, u8"hallo"}, {Illegal, u8"ß"}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"", true);
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());
@@ -160,10 +166,11 @@ TEST_CASE("Lexer: Illegal identifier") {
 TEST_CASE("Lexer: Single operator") {
 	// Arrange
 	U8String source = u8"<<=";
+	ErrorHandler err(u8"", source);
 	Vec<Token> expected = {{Operator, u8"<<="}, {EndOfFile, u8""}};
 
 	// Act
-	auto tokens = Lexer::tokenize(source, u8"");
+	auto tokens = Lexer::tokenize(source, err);
 
 	// Assert
 	CHECK(tokens.size() == expected.size());

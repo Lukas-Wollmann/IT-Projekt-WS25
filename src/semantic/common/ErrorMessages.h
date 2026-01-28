@@ -1,124 +1,105 @@
 #pragma once
-#include <sstream>
-
 #include "ast/AST.h"
-#include "type/PrintVisitor.h"
-#include "type/Type.h"
+#include "core/Operators.h"
+#include "type/Printer.h"
 
 namespace semantic {
 	enum struct ErrorMessageKind {
-		TYPE_MISSMATCH,
-		DEREFERENCE_NON_POINTER_TYPE,
-		UNARY_OPERATOR_NOT_FOUND,
-		BINARY_OPERATOR_NOT_FOUND,
-		CALL_ON_NON_FUNCTION,
-		TOO_MANY_ARGUMENTS,
-		UNREACHABLE_STATEMENT,
-		VARIABLE_REDEFINITION,
-		NON_RETURNING_PATHS,
-        UNDEFINED_REFERENCE,
-        ASSIGN_TO_RVALUE
+		TypeMissmatch,
+		DereferenceNonPointerType,
+		UnaryOperatorNotFound,
+		BinaryOperatorNotFound,
+		CallOnNonFunctionType,
+		TooManyArguments,
+		UnreachableStatement,
+		SymbolRedefinition,
+		NonReturningPaths,
+		UndefinedReference,
+		AssignToRValue
 	};
 
 	template <ErrorMessageKind E>
 	struct ErrorMessage;
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::TYPE_MISSMATCH> {
-		U8String str(type::TypePtr expected, type::TypePtr actual) const {
-			std::stringstream ss;
-			ss << "Expected value of type '" << *expected << "', got type '" << *actual
-			   << "' instead.";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::TypeMissmatch> {
+		[[nodiscard]] static U8String str(const type::TypePtr &expected,
+										  const type::TypePtr &actual) {
+			return std::format("Expected value of type '{}', got type '{}' instead.", *expected,
+							   *actual);
 		}
 	};
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::DEREFERENCE_NON_POINTER_TYPE> {
-		U8String str(type::TypePtr type) const {
-			std::stringstream ss;
-			ss << "Cannot dereference the non-pointer type '" << *type << "'.";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::DereferenceNonPointerType> {
+		[[nodiscard]] static U8String str(const type::TypePtr &type) {
+			return std::format("Cannot dereference the non-pointer type '{}'.", *type);
 		}
 	};
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::UNARY_OPERATOR_NOT_FOUND> {
-		U8String str(type::TypePtr type, ast::UnaryOpKind op) const {
-			std::stringstream ss;
-			ss << "Cannot use unary operator '" << op << "' on a value of type '" << *type << "'.";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::UnaryOperatorNotFound> {
+		[[nodiscard]] static U8String str(const type::TypePtr &type, const UnaryOpKind op) {
+			return std::format("Cannot use unary operator '{}' on a value of type '{}'.", op,
+							   *type);
 		}
 	};
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::BINARY_OPERATOR_NOT_FOUND> {
-		U8String str(type::TypePtr left, type::TypePtr right, ast::BinaryOpKind op) const {
-			std::stringstream ss;
-			ss << "Cannot use binary operator '" << op << "' on values of type '" << *left
-			   << "' and '" << *right << "'.";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound> {
+		[[nodiscard]] static U8String str(const type::TypePtr &left, const type::TypePtr &right,
+										  const BinaryOpKind op) {
+			return std::format("Cannot use binary operator '{}' on values of type '{}' and '{}'.",
+							   op, *left, *right);
 		}
 	};
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::CALL_ON_NON_FUNCTION> {
-		U8String str(type::TypePtr type) const {
-			std::stringstream ss;
-			ss << "Cannot call the non-function type '" << *type << "'.";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::CallOnNonFunctionType> {
+		[[nodiscard]] static U8String str(const type::TypePtr &type) {
+			return std::format("Cannot call the non-function type '{}'.", *type);
 		}
 	};
 
 	template <>
-	struct ErrorMessage<ErrorMessageKind::TOO_MANY_ARGUMENTS> {
-		U8String str(size_t expected, size_t actual) const {
-			std::stringstream ss;
-			ss << "Expected " << expected << " arguments, found " << actual << ".";
-			return U8String(ss.str());
+	struct ErrorMessage<ErrorMessageKind::TooManyArguments> {
+		[[nodiscard]] static U8String str(const size_t expected, const size_t actual) {
+			return std::format("Expected {} arguments, found {}.", expected, actual);
 		}
 	};
 
-    template <>
-	struct ErrorMessage<ErrorMessageKind::UNREACHABLE_STATEMENT> {
-		U8String str() const {
-			return U8String("Found unreachable statement after return.");
+	template <>
+	struct ErrorMessage<ErrorMessageKind::UnreachableStatement> {
+		[[nodiscard]] static U8String str() {
+			return u8"Found unreachable statement after return.";
 		}
 	};
 
-    template <>
-	struct ErrorMessage<ErrorMessageKind::VARIABLE_REDEFINITION> {
-		U8String str(const U8String &ident) const {
-			std::stringstream ss;
-			ss << "Illegal redefinition of symbol: " << ident;
-			return U8String(ss.str());
+	template <>
+	struct ErrorMessage<ErrorMessageKind::SymbolRedefinition> {
+		[[nodiscard]] static U8String str(const U8String &ident) {
+			return std::format("Illegal redefinition of symbol: '{}'.", ident);
 		}
 	};
 
-    template <>
-	struct ErrorMessage<ErrorMessageKind::NON_RETURNING_PATHS> {
-		U8String str(const U8String &ident) const {
-			std::stringstream ss;
-			ss << "Not all paths inside function '" << ident << "' return a value.";
-			return U8String(ss.str());
+	template <>
+	struct ErrorMessage<ErrorMessageKind::NonReturningPaths> {
+		[[nodiscard]] static U8String str(const U8String &ident) {
+			return std::format("Not all paths inside function '{}' return a value.", ident);
 		}
 	};
 
-    template <>
-	struct ErrorMessage<ErrorMessageKind::UNDEFINED_REFERENCE> {
-		U8String str(const U8String &ident) const {
-			std::stringstream ss;
-			ss << "Undefined reference to '" << ident << "'.";
-			return U8String(ss.str());
+	template <>
+	struct ErrorMessage<ErrorMessageKind::UndefinedReference> {
+		[[nodiscard]] static U8String str(const U8String &ident) {
+			return std::format("Undefined reference to '{}'.", ident);
 		}
 	};
 
-    template <>
-	struct ErrorMessage<ErrorMessageKind::ASSIGN_TO_RVALUE> {
-		U8String str() const {
-			std::stringstream ss;
-			ss << "Left side of an assignment needs to be an l-value.";
-			return U8String(ss.str());
+	template <>
+	struct ErrorMessage<ErrorMessageKind::AssignToRValue> {
+		[[nodiscard]] static U8String str() {
+			return std::format("Left side of an assignment needs to be an l-value.");
 		}
 	};
 }

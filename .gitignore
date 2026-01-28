@@ -42,6 +42,7 @@
 
 bin
 build
+cmake-build
 
 out
 out.ll

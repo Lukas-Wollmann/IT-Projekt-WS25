@@ -3,13 +3,14 @@
 #include <unistd.h>
 
 #include <fstream>
-#include <iostream>
-#include <memory>
+#include <sstream>
 
 #include "ast/AST.h"
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
 #include "codegen/CodeGenContext.h"
+#include "core/ErrorHandler.h"
+#include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
@@ -20,18 +21,15 @@ using namespace type;
 using namespace semantic;
 using namespace codegen;
 using namespace lexer;
-
-#define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
-#define MOVE(t)		 std::move(t)
+using namespace parser;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
-		std::cout << "Usage: \"" << argv[0] << "\" <input-filename> [options]\n";
-		std::cout << "Options:\n";
-		std::cout << "\t-o, --output <filename> Name of the generated output file\n";
-		std::cout << "\t-d, --debug             Print debug information for AST and Tokens\n";
-		std::cout << "\t-i, --keep-intermediate Keeps the generated intermediate files\n";
-		std::cout << std::endl;
+		util::print("Usage: \"{}\" <input-filename> [options]\n", argv[0]);
+		util::print("Options:\n");
+		util::print("\t-o, --output <filename> Name of the generated output file\n");
+		util::print("\t-d, --debug             Print debug information for AST and Tokens\n");
+		util::print("\t-i, --keep-intermediate Keeps the generated intermediate files\n");
 		return 1;
 	}
 
@@ -46,7 +44,7 @@ int main(const int argc, const char *argv[]) {
 			debug = true;
 		} else if (opt == "-o" || opt == "--output") {
 			if (i > argc - 2) {
-				std::cout << "Expected filename after option '" << opt << "'" << std::endl;
+				util::print("Expected filename after option '{}'.\n", opt);
 				return 1;
 			}
 
@@ -54,7 +52,7 @@ int main(const int argc, const char *argv[]) {
 		} else if (opt == "-i" || opt == "--keep-intermediate") {
 			keepIntermediate = true;
 		} else {
-			std::cout << "Unknown option: " << opt << std::endl;
+			util::print("Unknown option: '{}'.", opt);
 			return 1;
 		}
 	}
@@ -62,7 +60,7 @@ int main(const int argc, const char *argv[]) {
 	std::ifstream file(filename, std::ios::in | std::ios::binary);
 
 	if (!file) {
-		std::cout << "Failed to open file" << std::endl;
+		util::print("Could not open file: '{}'.\n", filename);
 		return 3;
 	}
 
@@ -71,56 +69,55 @@ int main(const int argc, const char *argv[]) {
 	U8String source(buffer.str());
 	file.close();
 
-	auto tokens = Lexer::tokenize(source, U8String(filename));
+	ErrorHandler err(filename, source);
+
+	auto tokens = Lexer::tokenize(source, err);
 
 	if (debug) {
 		for (auto tok : tokens)
-			std::cout << tok << "\n";
+			util::print("{:?}\n", tok);
 	}
 
-	Parser parser(tokens, "test-module");
-	auto ast = parser.parse();
-
-	for (auto err : parser.errors)
-		std::cout << err << "\n";
-
-	std::cout.flush();
-
-	if (!parser.errors.empty())
+	if (err.hasError()) {
+		err.printErrors();
 		return 1;
+	}
+
+	auto module = Parser::parse(tokens, err, filename);
+
+	if (err.hasError()) {
+		err.printErrors();
+		return 2;
+	}
 
 	if (debug)
-		std::cout << *ast << std::endl;
+		util::print("{}\n", *module);
 
-	TypeCheckerContext ctx;
+	TypeCheckerContext ctx(err);
 
 	ExplorationPass pass1(ctx);
-	pass1.dispatch(*ast);
+	pass1.dispatch(*module);
 
 	TypeCheckingPass pass2(ctx);
-	pass2.dispatch(*ast);
+	pass2.dispatch(*module);
 
-	for (auto err : ctx.getErrors())
-		std::cout << err << "\n";
+	err.printErrors();
 
-	std::cout.flush();
+	if (err.hasError())
+		return 3;
 
-	if (!ctx.getErrors().empty())
-		return 2;
-
-    std::string llFilename = outputFilename + ".ll";
+	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
-	CodeGen::generate(output, *ast);
+	CodeGen::generate(output, *module);
 	output.close();
 
 	pid_t pid = fork();
-	
-    if (pid == 0) {
+
+	if (pid == 0) {
 		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(), "-o",
 											   outputFilename.c_str(), nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
-		return 3;
 	} else if (pid > 0) {
 		int status;
 		waitpid(pid, &status, 0);
@@ -130,14 +127,10 @@ int main(const int argc, const char *argv[]) {
 			execvp("rm", const_cast<char *const *>(rmArgs.data()));
 			perror("execvp failed");
 		}
-
-		std::cout << "Clang exited with " << status << "\n";
 	} else {
 		perror("fork failed");
-		return 4;
+		return 5;
 	}
-
-	std::cout << "Build finished sucessfully." << std::endl;
 
 	return 0;
 }

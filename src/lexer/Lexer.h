@@ -1,31 +1,32 @@
 #pragma once
 
 #include "Token.h"
+#include "core/ErrorHandler.h"
 #include "core/U8String.h"
 
 namespace lexer {
 	struct Lexer {
-	public:
-		static Vec<Token> tokenize(const U8String &source, const U8String &filename,
-								   bool comments = false);
+		static Vec<Token> tokenize(const U8String &source, ErrorHandler &err);
 
 	private:
 		const U8String &m_Source;
 		U8String::ConstIterator m_Iter;
 		char32_t m_Current;
 		SourceLoc m_CurrentLoc;
+		ErrorHandler &m_ErrorHandler;
 
-		Lexer(const U8String &source, U8String filename);
+		Lexer(const U8String &source, ErrorHandler &err);
 
 		Token nextToken();
 
-		bool isAtEnd() const;
+		SourceLoc offset(SourceLoc loc) const;
+		[[nodiscard]] bool isAtEnd() const;
 		void advance();
 		void skipWhitespace();
-		char32_t peek() const;
-		bool doesMatch(const U8String &str) const;
+		[[nodiscard]] char32_t peek() const;
+		[[nodiscard]] bool doesMatch(const U8String &str) const;
 
-		char32_t getEscapedChar(char32_t c);
+		static char32_t getEscapedChar(char32_t c);
 
 		Opt<Token> tryLexIdentifier();
 		Opt<Token> tryLexIntLiteral();

@@ -1,22 +1,19 @@
 #include "TypeCheckerContext.h"
 
 namespace semantic {
-	TypeCheckerContext::TypeCheckerContext()
-		: m_GlobalNamespace(u8"global") {}
+	TypeCheckerContext::TypeCheckerContext(ErrorHandler &err)
+		: m_GlobalNamespace(u8"global")
+		, m_ErrorHandler(err) {}
 
-	void TypeCheckerContext::addError(U8String msg) {
-		m_Errors.push_back(std::move(msg));
+	void TypeCheckerContext::submitError(U8String msg, SourceLoc loc, ErrorLevel level) {
+		m_ErrorHandler.addError(std::move(msg), loc, level);
 	}
 
 	Namespace &TypeCheckerContext::getGlobalNamespace() {
 		return m_GlobalNamespace;
 	}
 
-    const OperatorTable &TypeCheckerContext::getOperatorTable() const {
+	const OperatorTable &TypeCheckerContext::getOperatorTable() const {
 		return m_OperatorTable;
-	}
-
-	const Vec<U8String> &TypeCheckerContext::getErrors() const {
-		return m_Errors;
 	}
 }
