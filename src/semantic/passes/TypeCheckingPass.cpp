@@ -278,9 +278,10 @@ namespace semantic {
 
 		// The expression is not of type <error-type> but does not match the
 		// type of the variable declaration - this is an actual error
-		if (!typesMatch(type, varType))
-			m_Context.submitError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(varType, type),
-								  {});
+		if (!type->isTypeKind(TypeKind::Error) && !typesMatch(type, varType)) {
+			const auto msg = ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(varType, type);
+			m_Context.submitError(msg, {});
+		}
 
 		// Does this symbol already exist in the current scope (shadowing outer scope possible)
 		if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {

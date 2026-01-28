@@ -3,16 +3,14 @@
 #include <unistd.h>
 
 #include <fstream>
-#include <iostream>
-#include <memory>
 #include <sstream>
 
-#include "PrintUtil.h"
 #include "ast/AST.h"
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
 #include "codegen/CodeGenContext.h"
 #include "core/ErrorHandler.h"
+#include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
@@ -24,9 +22,6 @@ using namespace semantic;
 using namespace codegen;
 using namespace lexer;
 using namespace parser;
-
-#define MAKE(t, ...) std::make_unique<t>(__VA_ARGS__)
-#define MOVE(t)		 std::move(t)
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
@@ -49,7 +44,7 @@ int main(const int argc, const char *argv[]) {
 			debug = true;
 		} else if (opt == "-o" || opt == "--output") {
 			if (i > argc - 2) {
-				util::print("Expected filename after option '{}'\n", opt);
+				util::print("Expected filename after option '{}'.\n", opt);
 				return 1;
 			}
 
@@ -57,7 +52,7 @@ int main(const int argc, const char *argv[]) {
 		} else if (opt == "-i" || opt == "--keep-intermediate") {
 			keepIntermediate = true;
 		} else {
-			util::print("Unknown option: {}", opt);
+			util::print("Unknown option: '{}'.", opt);
 			return 1;
 		}
 	}
@@ -65,7 +60,7 @@ int main(const int argc, const char *argv[]) {
 	std::ifstream file(filename, std::ios::in | std::ios::binary);
 
 	if (!file) {
-		util::print("Could not open file: {}\n", filename);
+		util::print("Could not open file: '{}'.\n", filename);
 		return 3;
 	}
 
@@ -88,7 +83,7 @@ int main(const int argc, const char *argv[]) {
 		return 1;
 	}
 
-	auto module = Parser::parse(tokens, err, u8"test-module");
+	auto module = Parser::parse(tokens, err, filename);
 
 	if (err.hasError()) {
 		err.printErrors();

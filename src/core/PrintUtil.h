@@ -1,8 +1,8 @@
 #pragma once
 #include <format>
 #include <iostream>
-#include <sstream>
-#include <vector>
+
+#include "Typedef.h"
 
 template <typename T>
 concept Printable = requires(std::ostream &os, const T &t) {
@@ -10,7 +10,7 @@ concept Printable = requires(std::ostream &os, const T &t) {
 };
 
 template <Printable T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
+std::ostream &operator<<(std::ostream &os, const Vec<T> &vec) {
 	os << "{ ";
 
 	for (size_t i = 0; i < vec.size(); ++i) {

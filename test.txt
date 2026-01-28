@@ -1,5 +1,17 @@
 func main() -> i32 {
-    a: i32 = main;
+    n: i32 = 2020;
+    root: i32 = 0;
+    odd: i32 = 1;
 
-    return 1;
+    while (n > 0) {
+        n -= odd;
+        odd += 2;
+        root += 1;
+    }
+
+    if (n < 0) {
+        root -= 1;
+    }
+
+    return root;
 }
