@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#cmake -B cmake-build
+cmake --build cmake-build -t $1 -j
+
+PROG=$1; shift
+RUNFLAG=$1; shift
+
+if [ "$RUNFLAG" == "-r" ]; then
+    "./cmake-build/${PROG}" $@
+fi

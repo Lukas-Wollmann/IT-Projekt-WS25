@@ -214,9 +214,10 @@ namespace semantic {
 		for (const auto &stmt : n.stmts) {
 			const bool didReturn = dispatch(*stmt);
 
-			if (foundReturn && didReturn && !foundUnreachable) {
+			// Any statement that appears after a returning path is unreachable.
+			if (foundReturn && !foundUnreachable) {
 				foundUnreachable = true;
-				const auto msg = ErrorMessage<ErrorMessageKind::UnreachableStatement>::str();
+				const auto msg = ErrorMessage<UnreachableStatement>::str();
 				m_Context.submitError(msg, {}, ErrorLevel::WARNING);
 			}
 
@@ -279,13 +280,13 @@ namespace semantic {
 		// The expression is not of type <error-type> but does not match the
 		// type of the variable declaration - this is an actual error
 		if (!type->isTypeKind(TypeKind::Error) && !typesMatch(type, varType)) {
-			const auto msg = ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(varType, type);
+			const auto msg = ErrorMessage<TypeMissmatch>::str(varType, type);
 			m_Context.submitError(msg, {});
 		}
 
 		// Does this symbol already exist in the current scope (shadowing outer scope possible)
 		if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {
-			const auto msg = ErrorMessage<ErrorMessageKind::SymbolRedefinition>::str(n.ident);
+			const auto msg = ErrorMessage<SymbolRedefinition>::str(n.ident);
 			m_Context.submitError(msg, {});
 
 			return false;
@@ -309,7 +310,7 @@ namespace semantic {
 		const bool doesReturn = dispatch(*n.body);
 
 		if (!doesReturn && !n.returnType->isTypeKind(TypeKind::Unit)) {
-			const auto msg = ErrorMessage<ErrorMessageKind::NonReturningPaths>::str(n.ident);
+			const auto msg = ErrorMessage<NonReturningPaths>::str(n.ident);
 			m_Context.submitError(msg, {});
 		}
 

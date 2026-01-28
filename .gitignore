@@ -41,7 +41,6 @@
 *.dwo
 
 bin
-build
 cmake-build
 
 out
