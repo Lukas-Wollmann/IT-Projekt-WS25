@@ -223,10 +223,10 @@ namespace lexer {
 		if (m_Current != U'\'')
 			return {};
 
-		advance();
-
 		const auto start = m_CurrentLoc;
 		U8String lexeme;
+
+		advance();
 
 		bool escape = false;
 		while (m_Current != U'\'' || escape) {
