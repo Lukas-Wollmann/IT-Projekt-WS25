@@ -28,7 +28,7 @@ namespace type {
 	}
 
 	void Printer::visit(const FunctionType &t) {
-		std::format_to(m_Out, "({}) -> ({})", t.paramTypes, *t.returnType);
+		std::format_to(m_Out, "({})->({})", t.paramTypes, *t.returnType);
 	}
 
 	void Printer::visit(const ErrorType &) {

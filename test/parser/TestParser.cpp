@@ -9,8 +9,10 @@ using namespace lexer;
 
 TEST_CASE("Parser: peek() returns token at the next position") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::IntLiteral}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act
 	auto peek = parser.peek();
@@ -21,8 +23,10 @@ TEST_CASE("Parser: peek() returns token at the next position") {
 
 TEST_CASE("Parser: peek() throws if called at last position") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act & Assert
 	CHECK_THROWS_AS(parser.peek(), std::runtime_error);
@@ -30,8 +34,10 @@ TEST_CASE("Parser: peek() throws if called at last position") {
 
 TEST_CASE("Parser: advance() advances to the next token") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::IntLiteral}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act
 	parser.advance();
@@ -42,8 +48,10 @@ TEST_CASE("Parser: advance() advances to the next token") {
 
 TEST_CASE("Parser: advance() throws if called at the last position") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::IntLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act & Assert
 	CHECK_THROWS_AS(parser.advance(), std::runtime_error);
@@ -51,8 +59,10 @@ TEST_CASE("Parser: advance() throws if called at the last position") {
 
 TEST_CASE("Parser: consume() advances if called with correct token type") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::IntLiteral}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act
 	auto before = parser.consume(TokenType::IntLiteral);
@@ -64,8 +74,10 @@ TEST_CASE("Parser: consume() advances if called with correct token type") {
 
 TEST_CASE("Parser: consume() throws if called with incorrect token type") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::IntLiteral}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act
 	parser.consume(TokenType::IntLiteral);
@@ -76,8 +88,10 @@ TEST_CASE("Parser: consume() throws if called with incorrect token type") {
 
 TEST_CASE("Parser: consume() throws if called with incorrect lexeme") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::Keyword, u8"func"}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act & Assert
 	CHECK_THROWS_AS(parser.consume(TokenType::IntLiteral, u8"if"), ParsingError);
@@ -85,8 +99,10 @@ TEST_CASE("Parser: consume() throws if called with incorrect lexeme") {
 
 TEST_CASE("Parser: consume() throws if called with incorrect token type and lexeme") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::Keyword, u8"func"}, {TokenType::StringLiteral}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act & Assert
 	CHECK_THROWS_AS(parser.consume(TokenType::Separator, u8"if"), ParsingError);
@@ -94,27 +110,16 @@ TEST_CASE("Parser: consume() throws if called with incorrect token type and lexe
 
 TEST_CASE("Parser: advanceToNext() finds next occurance of token") {
 	// Arrange
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
 	const Vec<Token> tokens{{TokenType::StringLiteral},
 							{TokenType::BoolLiteral},
 							{TokenType::Keyword, u8"func"}};
-	Parser parser{tokens, u8"test-module"};
+	Parser parser{tokens, err, u8"test-module"};
 
 	// Act
 	parser.advanceToNext(TokenType::Keyword, u8"func");
 
 	// Assert
 	CHECK(parser.m_Current->matches(TokenType::Keyword, u8"func"));
-}
-
-TEST_CASE("Parser: Sandbox") {
-	U8String src = u8"func a() { 1<'b';}func a() { 1<'b';}func a() { 1<'b';}func a() { 1<'b';}func "
-				   u8"a() { 1<'b';}";
-
-	auto tokens = Lexer::tokenize(src, u8"");
-	auto module = Parser::parse(tokens, u8"test-module");
-
-	std::cout << *module.first << std::endl;
-
-	for (auto err : module.second)
-		std::cout << err << std::endl;
 }

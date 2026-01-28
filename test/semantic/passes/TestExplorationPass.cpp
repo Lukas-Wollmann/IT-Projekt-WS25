@@ -7,7 +7,9 @@ using namespace type;
 
 TEST_CASE("ExplorationPass: Visit Module visits all FuncDecls") {
 	// Arrange
-	TypeCheckerContext ctx;
+	U8String source = u8"";
+	ErrorHandler err(u8"", source);
+	TypeCheckerContext ctx(err);
 	ExplorationPass ep(ctx);
 
 	Vec<Box<FuncDecl>> funcDecls;

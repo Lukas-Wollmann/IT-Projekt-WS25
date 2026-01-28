@@ -30,13 +30,14 @@ namespace type {
 	};
 }
 
-template <>
-struct std::formatter<type::Type> {
+template <typename T>
+	requires std::derived_from<T, type::Type>
+struct std::formatter<T> {
 	constexpr auto parse(std::format_parse_context &ctx) {
 		return ctx.begin();
 	}
 
-	auto format(const type::Type &t, std::format_context &ctx) const {
+	auto format(const T &t, std::format_context &ctx) const {
 		return type::Printer(ctx.out()).printType(t);
 	}
 };
@@ -49,8 +50,10 @@ struct std::formatter<type::TypeList> {
 
 	auto format(const type::TypeList &l, std::format_context &ctx) const {
 		for (size_t i = 0; i < l.size(); ++i) {
-			const auto delimeter = i == 0 ? "," : "";
-			std::format_to(ctx.out(), "{}{}", delimeter, *l[i]);
+			if (i)
+				std::format_to(ctx.out(), ", ");
+
+			std::format_to(ctx.out(), "{}", *l[i]);
 		}
 
 		return ctx.out();

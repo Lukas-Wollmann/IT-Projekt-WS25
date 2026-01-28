@@ -1,5 +1,6 @@
+#include <format>
+
 #include "Doctest.h"
-#include "sstream"
 #include "type/Printer.h"
 
 using namespace type;
@@ -7,11 +8,9 @@ using namespace type;
 TEST_CASE("Typename: toString works") {
 	// Arrange
 	auto primitiveType = std::make_shared<Typename>(u8"i32");
-	std::stringstream ss;
 
 	// Act
-	ss << *primitiveType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *primitiveType);
 
 	// Assert
 	CHECK(result == "i32");
@@ -21,11 +20,9 @@ TEST_CASE("PointerType: toString works") {
 	// Arrange
 	auto primitiveType = std::make_shared<Typename>(u8"i32");
 	auto ptrType = std::make_shared<PointerType>(std::move(primitiveType));
-	std::stringstream ss;
 
 	// Act
-	ss << *ptrType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *ptrType);
 
 	// Assert
 	CHECK(result == "*i32");
@@ -35,11 +32,9 @@ TEST_CASE("ArrayType: toString works") {
 	// Arrange
 	auto primitiveType = std::make_shared<Typename>(u8"i32");
 	auto arrType = std::make_shared<ArrayType>(std::move(primitiveType));
-	std::stringstream ss;
 
 	// Act
-	ss << *arrType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *arrType);
 
 	// Assert
 	CHECK(result == "[]i32");
@@ -54,11 +49,9 @@ TEST_CASE("FunctionType: toString works") {
 
 	auto retType = std::make_shared<Typename>(u8"bool");
 	auto funcType = std::make_shared<FunctionType>(std::move(params), std::move(retType));
-	std::stringstream ss;
 
 	// Act
-	ss << *funcType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *funcType);
 
 	// Assert
 	CHECK(result == "(i32, f32, char)->(bool)");
@@ -67,11 +60,9 @@ TEST_CASE("FunctionType: toString works") {
 TEST_CASE("ErrorType: toString works") {
 	// Arrange
 	auto errorType = std::make_shared<ErrorType>();
-	std::stringstream ss;
 
 	// Act
-	ss << *errorType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *errorType);
 
 	// Assert
 	CHECK(result == "<error-type>");
@@ -80,11 +71,9 @@ TEST_CASE("ErrorType: toString works") {
 TEST_CASE("UnitType: toString works") {
 	// Arrange
 	auto unitType = std::make_shared<UnitType>();
-	std::stringstream ss;
 
 	// Act
-	ss << *unitType;
-	std::string result = ss.str();
+	std::string result = std::format("{}", *unitType);
 
 	// Assert
 	CHECK(result == "()");
