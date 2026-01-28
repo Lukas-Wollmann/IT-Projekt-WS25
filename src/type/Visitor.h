@@ -1,8 +1,6 @@
 #pragma once
-#include <iostream>
-
-#include "Macros.h"
 #include "Type.h"
+#include "core/Macros.h"
 
 namespace type {
 	///

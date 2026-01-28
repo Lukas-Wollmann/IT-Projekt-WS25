@@ -1,7 +1,5 @@
 #include "Type.h"
 
-#include "Macros.h"
-
 namespace type {
 	Type::Type(const TypeKind kind)
 		: kind(kind) {}

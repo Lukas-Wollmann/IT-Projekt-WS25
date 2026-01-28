@@ -1,12 +1,9 @@
 #pragma once
-#include <iostream>
-#include <unordered_map>
-
 #include "core/U8String.h"
 #include "type/Type.h"
 
 namespace semantic {
-	using Scope = std::unordered_map<U8String, type::TypePtr>;
+	using Scope = Map<U8String, type::TypePtr>;
 
 	struct SymbolTable {
 	private:

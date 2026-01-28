@@ -2,7 +2,6 @@
 
 #include <format>
 
-#include "AST.h"
 #include "Visitor.h"
 
 namespace ast {

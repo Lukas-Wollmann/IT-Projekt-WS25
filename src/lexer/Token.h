@@ -1,9 +1,5 @@
 #pragma once
-
-#include <iostream>
-#include <string>
-
-#include "Macros.h"
+#include "core/Macros.h"
 #include "core/SourceLoc.h"
 #include "core/U8String.h"
 

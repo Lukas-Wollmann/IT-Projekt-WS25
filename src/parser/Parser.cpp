@@ -1,10 +1,7 @@
 #include "Parser.h"
 
-#include <sstream>
-#include <string>
-
-#include "Macros.h"
-#include "Typedef.h"
+#include "core/Macros.h"
+#include "core/Typedef.h"
 #include "lexer/Token.h"
 
 using namespace ast;

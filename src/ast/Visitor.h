@@ -1,7 +1,6 @@
 #pragma once
 #include "AST.h"
-#include "Macros.h"
-#include "Typedef.h"
+#include "core/Macros.h"
 
 namespace ast {
 	///

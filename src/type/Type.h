@@ -1,8 +1,5 @@
 #pragma once
-#include <memory>
-#include <vector>
-
-#include "Typedef.h"
+#include "core/Typedef.h"
 #include "core/U8String.h"
 
 namespace type {

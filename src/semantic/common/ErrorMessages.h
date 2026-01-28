@@ -1,10 +1,7 @@
 #pragma once
-#include <sstream>
-
 #include "ast/AST.h"
 #include "core/Operators.h"
 #include "type/Printer.h"
-#include "type/Type.h"
 
 namespace semantic {
 	enum struct ErrorMessageKind {

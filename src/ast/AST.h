@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Typedef.h"
 #include "core/Operators.h"
 #include "core/SourceLoc.h"
+#include "core/Typedef.h"
 #include "core/U8String.h"
 #include "type/Type.h"
 

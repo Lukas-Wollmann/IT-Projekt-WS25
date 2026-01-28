@@ -1,8 +1,6 @@
 #include "TypeCheckingPass.h"
 
-#include <sstream>
-
-#include "Macros.h"
+#include "core/Macros.h"
 #include "semantic/common/ErrorMessages.h"
 #include "type/Compare.h"
 

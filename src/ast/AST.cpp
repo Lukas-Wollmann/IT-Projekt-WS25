@@ -1,6 +1,6 @@
 #include "AST.h"
 
-#include "Macros.h"
+#include "core/Macros.h"
 #include "core/U8String.h"
 #include "type/Printer.h"
 

@@ -1,7 +1,5 @@
 #include "Printer.h"
 
-#include <sstream>
-
 namespace type {
 	Printer::Printer(Iterator out)
 		: m_Out(out) {}

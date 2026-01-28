@@ -2,8 +2,8 @@
 
 #include <algorithm>
 
-#include "CharUtil.h"
-#include "Macros.h"
+#include "core/CharUtil.h"
+#include "core/Macros.h"
 
 namespace lexer {
 	const U8String s_Operators[] = {u8"+",	u8"-",	u8"*",	 u8"/",	 u8"=",	 u8"!",	 u8"<",

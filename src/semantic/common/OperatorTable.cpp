@@ -1,9 +1,7 @@
 #include "OperatorTable.h"
 
-#include <sstream>
-
-#include "Macros.h"
 #include "ast/AST.h"
+#include "core/Macros.h"
 #include "type/Compare.h"
 #include "type/Type.h"
 

@@ -1,8 +1,6 @@
 #include "Token.h"
 
-#include <sstream>
-
-#include "Macros.h"
+#include "core/Macros.h"
 
 namespace lexer {
 	Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc)
