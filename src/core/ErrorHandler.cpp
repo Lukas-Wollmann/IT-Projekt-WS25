@@ -12,7 +12,7 @@
 #define CYAN   "\033[36m"
 
 ErrorHandler::ErrorHandler(U8String filename, const U8String &sourceCode)
-	: sourceCode(std::move(sourceCode))
+	: sourceCode(sourceCode)
 	, filename(std::move(filename))
 	, hasErrors(false) {}
 

@@ -113,17 +113,17 @@ struct std::formatter<AssignmentKind> {
 		std::u8string_view out;
 
 		switch (kind) {
-			case Simple:		 out = u8"=";
-			case Addition:		 out = u8"+=";
-			case Subtraction:	 out = u8"-=";
-			case Multiplication: out = u8"*=";
-			case Division:		 out = u8"/=";
-			case Modulo:		 out = u8"%=";
-			case BitwiseAnd:	 out = u8"&=";
-			case BitwiseOr:		 out = u8"|=";
-			case BitwiseXor:	 out = u8"^=";
-			case LeftShift:		 out = u8"<<=";
-			case RightShift:	 out = u8">>=";
+			case Simple:		 out = u8"="; break;
+			case Addition:		 out = u8"+="; break;
+			case Subtraction:	 out = u8"-="; break;
+			case Multiplication: out = u8"*="; break;
+			case Division:		 out = u8"/="; break;
+			case Modulo:		 out = u8"%="; break;
+			case BitwiseAnd:	 out = u8"&="; break;
+			case BitwiseOr:		 out = u8"|="; break;
+			case BitwiseXor:	 out = u8"^="; break;
+			case LeftShift:		 out = u8"<<="; break;
+			case RightShift:	 out = u8">>="; break;
 			default:			 UNREACHABLE();
 		}
 
