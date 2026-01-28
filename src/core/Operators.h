@@ -130,15 +130,3 @@ struct std::formatter<AssignmentKind> {
 		return std::copy(out.begin(), out.end(), ctx.out());
 	}
 };
-
-inline std::ostream &operator<<(std::ostream &os, BinaryOpKind op) {
-	return os << std::format("{}", op);
-}
-
-inline std::ostream &operator<<(std::ostream &os, UnaryOpKind op) {
-	return os << std::format("{}", op);
-}
-
-inline std::ostream &operator<<(std::ostream &os, AssignmentKind op) {
-	return os << std::format("{}", op);
-}

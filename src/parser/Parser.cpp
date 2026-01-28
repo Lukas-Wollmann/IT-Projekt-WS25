@@ -38,10 +38,9 @@ namespace parser {
 
 	const Token &Parser::consume(TokenType type, U8String lexeme) {
 		if (!m_Current->matches(type, lexeme)) {
-			std::stringstream err;
-			err << "Expected '" << lexeme << "' but found " << m_Current->str() << " instead.";
+			const auto msg = std::format("Expected '{}' but found {} instead.", lexeme, *m_Current);
 
-			throw ParsingError(U8String(err.str()), *m_Current);
+			throw ParsingError(std::move(msg));
 		}
 
 		auto oldCurrent = m_Current;
@@ -52,10 +51,9 @@ namespace parser {
 
 	const Token &Parser::consume(TokenType type) {
 		if (!m_Current->matches(type)) {
-			std::stringstream err;
-			err << "Expected " << type << " but found " << m_Current->str() << " instead.";
+			const auto msg = std::format("Expected {} but found {} instead.", type, *m_Current);
 
-			throw ParsingError(U8String(err.str()), *m_Current);
+			throw ParsingError(msg);
 		}
 
 		auto oldCurrent = m_Current;
@@ -65,7 +63,7 @@ namespace parser {
 	}
 
 	void Parser::reportError(const ParsingError &e) {
-		m_ErrorHandler.addError(std::move(e.message), e.token.loc);
+		m_ErrorHandler.addError(std::move(e.message), m_Current->loc);
 	}
 
 	void Parser::advanceToNext(lexer::TokenType type, U8String lexeme) {
@@ -155,7 +153,7 @@ namespace parser {
 			return std::make_unique<PointerType>(std::move(type));
 		}
 
-		throw ParsingError(u8"Expected a type.", *m_Current);
+		throw ParsingError(u8"Expected a type.");
 	}
 
 	Box<Stmt> Parser::parseStmt() {
@@ -208,10 +206,10 @@ namespace parser {
 
 		while (!m_Current->matches(TokenType::Separator, u8"}")) {
 			if (m_Current->matches(TokenType::EndOfFile)) {
-				std::stringstream err;
-				err << "Previously opened block was never closed, forgot a '}'?";
+				const auto msg =
+						std::format("Previously opened block was never closed, forgot a '}}'?");
 
-				throw ParsingError(U8String(err.str()), *m_Current);
+				throw ParsingError(std::move(msg));
 			}
 
 			auto stmt = parseStmt();
@@ -433,10 +431,9 @@ namespace parser {
 		else if (op == u8"*")
 			kind = UnaryOpKind::Dereference;
 		else {
-			std::stringstream err;
-			err << "Operator '" << op << "' can not be used as unary operator.";
+			const auto msg = std::format("Operator '{}' can not be used as unary operator.", op);
 
-			throw ParsingError(U8String(err.str()), *m_Current);
+			throw ParsingError(std::move(msg));
 		}
 
 		auto expr = parseUnaryExpr();
@@ -525,9 +522,8 @@ namespace parser {
 			return expr;
 		}
 
-		std::stringstream err;
-		err << "Expected an expression, found " << m_Current->str() << " instead.";
+		const auto msg = std::format("Expected an expression, found {} instead.", *m_Current);
 
-		throw ParsingError(U8String(err.str()), *m_Current);
+		throw ParsingError(std::move(msg));
 	}
 }

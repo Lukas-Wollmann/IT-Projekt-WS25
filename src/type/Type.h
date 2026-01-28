@@ -55,6 +55,4 @@ namespace type {
 	struct UnitType : Type {
 		UnitType();
 	};
-
-	std::ostream &operator<<(std::ostream &os, TypeKind kind);
 }

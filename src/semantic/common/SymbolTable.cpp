@@ -41,13 +41,4 @@ namespace semantic {
 
 		return m_Scopes.back().contains(name);
 	}
-
-	std::ostream &operator<<(std::ostream &os, const Scope &scope) {
-		os << "====== Scope ======\n";
-
-		for (auto &[name, type] : scope)
-			os << name << ": " << *type << "\n";
-
-		return os << "===================\n";
-	}
 }

@@ -5,8 +5,8 @@ namespace semantic {
 		: m_GlobalNamespace(u8"global")
 		, m_ErrorHandler(err) {}
 
-	void TypeCheckerContext::submitError(U8String msg, SourceLoc loc) {
-		m_ErrorHandler.addError(std::move(msg), loc);
+	void TypeCheckerContext::submitError(U8String msg, SourceLoc loc, ErrorLevel level) {
+		m_ErrorHandler.addError(std::move(msg), loc, level);
 	}
 
 	Namespace &TypeCheckerContext::getGlobalNamespace() {

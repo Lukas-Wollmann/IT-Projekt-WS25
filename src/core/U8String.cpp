@@ -128,7 +128,7 @@ U8String &U8String::operator+=(const U8String &str) {
 }
 
 std::ostream &operator<<(std::ostream &os, const U8String &str) {
-	return os << str.m_Data.data();
+	return os << std::format("{}", str);
 }
 
 void U8String::validateUTF8() {

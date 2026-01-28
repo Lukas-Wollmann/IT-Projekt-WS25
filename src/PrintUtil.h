@@ -22,3 +22,10 @@ std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
 
 	return os << " }";
 }
+
+namespace util {
+	template <typename... Args>
+	void print(std::format_string<Args...> fmt, Args &&...args) {
+		std::cout << std::format(fmt, std::forward<Args>(args)...);
+	}
+}

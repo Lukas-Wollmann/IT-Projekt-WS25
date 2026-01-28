@@ -3,24 +3,24 @@
 #include "type/Printer.h"
 
 namespace ast {
-	ASTPrinter::ASTPrinter(Iterator out)
+	Printer::Printer(Iterator out)
 		: m_Out(out)
 		, m_Prefix(u8"")
 		, m_IsLast(true) {}
 
-	ASTPrinter::Iterator ASTPrinter::printNode(const Node &n) {
+	Printer::Iterator Printer::printNode(const Node &n) {
 		dispatch(n);
 
 		return m_Out;
 	}
 
-	void ASTPrinter::printLine(const U8String &text) {
+	void Printer::printLine(const U8String &text) {
 		U8String connector = m_IsLast ? u8"└─ " : u8"├─ ";
 		m_Out = std::format_to(m_Out, "{}{}{}\n", m_Prefix, connector, text);
 	}
 
-	ASTPrinter ASTPrinter::child(bool isLast) const {
-		ASTPrinter p(m_Out);
+	Printer Printer::child(bool isLast) const {
+		Printer p(m_Out);
 		U8String prefix = m_IsLast ? u8"   " : u8"│  ";
 
 		p.m_Prefix = m_Prefix + prefix;
@@ -29,50 +29,50 @@ namespace ast {
 		return p;
 	}
 
-	void ASTPrinter::printLabeledChild(const U8String &label, const Node &node, bool isLast) const {
+	void Printer::printLabeledChild(const U8String &label, const Node &node, bool isLast) const {
 		auto p = child(isLast);
 		p.printLine(label);
 		p.child(true).printNode(node);
 	}
 
-	void ASTPrinter::visit(const IntLit &n) {
+	void Printer::visit(const IntLit &n) {
 		printLine(std::format("IntLit({})", n.value));
 	}
 
-	void ASTPrinter::visit(const CharLit &n) {
+	void Printer::visit(const CharLit &n) {
 		printLine(std::format("CharLit('{}')", U8String(n.value)));
 	}
 
-	void ASTPrinter::visit(const BoolLit &n) {
+	void Printer::visit(const BoolLit &n) {
 		printLine(std::format("BoolLit({})", n.value));
 	}
 
-	void ASTPrinter::visit(const UnitLit &n) {
+	void Printer::visit(const UnitLit &n) {
 		printLine(u8"UnitLit");
 	}
 
-	void ASTPrinter::visit(const VarRef &n) {
+	void Printer::visit(const VarRef &n) {
 		printLine(std::format("VarRef(\"{}\")", n.ident));
 	}
 
-	void ASTPrinter::visit(const UnaryExpr &n) {
+	void Printer::visit(const UnaryExpr &n) {
 		printLine(std::format("UnaryExpr({})", n.op));
 		child(true).printNode(*n.operand);
 	}
 
-	void ASTPrinter::visit(const BinaryExpr &n) {
+	void Printer::visit(const BinaryExpr &n) {
 		printLine(std::format("BinaryExpr({})", n.op));
 		child(false).printNode(*n.left);
 		child(true).printNode(*n.right);
 	}
 
-	void ASTPrinter::visit(const Assignment &n) {
+	void Printer::visit(const Assignment &n) {
 		printLine(std::format("Assignment({})", n.assignmentKind));
 		child(false).printNode(*n.left);
 		child(true).printNode(*n.right);
 	}
 
-	void ASTPrinter::visit(const FuncCall &n) {
+	void Printer::visit(const FuncCall &n) {
 		printLine(u8"FuncCall");
 
 		auto callee = child();
@@ -88,7 +88,7 @@ namespace ast {
 		}
 	}
 
-	void ASTPrinter::visit(const BlockStmt &n) {
+	void Printer::visit(const BlockStmt &n) {
 		printLine(u8"BlockStmt");
 
 		for (size_t i = 0; i < n.stmts.size(); ++i) {
@@ -97,30 +97,30 @@ namespace ast {
 		}
 	}
 
-	void ASTPrinter::visit(const IfStmt &n) {
+	void Printer::visit(const IfStmt &n) {
 		printLine(u8"IfStmt");
 		printLabeledChild(u8"Cond", *n.cond);
 		printLabeledChild(u8"Then", *n.then);
 		printLabeledChild(u8"Else", *n.else_, true);
 	}
 
-	void ASTPrinter::visit(const WhileStmt &n) {
+	void Printer::visit(const WhileStmt &n) {
 		printLine(u8"WhileStmt");
 		printLabeledChild(u8"Cond", *n.cond);
 		printLabeledChild(u8"Body", *n.body, true);
 	}
 
-	void ASTPrinter::visit(const ReturnStmt &n) {
+	void Printer::visit(const ReturnStmt &n) {
 		printLine(u8"ReturnStmt");
 		child(true).printNode(*n.expr);
 	}
 
-	void ASTPrinter::visit(const VarDef &n) {
+	void Printer::visit(const VarDef &n) {
 		printLine(u8"VarDef(\"" + n.ident + u8"\")");
 		printLabeledChild(u8"Value", *n.value, true);
 	}
 
-	void ASTPrinter::visit(const FuncDecl &n) {
+	void Printer::visit(const FuncDecl &n) {
 		printLine(u8"FuncDecl(\"" + n.ident + u8"\")");
 
 		auto params = child();
@@ -129,27 +129,23 @@ namespace ast {
 		for (size_t i = 0; i < n.params.size(); ++i) {
 			const auto &[name, type] = n.params[i];
 			const auto isLast = i + 1 == n.params.size();
-			params.child(isLast).printLine(name + u8": " + type::str(*type));
+			params.child(isLast).printLine(std::format("{}: {}", name, *type));
 		}
 
 		auto ret = child();
-		ret.printLine(u8"ReturnType: " + type::str(*n.returnType));
+		ret.printLine(std::format("ReturnType: {}", *n.returnType));
 
 		auto body = child(true);
 		body.printLine(u8"Body");
 		body.child(true).printNode(*n.body);
 	}
 
-	void ASTPrinter::visit(const Module &n) {
+	void Printer::visit(const Module &n) {
 		printLine(u8"Module(\"" + n.name + u8"\")");
 
 		for (size_t i = 0; i < n.decls.size(); ++i) {
 			const auto isLast = i + 1 == n.decls.size();
 			child(isLast).printNode(*n.decls[i]);
 		}
-	}
-
-	std::ostream &operator<<(std::ostream &os, const Node &n) {
-		return os << std::format("{}", n);
 	}
 }

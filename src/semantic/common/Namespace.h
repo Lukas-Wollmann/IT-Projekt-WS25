@@ -23,7 +23,7 @@ namespace semantic {
 		Namespace &operator=(const Namespace &) = delete;
 		Namespace &operator=(Namespace &&) = delete;
 
-		void addFunction(U8String name, Ptr<const type::FunctionType> func);
+		void addFunction(U8String name, type::FunctionTypePtr func);
 		Opt<type::FunctionTypePtr> getFunction(const U8String &name) const;
 		size_t getSize() const;
 

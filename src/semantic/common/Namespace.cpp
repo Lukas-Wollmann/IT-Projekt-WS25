@@ -26,13 +26,4 @@ namespace semantic {
 	size_t Namespace::getSize() const {
 		return m_Functions.size();
 	}
-
-	std::ostream &operator<<(std::ostream &os, const Namespace &ns) {
-		os << "Namespace \"" << ns.m_Name << "\" {\n";
-
-		for (const auto &[name, fn] : ns.m_Functions)
-			os << "    " << name << ": " << *fn << "\n";
-
-		return os << "}\n";
-	}
 }

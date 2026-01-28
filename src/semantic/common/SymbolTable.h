@@ -6,12 +6,6 @@
 #include "type/Type.h"
 
 namespace semantic {
-	struct SymbolTable;
-}
-
-std::ostream &operator<<(std::ostream &os, const semantic::SymbolTable &table);
-
-namespace semantic {
 	using Scope = std::unordered_map<U8String, type::TypePtr>;
 
 	struct SymbolTable {
@@ -32,9 +26,5 @@ namespace semantic {
 		void addSymbol(U8String name, type::TypePtr type);
 		[[nodiscard]] Opt<type::TypePtr> getSymbol(const U8String &name) const;
 		[[nodiscard]] bool isSymbolDefinedInCurrentScope(const U8String &name) const;
-
-		friend std::ostream & ::operator<<(std::ostream &os, const SymbolTable &table);
 	};
-
-	std::ostream &operator<<(std::ostream &os, const Scope &scope);
 }

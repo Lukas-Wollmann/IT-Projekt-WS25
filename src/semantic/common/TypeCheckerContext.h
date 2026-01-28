@@ -19,7 +19,7 @@ namespace semantic {
 		TypeCheckerContext &operator=(const TypeCheckerContext &) = delete;
 		TypeCheckerContext &operator=(TypeCheckerContext &&) = delete;
 
-		void submitError(U8String msg, SourceLoc loc);
+		void submitError(U8String msg, SourceLoc loc, ErrorLevel level = ErrorLevel::ERROR);
 		Namespace &getGlobalNamespace();
 		const OperatorTable &getOperatorTable() const;
 	};

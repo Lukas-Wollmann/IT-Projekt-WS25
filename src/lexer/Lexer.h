@@ -5,11 +5,6 @@
 #include "core/U8String.h"
 
 namespace lexer {
-	struct LexerError {
-		U8String message;
-		Token token;
-	};
-
 	struct Lexer {
 		static Vec<Token> tokenize(const U8String &source, ErrorHandler &err);
 
@@ -18,8 +13,9 @@ namespace lexer {
 		U8String::ConstIterator m_Iter;
 		char32_t m_Current;
 		SourceLoc m_CurrentLoc;
+		ErrorHandler &m_ErrorHandler;
 
-		explicit Lexer(const U8String &source);
+		Lexer(const U8String &source, ErrorHandler &err);
 
 		Token nextToken();
 

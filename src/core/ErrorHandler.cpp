@@ -100,7 +100,7 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 
 	// Dateiname und Position: "--> file.cpp:2:11" (1-based)
 	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
-			  << (error.location.column + 1) << "\n";
+			  << error.location.column << "\n";
 
 	// Leere Zeile mit Pipe
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " |" << RESET << "\n";
@@ -154,16 +154,15 @@ void ErrorHandler::printErrors() const {
 	if (errCount > 0 || warnCount > 0) {
 		std::cout << BOLD;
 		if (errCount > 0) {
-			std::cout << RED << "ERROR" << RESET << BOLD << ": Could not compile due to "
-					  << errCount << " error" << (errCount > 1 ? "s" : "") << "!";
+			std::cout << RED << BOLD << errCount << " error" << (errCount > 1 ? "s" : "")
+					  << " emitted.\n"
+					  << RESET;
 		}
 		if (warnCount > 0) {
-			if (errCount > 0)
-				std::cout << "; ";
-			std::cout << YELLOW << warnCount << " Warning" << (warnCount > 1 ? "s" : "")
-					  << " emitted" << RESET << ".";
+			std::cout << YELLOW << warnCount << " warning" << (warnCount > 1 ? "s" : "")
+					  << " emitted.\n"
+					  << RESET;
 		}
-		std::cout << RESET << "\n";
 	}
 }
 

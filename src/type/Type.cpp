@@ -32,18 +32,4 @@ namespace type {
 
 	UnitType::UnitType()
 		: Type(TypeKind::Unit) {}
-
-	std::ostream &operator<<(std::ostream &os, const TypeKind kind) {
-		using enum TypeKind;
-
-		switch (kind) {
-			case Typename: return os << "Typename";
-			case Pointer:  return os << "Pointer";
-			case Array:	   return os << "Array";
-			case Function: return os << "Function";
-			case Error:	   return os << "Error";
-			case Unit:	   return os << "Unit";
-			default:	   UNREACHABLE();
-		}
-	}
 }

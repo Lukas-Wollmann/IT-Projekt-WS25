@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 
+#include "PrintUtil.h"
 #include "ast/AST.h"
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
@@ -29,12 +30,11 @@ using namespace parser;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
-		std::cout << "Usage: \"" << argv[0] << "\" <input-filename> [options]\n";
-		std::cout << "Options:\n";
-		std::cout << "\t-o, --output <filename> Name of the generated output file\n";
-		std::cout << "\t-d, --debug             Print debug information for AST and Tokens\n";
-		std::cout << "\t-i, --keep-intermediate Keeps the generated intermediate files\n";
-		std::cout << std::endl;
+		util::print("Usage: \"{}\" <input-filename> [options]\n", argv[0]);
+		util::print("Options:\n");
+		util::print("\t-o, --output <filename> Name of the generated output file\n");
+		util::print("\t-d, --debug             Print debug information for AST and Tokens\n");
+		util::print("\t-i, --keep-intermediate Keeps the generated intermediate files\n");
 		return 1;
 	}
 
@@ -49,7 +49,7 @@ int main(const int argc, const char *argv[]) {
 			debug = true;
 		} else if (opt == "-o" || opt == "--output") {
 			if (i > argc - 2) {
-				std::cout << "Expected filename after option '" << opt << "'" << std::endl;
+				util::print("Expected filename after option '{}'\n", opt);
 				return 1;
 			}
 
@@ -57,7 +57,7 @@ int main(const int argc, const char *argv[]) {
 		} else if (opt == "-i" || opt == "--keep-intermediate") {
 			keepIntermediate = true;
 		} else {
-			std::cout << "Unknown option: " << opt << std::endl;
+			util::print("Unknown option: {}", opt);
 			return 1;
 		}
 	}
@@ -65,7 +65,7 @@ int main(const int argc, const char *argv[]) {
 	std::ifstream file(filename, std::ios::in | std::ios::binary);
 
 	if (!file) {
-		std::cout << "Failed to open file" << std::endl;
+		util::print("Could not open file: {}\n", filename);
 		return 3;
 	}
 
@@ -80,7 +80,7 @@ int main(const int argc, const char *argv[]) {
 
 	if (debug) {
 		for (auto tok : tokens)
-			std::cout << tok << "\n";
+			util::print("{:?}\n", tok);
 	}
 
 	if (err.hasError()) {
@@ -96,7 +96,7 @@ int main(const int argc, const char *argv[]) {
 	}
 
 	if (debug)
-		std::cout << *module << std::endl;
+		util::print("{}\n", *module);
 
 	TypeCheckerContext ctx(err);
 
@@ -106,10 +106,10 @@ int main(const int argc, const char *argv[]) {
 	TypeCheckingPass pass2(ctx);
 	pass2.dispatch(*module);
 
-	if (err.hasError()) {
-		err.printErrors();
+	err.printErrors();
+
+	if (err.hasError())
 		return 3;
-	}
 
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
@@ -123,7 +123,6 @@ int main(const int argc, const char *argv[]) {
 											   outputFilename.c_str(), nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
-		return 4;
 	} else if (pid > 0) {
 		int status;
 		waitpid(pid, &status, 0);
@@ -133,14 +132,10 @@ int main(const int argc, const char *argv[]) {
 			execvp("rm", const_cast<char *const *>(rmArgs.data()));
 			perror("execvp failed");
 		}
-
-		std::cout << "Clang exited with " << status << "\n";
 	} else {
 		perror("fork failed");
 		return 5;
 	}
-
-	std::cout << "Build finished sucessfully." << std::endl;
 
 	return 0;
 }
