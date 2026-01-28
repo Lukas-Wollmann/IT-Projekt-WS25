@@ -42,6 +42,3 @@
 
 bin
 cmake-build
-
-out
-out.ll
