@@ -9,9 +9,10 @@
 namespace semantic {
 	using namespace type;
 	using namespace ast;
+	using enum ErrorMessageKind;
 
-	TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &context)
-		: m_Context(context) {}
+	TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &ctx)
+		: m_Context(ctx) {}
 
 	bool TypeCheckingPass::visit(IntLit &n) {
 		VERIFY(!n.isInferred());
@@ -48,8 +49,8 @@ namespace semantic {
 
 		if (n.op == UnaryOpKind::Dereference) {
 			if (!type->isTypeKind(TypeKind::Pointer)) {
-				m_Context.addError(
-						ErrorMessage<ErrorMessageKind::DereferenceNonPointerType>::str(type));
+				m_Context.submitError(ErrorMessage<DereferenceNonPointerType>::str(type), {});
+
 				n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 				return false;
 			}
@@ -69,7 +70,7 @@ namespace semantic {
 			return false;
 		}
 
-		m_Context.addError(ErrorMessage<ErrorMessageKind::UnaryOperatorNotFound>::str(type, n.op));
+		m_Context.submitError(ErrorMessage<UnaryOperatorNotFound>::str(type, n.op), {});
 
 		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
@@ -93,8 +94,7 @@ namespace semantic {
 			return false;
 		}
 
-		m_Context.addError(
-				ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound>::str(left, right, n.op));
+		m_Context.submitError(ErrorMessage<BinaryOperatorNotFound>::str(left, right, n.op), {});
 
 		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
@@ -111,7 +111,7 @@ namespace semantic {
 			return false;
 
 		if (n.left->valueCategory != ValueCategory::LValue) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::AssignToRValue>::str());
+			m_Context.submitError(ErrorMessage<AssignToRValue>::str(), {});
 			return false;
 		}
 
@@ -123,7 +123,7 @@ namespace semantic {
 			if (typesMatch(left, right))
 				return false;
 
-			m_Context.addError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(left, right));
+			m_Context.submitError(ErrorMessage<TypeMissmatch>::str(left, right), {});
 			return false;
 		}
 
@@ -131,8 +131,9 @@ namespace semantic {
 		const auto opFunc = operatorTable.getBinaryOperator(compoundOp.value(), left, right);
 
 		if (!opFunc.has_value()) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound>::str(
-					left, right, compoundOp.value()));
+			const auto msg =
+					ErrorMessage<BinaryOperatorNotFound>::str(left, right, compoundOp.value());
+			m_Context.submitError(msg, {});
 			return false;
 		}
 
@@ -144,7 +145,7 @@ namespace semantic {
 		if (*left == *resultType)
 			return false;
 
-		m_Context.addError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(left, resultType));
+		m_Context.submitError(ErrorMessage<TypeMissmatch>::str(left, resultType), {});
 		return false;
 	}
 
@@ -157,7 +158,7 @@ namespace semantic {
 		}
 
 		if (!type->isTypeKind(TypeKind::Function)) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::CallOnNonFunctionType>::str(type));
+			m_Context.submitError(ErrorMessage<CallOnNonFunctionType>::str(type), {});
 			return false;
 		}
 
@@ -188,7 +189,7 @@ namespace semantic {
 			return false;
 		}
 
-		m_Context.addError(ErrorMessage<ErrorMessageKind::UndefinedReference>::str(n.ident));
+		m_Context.submitError(ErrorMessage<UndefinedReference>::str(n.ident), {});
 
 		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 		return false;
@@ -204,7 +205,8 @@ namespace semantic {
 
 			if (foundReturn && didReturn && !foundUnreachable) {
 				foundUnreachable = true;
-				m_Context.addError(ErrorMessage<ErrorMessageKind::UnreachableStatement>::str());
+				const auto msg = ErrorMessage<ErrorMessageKind::UnreachableStatement>::str();
+				m_Context.submitError(msg, {});
 			}
 
 			foundReturn |= didReturn;
@@ -218,7 +220,7 @@ namespace semantic {
 		const auto type = checkExpression(*n.cond);
 
 		if (const auto boolType = std::make_shared<Typename>(u8"bool"); !typesMatch(type, boolType))
-			m_Context.addError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(boolType, type));
+			m_Context.submitError(ErrorMessage<TypeMissmatch>::str(boolType, type), {});
 
 		const bool thenReturns = dispatch(*n.then);
 		const bool elseReturns = dispatch(*n.else_);
@@ -230,7 +232,7 @@ namespace semantic {
 		const auto type = checkExpression(*n.cond);
 
 		if (const auto boolType = std::make_shared<Typename>(u8"bool"); !typesMatch(type, boolType))
-			m_Context.addError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(boolType, type));
+			m_Context.submitError(ErrorMessage<TypeMissmatch>::str(boolType, type), {});
 
 		dispatch(*n.body);
 		return false;
@@ -247,8 +249,7 @@ namespace semantic {
 			return true;
 
 		// The return type is not matching the function declaration
-		m_Context.addError(
-				ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(currentFuncRetType, type));
+		m_Context.submitError(ErrorMessage<TypeMissmatch>::str(currentFuncRetType, type), {});
 		return true;
 	}
 
@@ -259,11 +260,13 @@ namespace semantic {
 		// The expression is not of type <error-type> but does not match the
 		// type of the variable declaration - this is an actual error
 		if (!typesMatch(type, varType))
-			m_Context.addError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(varType, type));
+			m_Context.submitError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(varType, type),
+								  {});
 
 		// Does this symbol already exist in the current scope (shadowing outer scope possible)
 		if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::SymbolRedefinition>::str(n.ident));
+			m_Context.submitError(ErrorMessage<ErrorMessageKind::SymbolRedefinition>::str(n.ident),
+								  {});
 			return false;
 		}
 
@@ -284,7 +287,8 @@ namespace semantic {
 		const bool doesReturn = dispatch(*n.body);
 
 		if (!doesReturn && !n.returnType->isTypeKind(TypeKind::Unit))
-			m_Context.addError(ErrorMessage<ErrorMessageKind::NonReturningPaths>::str(n.ident));
+			m_Context.submitError(ErrorMessage<ErrorMessageKind::NonReturningPaths>::str(n.ident),
+								  {});
 
 		m_SymbolTable.exitScope();
 
@@ -320,8 +324,9 @@ namespace semantic {
 		const auto &params = func->paramTypes;
 
 		if (args.size() != params.size()) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::TooManyArguments>::str(params.size(),
-																					 args.size()));
+			m_Context.submitError(ErrorMessage<ErrorMessageKind::TooManyArguments>::str(
+										  params.size(), args.size()),
+								  {});
 			return;
 		}
 
@@ -332,8 +337,9 @@ namespace semantic {
 			if (typesMatch(argType, paramType))
 				continue;
 
-			m_Context.addError(
-					ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(paramType, argType));
+			m_Context.submitError(ErrorMessage<ErrorMessageKind::TypeMissmatch>::str(paramType,
+																					 argType),
+								  {});
 			return;
 		}
 	}

@@ -2,6 +2,7 @@
 
 #include "Typedef.h"
 #include "core/Operators.h"
+#include "core/SourceLoc.h"
 #include "core/U8String.h"
 #include "type/Type.h"
 
@@ -32,11 +33,12 @@ namespace ast {
 
 	struct Node {
 		const NodeKind kind;
+		const SourceLoc loc;
 
 		virtual ~Node() = default;
 
 	protected:
-		explicit Node(NodeKind kind);
+		explicit Node(NodeKind kind, SourceLoc loc = {});
 	};
 
 	struct Stmt : Node {

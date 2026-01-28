@@ -8,6 +8,7 @@
 namespace parser {
 	struct ParsingError {
 		U8String message;
+		lexer::Token token;
 	};
 
 	struct Parser {

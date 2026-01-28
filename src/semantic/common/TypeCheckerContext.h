@@ -1,6 +1,7 @@
 #pragma once
 #include "Namespace.h"
 #include "OperatorTable.h"
+#include "core/ErrorHandler.h"
 #include "core/U8String.h"
 
 namespace semantic {
@@ -8,20 +9,18 @@ namespace semantic {
 	private:
 		Namespace m_GlobalNamespace;
 		OperatorTable m_OperatorTable;
-		Vec<U8String> m_Errors;
+		ErrorHandler &m_ErrorHandler;
 
 	public:
-		TypeCheckerContext();
+		explicit TypeCheckerContext(ErrorHandler &err);
 		TypeCheckerContext(const TypeCheckerContext &) = delete;
 		TypeCheckerContext(TypeCheckerContext &&) = delete;
 
 		TypeCheckerContext &operator=(const TypeCheckerContext &) = delete;
 		TypeCheckerContext &operator=(TypeCheckerContext &&) = delete;
 
-		void addError(U8String msg);
+		void submitError(U8String msg, SourceLoc loc);
 		Namespace &getGlobalNamespace();
 		const OperatorTable &getOperatorTable() const;
-
-		const Vec<U8String> &getErrors() const;
 	};
 }

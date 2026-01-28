@@ -98,7 +98,7 @@ int main(const int argc, const char *argv[]) {
 	if (debug)
 		std::cout << *module << std::endl;
 
-	TypeCheckerContext ctx;
+	TypeCheckerContext ctx(err);
 
 	ExplorationPass pass1(ctx);
 	pass1.dispatch(*module);
@@ -106,13 +106,10 @@ int main(const int argc, const char *argv[]) {
 	TypeCheckingPass pass2(ctx);
 	pass2.dispatch(*module);
 
-	for (auto err : ctx.getErrors())
-		std::cout << err << "\n";
-
-	std::cout.flush();
-
-	if (!ctx.getErrors().empty())
+	if (err.hasError()) {
+		err.printErrors();
 		return 3;
+	}
 
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);

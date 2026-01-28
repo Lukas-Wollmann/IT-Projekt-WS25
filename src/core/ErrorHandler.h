@@ -29,11 +29,7 @@ private:
 public:
 	ErrorHandler(U8String filename, const U8String &sourceCode);
 
-	void addError(ErrorLevel level, U8String message, SourceLoc location,
-				  size_t highlightLength = 1);
-
-	void addTokenError(const lexer::Token &token, U8String message);
-
+	void addError(U8String message, SourceLoc loc, ErrorLevel level = ErrorLevel::ERROR);
 	void printErrors() const;
 
 	// Prüfen, ob Fehler vorhanden sind

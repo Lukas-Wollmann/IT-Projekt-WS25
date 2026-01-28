@@ -16,17 +16,11 @@ ErrorHandler::ErrorHandler(U8String filename, const U8String &sourceCode)
 	, filename(std::move(filename))
 	, hasErrors(false) {}
 
-void ErrorHandler::addError(ErrorLevel level, U8String message, SourceLoc location,
-							size_t highlightLength) {
-	if (level == ErrorLevel::ERROR) {
+void ErrorHandler::addError(U8String message, SourceLoc loc, ErrorLevel level) {
+	if (level == ErrorLevel::ERROR)
 		hasErrors = true;
-	}
 
-	errors.push_back({level, std::move(message), location, highlightLength});
-}
-
-void ErrorHandler::addTokenError(const lexer::Token &token, U8String message) {
-	addError(ErrorLevel::ERROR, std::move(message), token.loc, token.loc.length);
+	errors.push_back({level, std::move(message), loc, loc.length});
 }
 
 U8String ErrorHandler::getLineFromSource(size_t lineNumber) const {

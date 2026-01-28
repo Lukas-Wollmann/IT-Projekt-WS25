@@ -7,16 +7,18 @@
 
 namespace semantic {
 	using namespace type;
+	using namespace ast;
+	using enum ErrorMessageKind;
 
-	ExplorationPass::ExplorationPass(TypeCheckerContext &context)
-		: m_Context(context) {}
+	ExplorationPass::ExplorationPass(TypeCheckerContext &ctx)
+		: m_Context(ctx) {}
 
-	void ExplorationPass::visit(const ast::Module &n) {
+	void ExplorationPass::visit(const Module &n) {
 		for (auto &d : n.decls)
 			dispatch(*d);
 	}
 
-	void ExplorationPass::visit(const ast::FuncDecl &n) {
+	void ExplorationPass::visit(const FuncDecl &n) {
 		TypeList params;
 
 		std::ranges::copy(n.params | std::views::values, std::back_inserter(params));
@@ -25,7 +27,9 @@ namespace semantic {
 		auto &global = m_Context.getGlobalNamespace();
 
 		if (global.getFunction(n.ident)) {
-			m_Context.addError(ErrorMessage<ErrorMessageKind::SymbolRedefinition>::str(n.ident));
+			const auto msg = ErrorMessage<SymbolRedefinition>::str(n.ident);
+			m_Context.submitError(msg, {});
+
 			return;
 		}
 

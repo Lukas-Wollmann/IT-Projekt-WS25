@@ -14,7 +14,7 @@ namespace semantic {
 		TypeCheckerContext &m_Context;
 
 	public:
-		explicit ExplorationPass(TypeCheckerContext &context);
+		explicit ExplorationPass(TypeCheckerContext &ctx);
 
 	private:
 		void visit(const ast::Module &n) override;

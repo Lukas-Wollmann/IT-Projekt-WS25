@@ -18,8 +18,7 @@ namespace parser {
 		, m_ErrorHandler(err)
 		, m_Current(tokens.begin()) {}
 
-	Box<Module> Parser::parse(const Vec<lexer::Token> &tokens, ErrorHandler &err,
-							  U8String moduleName) {
+	Box<Module> Parser::parse(const Vec<Token> &tokens, ErrorHandler &err, U8String moduleName) {
 		Parser parser(tokens, err, std::move(moduleName));
 
 		return parser.parseModule();
@@ -42,7 +41,7 @@ namespace parser {
 			std::stringstream err;
 			err << "Expected '" << lexeme << "' but found " << m_Current->str() << " instead.";
 
-			throw ParsingError(U8String(err.str()));
+			throw ParsingError(U8String(err.str()), *m_Current);
 		}
 
 		auto oldCurrent = m_Current;
@@ -56,7 +55,7 @@ namespace parser {
 			std::stringstream err;
 			err << "Expected " << type << " but found " << m_Current->str() << " instead.";
 
-			throw ParsingError(U8String(err.str()));
+			throw ParsingError(U8String(err.str()), *m_Current);
 		}
 
 		auto oldCurrent = m_Current;
@@ -66,7 +65,7 @@ namespace parser {
 	}
 
 	void Parser::reportError(const ParsingError &e) {
-		m_ErrorHandler.addError(ErrorLevel::ERROR, std::move(e.message), {});
+		m_ErrorHandler.addError(std::move(e.message), e.token.loc);
 	}
 
 	void Parser::advanceToNext(lexer::TokenType type, U8String lexeme) {
@@ -156,7 +155,7 @@ namespace parser {
 			return std::make_unique<PointerType>(std::move(type));
 		}
 
-		throw ParsingError(u8"Expected a type.");
+		throw ParsingError(u8"Expected a type.", *m_Current);
 	}
 
 	Box<Stmt> Parser::parseStmt() {
@@ -212,7 +211,7 @@ namespace parser {
 				std::stringstream err;
 				err << "Previously opened block was never closed, forgot a '}'?";
 
-				throw ParsingError(U8String(err.str()));
+				throw ParsingError(U8String(err.str()), *m_Current);
 			}
 
 			auto stmt = parseStmt();
@@ -437,7 +436,7 @@ namespace parser {
 			std::stringstream err;
 			err << "Operator '" << op << "' can not be used as unary operator.";
 
-			throw ParsingError(U8String(err.str()));
+			throw ParsingError(U8String(err.str()), *m_Current);
 		}
 
 		auto expr = parseUnaryExpr();
@@ -529,6 +528,6 @@ namespace parser {
 		std::stringstream err;
 		err << "Expected an expression, found " << m_Current->str() << " instead.";
 
-		throw ParsingError(U8String(err.str()));
+		throw ParsingError(U8String(err.str()), *m_Current);
 	}
 }

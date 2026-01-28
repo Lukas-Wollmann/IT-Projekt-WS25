@@ -7,8 +7,9 @@
 namespace ast {
 	using namespace type;
 
-	Node::Node(const NodeKind kind)
-		: kind(kind) {}
+	Node::Node(const NodeKind kind, const SourceLoc loc)
+		: kind(kind)
+		, loc(loc) {}
 
 	Stmt::Stmt(const NodeKind kind)
 		: Node(kind) {}

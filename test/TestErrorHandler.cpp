@@ -1,5 +1,5 @@
 #include "Doctest.h"
-#include "ErrorHandler.h"
+#include "core/ErrorHandler.h"
 #include "lexer/Token.h"
 
 #if 0

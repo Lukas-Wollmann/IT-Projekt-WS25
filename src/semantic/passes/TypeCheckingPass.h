@@ -1,5 +1,6 @@
 #pragma once
 #include "ast/Visitor.h"
+#include "core/ErrorHandler.h"
 #include "core/Operators.h"
 #include "semantic/common/SymbolTable.h"
 #include "semantic/common/TypeCheckerContext.h"
@@ -19,7 +20,7 @@ namespace semantic {
 		Opt<type::TypePtr> m_CurrentFunctionReturnType;
 
 	public:
-		TypeCheckingPass(TypeCheckerContext &context);
+		explicit TypeCheckingPass(TypeCheckerContext &ctx);
 
 	private:
 		bool visit(ast::Module &n) override;

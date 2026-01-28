@@ -33,7 +33,7 @@ namespace lexer {
 
 			} catch (const LexerError &e) {
 				tokens.push_back(e.token);
-				err.addTokenError(e.token, e.message);
+				err.addError(std::move(e.message), e.token.loc);
 			}
 		}
 
