@@ -61,7 +61,7 @@ ReflowComments: true
 CommentPragmas: '^ IWYU pragma:'
 
 # Namespace formatting
-NamespaceIndentation: All
+NamespaceIndentation: None
 CompactNamespaces: false
 FixNamespaceComments: false
 

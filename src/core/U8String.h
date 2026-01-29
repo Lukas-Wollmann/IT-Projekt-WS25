@@ -71,6 +71,7 @@ struct std::formatter<U8String> {
 
 	auto format(const U8String &s, std::format_context &ctx) const {
 		const auto &data = s.data();
+
 		return std::copy(data.begin(), data.end(), ctx.out());
 	}
 };

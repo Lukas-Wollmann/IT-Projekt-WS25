@@ -16,12 +16,12 @@
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
 
+using namespace lex;
+using namespace prs;
 using namespace ast;
+using namespace sem;
+using namespace gen;
 using namespace type;
-using namespace semantic;
-using namespace codegen;
-using namespace lexer;
-using namespace parser;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {

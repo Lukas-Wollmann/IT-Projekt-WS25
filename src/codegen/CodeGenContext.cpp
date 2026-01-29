@@ -1,49 +1,49 @@
 #include "CodeGenContext.h"
 
-namespace codegen {
-    CodeGenContext::CodeGenContext(const U8String &moduleName) 
-        : m_LLVMModule(std::make_unique<llvm::Module>(moduleName.asAscii(), m_LLVMContext))
-        , m_IRBuilder(m_LLVMContext)
-        , m_Converter(m_LLVMContext) {}
+namespace gen {
+CodeGenContext::CodeGenContext(const U8String &moduleName)
+	: m_LLVMModule(std::make_unique<llvm::Module>(moduleName.asAscii(), m_LLVMContext))
+	, m_IRBuilder(m_LLVMContext)
+	, m_Converter(m_LLVMContext) {}
 
-    llvm::Type *CodeGenContext::convertType(type::TypePtr type) {
-        return m_Converter.dispatch(*type);
-    }
+llvm::Type *CodeGenContext::convertType(type::TypePtr type) {
+	return m_Converter.dispatch(*type);
+}
 
-    llvm::AllocaInst *CodeGenContext::getAlloca(const U8String &ident) {
-        return m_Allocas.at(ident);
-    }
+llvm::AllocaInst *CodeGenContext::getAlloca(const U8String &ident) {
+	return m_Allocas.at(ident);
+}
 
-    llvm::AllocaInst *CodeGenContext::createAlloca(llvm::Type *type, const U8String &ident) {
-        auto func = m_IRBuilder.GetInsertBlock()->getParent();
-        
-        VERIFY(func);
-        
-        llvm::IRBuilder<> tmp(&func->getEntryBlock(), func->getEntryBlock().begin());
+llvm::AllocaInst *CodeGenContext::createAlloca(llvm::Type *type, const U8String &ident) {
+	auto func = m_IRBuilder.GetInsertBlock()->getParent();
 
-		auto alloca = tmp.CreateAlloca(type, nullptr, ident.asAscii());
-        m_Allocas[ident] = alloca;
+	VERIFY(func);
 
-        return alloca;
-    }
+	llvm::IRBuilder<> tmp(&func->getEntryBlock(), func->getEntryBlock().begin());
 
-    const std::unordered_map<U8String, llvm::AllocaInst *> &CodeGenContext::getAllocas() const {
-        return m_Allocas;
-    }
+	auto alloca = tmp.CreateAlloca(type, nullptr, ident.asAscii());
+	m_Allocas[ident] = alloca;
 
-    void CodeGenContext::setAllocas(std::unordered_map<U8String, llvm::AllocaInst *> allocas) {
-        m_Allocas = std::move(allocas);
-    }   
+	return alloca;
+}
 
-    llvm::LLVMContext &CodeGenContext::getLLVMContext() {
-        return m_LLVMContext;
-    }
+const std::unordered_map<U8String, llvm::AllocaInst *> &CodeGenContext::getAllocas() const {
+	return m_Allocas;
+}
 
-    llvm::IRBuilder<> &CodeGenContext::getIRBuilder() {
-        return m_IRBuilder;
-    }
+void CodeGenContext::setAllocas(std::unordered_map<U8String, llvm::AllocaInst *> allocas) {
+	m_Allocas = std::move(allocas);
+}
 
-    llvm::Module &CodeGenContext::getLLVMModule() {
-        return *m_LLVMModule;
-    }
+llvm::LLVMContext &CodeGenContext::getLLVMContext() {
+	return m_LLVMContext;
+}
+
+llvm::IRBuilder<> &CodeGenContext::getIRBuilder() {
+	return m_IRBuilder;
+}
+
+llvm::Module &CodeGenContext::getLLVMModule() {
+	return *m_LLVMModule;
+}
 }

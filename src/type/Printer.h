@@ -4,36 +4,36 @@
 #include "Visitor.h"
 
 namespace type {
-	///
-	/// Turn a type into a string representation for debug purposes.
-	///
-	struct Printer : ConstVisitor<void> {
-		using Iterator = std::format_context::iterator;
+///
+/// Turn a type into a string representation for debug purposes.
+///
+struct Printer : ConstVisitor<void> {
+	using Iterator = std::format_context::iterator;
 
-	private:
-		Iterator m_Out;
+private:
+	Iterator m_Out;
 
-	public:
-		explicit Printer(Iterator out);
+public:
+	explicit Printer(Iterator out);
 
-		Iterator printType(const Type &t);
+	Iterator printType(const Type &t);
 
-	private:
-		void print(const U8String &text);
+private:
+	void print(const U8String &text);
 
-		void visit(const Typename &t) override;
-		void visit(const PointerType &t) override;
-		void visit(const ArrayType &t) override;
-		void visit(const FunctionType &t) override;
-		void visit(const ErrorType &t) override;
-		void visit(const UnitType &t) override;
-	};
+	void visit(const Typename &t) override;
+	void visit(const PointerType &t) override;
+	void visit(const ArrayType &t) override;
+	void visit(const FunctionType &t) override;
+	void visit(const ErrorType &t) override;
+	void visit(const UnitType &t) override;
+};
 }
 
 template <typename T>
 	requires std::derived_from<T, type::Type>
 struct std::formatter<T> {
-	constexpr auto parse(std::format_parse_context &ctx) {
+	constexpr auto parse(const std::format_parse_context &ctx) {
 		return ctx.begin();
 	}
 
@@ -44,7 +44,7 @@ struct std::formatter<T> {
 
 template <>
 struct std::formatter<type::TypeList> {
-	constexpr auto parse(std::format_parse_context &ctx) {
+	constexpr auto parse(const std::format_parse_context &ctx) {
 		return ctx.begin();
 	}
 

@@ -1,26 +1,24 @@
 #include "Token.h"
 
-#include "core/Macros.h"
+namespace lex {
+Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc)
+	: type(type)
+	, lexeme(std::move(lexeme))
+	, loc(loc) {}
 
-namespace lexer {
-	Token::Token(const TokenType type, U8String lexeme, const SourceLoc &loc)
-		: type(type)
-		, lexeme(std::move(lexeme))
-		, loc(loc) {}
+bool Token::matches(const TokenType otherType, const U8String &otherLexeme) const {
+	return type == otherType && lexeme == otherLexeme;
+}
 
-	bool Token::matches(TokenType otherType, U8String otherLexeme) const {
-		return type == otherType && lexeme == otherLexeme;
-	}
+bool Token::matches(const TokenType otherType) const {
+	return type == otherType;
+}
 
-	bool Token::matches(TokenType otherType) const {
-		return type == otherType;
-	}
+bool Token::operator==(const Token &other) const {
+	return type == other.type && lexeme == other.lexeme;
+}
 
-	bool operator==(const Token &left, const Token &right) {
-		return left.type == right.type && left.lexeme == right.lexeme;
-	}
-
-	bool operator!=(const Token &left, const Token &right) {
-		return !(left == right);
-	}
+bool Token::operator!=(const Token &other) const {
+	return !(*this == other);
+}
 }

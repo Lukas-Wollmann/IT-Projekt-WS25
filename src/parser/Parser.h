@@ -5,51 +5,57 @@
 #include "lexer/Token.h"
 #include "type/Type.h"
 
-namespace parser {
-	struct ParsingError {
-		U8String message;
-	};
+namespace prs {
+struct ParsingError : std::exception {
+	U8String msg;
 
-	struct Parser {
-		using TokenIter = Vec<lexer::Token>::const_iterator;
+	explicit ParsingError(U8String msg);
+};
 
-		const Vec<lexer::Token> &m_Tokens;
-		const U8String m_ModuleName;
-		ErrorHandler &m_ErrorHandler;
-		TokenIter m_Current;
+///
+/// Parse a vector of tokens into an abstract syntax tree. All functionality is public
+/// for testing purposes, do only use the static parse(...) as an interface for this class.
+///
+struct Parser {
+	static Box<ast::Module> parse(const Vec<lex::Token> &tokens, ErrorHandler &err,
+								  U8String moduleName);
 
-		Parser(const Vec<lexer::Token> &tokens, ErrorHandler &err, U8String moduleName);
+	using TokenIter = Vec<lex::Token>::const_iterator;
 
-		static Box<ast::Module> parse(const Vec<lexer::Token> &tokens, ErrorHandler &err,
-									  U8String moduleName);
+	const Vec<lex::Token> &m_Tokens;
+	const U8String m_ModuleName;
+	ErrorHandler &m_ErrorHandler;
+	TokenIter m_Current;
 
-		const lexer::Token &peek() const;
-		void advance();
-		const lexer::Token &consume(lexer::TokenType type, U8String lexeme);
-		const lexer::Token &consume(lexer::TokenType type);
-		void reportError(const ParsingError &e);
-		void advanceToNext(lexer::TokenType type, U8String lexeme);
+	Parser(const Vec<lex::Token> &tokens, ErrorHandler &err, U8String moduleName);
 
-		Box<ast::Module> parseModule();
-		Box<ast::FuncDecl> parseFuncDecl();
-		Vec<ast::Param> parseParamList();
-		type::TypePtr parseType();
-		Box<ast::Stmt> parseStmt();
-		Box<ast::BlockStmt> parseBlockStmt();
-		Box<ast::WhileStmt> parseWhileStmt();
-		Box<ast::IfStmt> parseIfStmt();
-		Box<ast::VarDef> parseVarDef();
-		Box<ast::Expr> parseExpr();
-		Box<ast::Expr> parseAssignmentExpr();
-		Box<ast::Expr> parseEqualityExpr();
-		Box<ast::Expr> parseRelationalExpr();
-		Box<ast::Expr> parseAdditiveExpr();
-		Box<ast::Expr> parseMultiplicativeExpr();
-		Box<ast::Expr> parseUnaryExpr();
-		Box<ast::Expr> parsePostfixExpr();
-		Box<ast::Expr> parsePrimaryExpr();
-		Vec<Box<ast::Expr>> parseExprList();
+	[[nodiscard]] const lex::Token &peek() const;
+	void advance();
+	const lex::Token &consume(lex::TokenType type, U8String lexeme);
+	const lex::Token &consume(lex::TokenType type);
+	void reportError(ParsingError &e) const;
+	void advanceToNext(lex::TokenType type, const U8String &lexeme);
 
-		AssignmentKind getAssignmentKindFromString(const U8String &str) const;
-	};
+	Box<ast::Module> parseModule();
+	Box<ast::FuncDecl> parseFuncDecl();
+	Vec<ast::Param> parseParamList();
+	type::TypePtr parseType();
+	Box<ast::Stmt> parseStmt();
+	Box<ast::BlockStmt> parseBlockStmt();
+	Box<ast::WhileStmt> parseWhileStmt();
+	Box<ast::IfStmt> parseIfStmt();
+	Box<ast::VarDef> parseVarDef();
+	Box<ast::Expr> parseExpr();
+	Box<ast::Expr> parseAssignmentExpr();
+	Box<ast::Expr> parseEqualityExpr();
+	Box<ast::Expr> parseRelationalExpr();
+	Box<ast::Expr> parseAdditiveExpr();
+	Box<ast::Expr> parseMultiplicativeExpr();
+	Box<ast::Expr> parseUnaryExpr();
+	Box<ast::Expr> parsePostfixExpr();
+	Box<ast::Expr> parsePrimaryExpr();
+	Vec<Box<ast::Expr>> parseExprList();
+
+	static AssignmentKind getAssignmentKindFromString(const U8String &str);
+};
 }

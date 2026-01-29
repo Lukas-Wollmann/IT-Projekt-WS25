@@ -1,7 +1,7 @@
 #include "Doctest.h"
 #include "semantic/passes/ExplorationPass.h"
 
-using namespace semantic;
+using namespace sem;
 using namespace ast;
 using namespace type;
 
