@@ -17,7 +17,7 @@ cmake -B cmake-build
 cmake --build cmake-build -t app -j
 ```
 
-The built artifact can be found in `./cmak-build/app`. Just execute the file and see instructions on how to use it.
+The built artifact can be found in `./cmake-build/app`. Just execute the file and see instructions on how to use it.
 
 ## Mitglieder:
 

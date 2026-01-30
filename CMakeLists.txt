@@ -32,4 +32,3 @@ set(TEST_FILES ${TEST_CPP} ${TEST_HEADER})
 
 add_executable(test ${TEST_FILES})
 target_link_libraries(test logic ${llvm_libs})
-    

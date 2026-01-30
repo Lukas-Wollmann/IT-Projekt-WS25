@@ -1,11 +1,16 @@
 #!/bin/bash
 
-#cmake -B cmake-build
-cmake --build cmake-build -t $1 -j
+BUILD_DIR="cmake-build"
+
+if [ ! -d "$BUILD_DIR" ]; then
+    cmake -S . -B "$BUILD_DIR"
+fi
+
+cmake --build "$BUILD_DIR" -t "$1" -j
 
 PROG=$1; shift
 RUN_FLAG=$1; shift
 
 if [ "$RUN_FLAG" == "-r" ]; then
-    "./cmake-build/${PROG}" $@
+    "./$BUILD_DIR/${PROG}" $@
 fi

@@ -1,19 +1,7 @@
 func main() -> i32 {
-    a: () = ();
-    return fib(40);
-}
+    a: i32 = 10; 
+    b: i32 = 10; 
+    a = 20;
 
-func foo() {
-    if (1 == 2) {
-        return;
-    }
-
-}
-
-func fib(n: i32) -> i32 {
-    if (n < 2) {
-        return n;
-    }
-
-    return fib(n - 1) + fib(n - 2);
+    return a;
 }

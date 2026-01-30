@@ -12,6 +12,8 @@
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
+#include "mir/Lowerer.h"
+#include "mir/Visualizer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
@@ -105,6 +107,12 @@ int main(const int argc, const char *argv[]) {
 
 	if (err.hasError())
 		return 3;
+
+	if (debug) {
+		mir::Module mod = mir::Lowerer(u8"test").lower(*module);
+		std::string s = mir::Visualizer::to_dot(mod);
+		util::print("{}\n", s);
+	}
 
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
