@@ -11,7 +11,12 @@ llvm::Type *CodeGenContext::convertType(type::TypePtr type) {
 }
 
 llvm::AllocaInst *CodeGenContext::getAlloca(const U8String &ident) {
-	return m_Allocas.at(ident);
+	auto it = m_Allocas.find(ident);
+
+	if (it == m_Allocas.end())
+		return nullptr;
+
+	return it->second;
 }
 
 llvm::AllocaInst *CodeGenContext::createAlloca(llvm::Type *type, const U8String &ident) {
