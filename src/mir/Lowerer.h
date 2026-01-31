@@ -20,7 +20,7 @@ class Lowerer {
 	Vec<Vec<TrackedVar>> scopeStack;
 
 	// Symbol Table: Maps source names (u8"a") -> unique MIR IDs (u8"a_0")
-	Vec<std::map<U8String, Id>> nameMapStack;
+	Vec<Map<U8String, Id>> nameMapStack;
 	u32 uniqueCounter = 0;
 
 public:

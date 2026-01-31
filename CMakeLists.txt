@@ -7,28 +7,49 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ZLIB REQUIRED)
 find_package(LLVM REQUIRED CONFIG)
 
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
-llvm_map_components_to_libnames(llvm_libs support core irreader)
 
-include_directories(lib src test)
+if(TARGET LLVM)
+    set(llvm_libs LLVM)
+else()
+    llvm_map_components_to_libnames(llvm_libs support core irreader)
+endif()
 
-file(GLOB_RECURSE SRC_CPP CONFIGURE_DEPENDS "src/*.cpp")
-file(GLOB_RECURSE SRC_HEADER CONFIGURE_DEPENDS "src/*.h")
-set(SRC_FILES ${SRC_CPP} ${SRC_HEADER})
+# Collect all your logic source files
+file(GLOB_RECURSE LOGIC_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+# Exclude main.cpp from LOGIC_SOURCES if it's already in there to avoid double main()
+list(REMOVE_ITEM LOGIC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-add_library(logic STATIC ${SRC_FILES})
+# --- PCH HOST ---
+# We use a dummy INTERFACE library to hold the include paths and PCH 
+# so both targets stay in sync without a physical .a file.
+add_library(project_configs INTERFACE)
+target_include_directories(project_configs INTERFACE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src 
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/test
+    ${LLVM_INCLUDE_DIRS}
+)
 
-add_executable(app src/main.cpp)
-target_link_libraries(app logic ${llvm_libs})
+# 1. Target: App
+# We compile the logic sources DIRECTLY into the app
+add_executable(app src/main.cpp ${LOGIC_SOURCES})
+target_link_libraries(app PRIVATE project_configs ${llvm_libs})
+target_precompile_headers(app PUBLIC 
+    "src/core/Typedef.h"
+    <vector>
+    <string>
+    <memory>
+    <llvm/IR/IRBuilder.h>
+    <llvm/IR/Module.h>
+)
 
-file(GLOB_RECURSE TEST_CPP CONFIGURE_DEPENDS "test/*.cpp")
-file(GLOB_RECURSE TEST_HEADER CONFIGURE_DEPENDS "test/*.h")
-set(TEST_FILES ${TEST_CPP} ${TEST_HEADER})
+# 2. Target: Test
+# We also compile logic sources DIRECTLY into the test
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "test/*.cpp")
+add_executable(test ${TEST_SOURCES} ${LOGIC_SOURCES})
+target_link_libraries(test PRIVATE project_configs ${llvm_libs})
 
-add_executable(test ${TEST_FILES})
-target_link_libraries(test logic ${llvm_libs})
+# Reuse the PCH from 'app' so we only build it once
+target_precompile_headers(test REUSE_FROM app)
