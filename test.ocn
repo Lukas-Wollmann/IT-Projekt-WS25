@@ -1,7 +1,15 @@
-func main() -> i32 {
-    a: i32 = 10; 
-    b: i32 = 10; 
-    a = 20;
+//link printf() -> i32;
 
-    return a;
+func count() -> **i32 {
+	{
+		a: **i32 = new *i32(new i32(10));
+		b: **i32 = a;
+		
+		return b;
+	}
+}
+
+func main() -> i32 {
+	count();
+    return 0;
 }

@@ -13,7 +13,7 @@
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
 #include "mir/Lowerer.h"
-#include "mir/Visualizer.h"
+#include "mir/MIRGraphviz.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
@@ -109,8 +109,8 @@ int main(const int argc, const char *argv[]) {
 		return 3;
 
 	if (debug) {
-		mir::Module mod = mir::Lowerer(u8"test").lower(*module);
-		std::string s = mir::Visualizer::to_dot(mod);
+		mir::Module mod = mir::Lowerer(u8"test").lowerModule(*module);
+		std::string s = mir::MIRGraphviz::generateDOT(mod);
 		util::print("{}\n", s);
 	}
 

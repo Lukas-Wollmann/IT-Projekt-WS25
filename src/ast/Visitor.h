@@ -21,6 +21,7 @@ struct Visitor {
 			case NodeKind::CharLit:	   return visit(static_cast<Constness<CharLit> &>(node));
 			case NodeKind::BoolLit:	   return visit(static_cast<Constness<BoolLit> &>(node));
 			case NodeKind::UnitLit:	   return visit(static_cast<Constness<UnitLit> &>(node));
+			case NodeKind::HeapAlloc:  return visit(static_cast<Constness<HeapAlloc> &>(node));
 			case NodeKind::UnaryExpr:  return visit(static_cast<Constness<UnaryExpr> &>(node));
 			case NodeKind::BinaryExpr: return visit(static_cast<Constness<BinaryExpr> &>(node));
 			case NodeKind::Assignment: return visit(static_cast<Constness<Assignment> &>(node));
@@ -50,6 +51,10 @@ struct Visitor {
 	}
 
 	virtual T visit(Constness<UnitLit> &) {
+		UNREACHABLE();
+	}
+
+	virtual T visit(Constness<HeapAlloc> &) {
 		UNREACHABLE();
 	}
 

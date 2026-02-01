@@ -51,6 +51,11 @@ void Printer::visit(const UnitLit &n) {
 	printLine(u8"UnitLit");
 }
 
+void Printer::visit(const HeapAlloc &n) {
+	printLine(std::format("HeapAlloc: {}", *n.type));
+	child(true).printNode(*n.expr);
+}
+
 void Printer::visit(const VarRef &n) {
 	printLine(std::format("VarRef(\"{}\")", n.ident));
 }
@@ -116,12 +121,12 @@ void Printer::visit(const ReturnStmt &n) {
 }
 
 void Printer::visit(const VarDef &n) {
-	printLine(u8"VarDef(\"" + n.ident + u8"\")");
+	printLine(std::format("VarDef(\"{}\")", n.ident));
 	printLabeledChild(u8"Value", *n.value, true);
 }
 
 void Printer::visit(const FuncDecl &n) {
-	printLine(u8"FuncDecl(\"" + n.ident + u8"\")");
+	printLine(std::format("FuncDecl(\"{}\")", n.ident));
 
 	auto params = child();
 	params.printLine(u8"Params");

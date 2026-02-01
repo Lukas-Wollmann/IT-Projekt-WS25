@@ -37,6 +37,11 @@ BoolLit::BoolLit(const bool value)
 UnitLit::UnitLit()
 	: Expr(NodeKind::UnitLit) {}
 
+HeapAlloc::HeapAlloc(type::TypePtr type, Box<Expr> expr)
+	: Expr(NodeKind::HeapAlloc)
+	, type(std::move(type))
+	, expr(std::move(expr)) {}
+
 UnaryExpr::UnaryExpr(const UnaryOpKind op, Box<Expr> operand)
 	: Expr(NodeKind::UnaryExpr)
 	, op(op)

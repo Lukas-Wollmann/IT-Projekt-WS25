@@ -61,3 +61,6 @@ Three-Address-Code (TAC) kompiliert, oder zu C transpiliert werden.
 
 add BOOL_LIT in lexer
 two combined emojis like 🖕🏿 do not work: "🖕🏿🏿🏿"
+
+## Resources
+https://dreampuf.github.io/GraphvizOnline/

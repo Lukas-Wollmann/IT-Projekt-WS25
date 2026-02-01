@@ -506,6 +506,18 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		return std::make_unique<IntLit>(std::stoi(lit.asAscii()));
 	}
 
+	if (m_Current->matches(TokenType::Keyword, u8"new")) {
+		consume(TokenType::Keyword, u8"new");
+
+		auto type = parseType();
+
+		consume(TokenType::Separator, u8"(");
+		auto expr = parseExpr();
+		consume(TokenType::Separator, u8")");
+
+		return std::make_unique<HeapAlloc>(std::move(type), std::move(expr));
+	}
+
 	if (m_Current->matches(TokenType::Separator, u8"(")) {
 		consume(TokenType::Separator, u8"(");
 

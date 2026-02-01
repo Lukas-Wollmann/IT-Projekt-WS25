@@ -36,6 +36,20 @@ bool TypeCheckingPass::visit(UnitLit &n) {
 	return false;
 }
 
+bool TypeCheckingPass::visit(HeapAlloc &n) {
+	VERIFY(!n.isInferred());
+	const auto actualType = checkExpression(*n.expr);
+	const auto &expectedType = n.type;
+
+	if (*actualType != *expectedType) {
+		const auto msg = ErrorMessage<TypeMissmatch>::str(expectedType, actualType);
+		m_Context.submitError(msg, {});
+	}
+
+	n.infer(std::make_shared<PointerType>(expectedType), ValueCategory::RValue);
+	return false;
+}
+
 bool TypeCheckingPass::visit(UnaryExpr &n) {
 	VERIFY(!n.isInferred());
 	const auto type = checkExpression(*n.operand);

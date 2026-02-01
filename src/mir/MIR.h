@@ -1,92 +1,176 @@
 #pragma once
-
-#include <variant>
-
-#include "core/Typedef.h"
-#include "core/U8String.h"
+#include "core/Operators.h"
 #include "type/Type.h"
 
 namespace mir {
+using RegisterID = u32;
+using BlockID = u32;
 
-// Represents a unique identifier for a variable, parameter, or temporary register
-using Id = U8String;
-
-// The basic operations of the MIR.
-// These are more explicit than AST nodes to facilitate RAII and Codegen.
-enum struct InstKind {
-	// Memory & Ownership
-	Retain,	 // Increment Reference Count (inc_ref)
-	Release, // Decrement Reference Count & Drop if zero (dec_ref)
-
-	// Assignment & Data Flow
-	Assign,	 // t1 = t2
-	LoadLit, // t1 = constant
-
-	// Computation
-	UnaryOp,  // t1 = op t2
-	BinaryOp, // t1 = t2 op t3
-
-	// Subroutines
-	Call, // t1 = call func(args...)
-
-	// Control Flow (Terminators)
-	Jump,	// unconditional goto label
-	Branch, // if t1 goto label_true else label_false
-	Return	// exit function with value t1
+enum struct InstrKind {
+	IntLit,
+	CharLit,
+	UnitLit,
+	Alloc,
+	Load,
+	Assign,
+	Call, // Added missing kind
+	LoadFunc,
+	BinaryOp,
+	UnaryOp,
+	SPCreate,
+	SPRetain,
+	SPRelease
 };
 
-// Represents a single flattened instruction
-struct Instruction {
-	InstKind kind;
-	Opt<Id> dest;		// Destination register (if any)
-	Vec<Id> args;		// Source registers/operands
-	type::TypePtr type; // Type of the result/operation
+struct Instr {
+	const InstrKind kind;
+	virtual ~Instr() = default;
+
+protected:
+	explicit Instr(InstrKind kind);
 };
 
-// A Basic Block is a linear sequence of instructions.
-// It ends with a terminator (Jump, Branch, or Return).
+struct IntLit : Instr {
+	const RegisterID dest;
+	const i32 value;
+	const type::TypePtr type;
+	IntLit(RegisterID dest, i32 value, type::TypePtr type);
+};
+
+struct LoadFunc : Instr {
+	const RegisterID dest;
+	const U8String funcName;
+	const type::TypePtr type;
+
+	LoadFunc(RegisterID dest, U8String funcName, type::TypePtr type);
+};
+
+struct CharLit : Instr {
+	const RegisterID dest;
+	const char32_t value;
+	const type::TypePtr type;
+	CharLit(RegisterID dest, char32_t value, type::TypePtr type);
+};
+
+struct UnitLit : Instr {
+	const RegisterID dest;
+	const type::TypePtr type;
+	UnitLit(RegisterID dest, type::TypePtr type);
+};
+
+struct Alloc : Instr {
+	const RegisterID dest;
+	const type::TypePtr type;
+	Alloc(RegisterID dest, type::TypePtr type);
+};
+
+struct Load : Instr {
+	const RegisterID dest;
+	const RegisterID addr;
+	const type::TypePtr type;
+	Load(RegisterID dest, RegisterID addr, type::TypePtr type);
+};
+
+struct Assign : Instr {
+	const RegisterID dest;
+	const RegisterID src;
+	Assign(RegisterID dest, RegisterID src);
+};
+
+// Added Call Struct
+struct Call : Instr {
+	const RegisterID dest;
+	const RegisterID callee;
+	const Vec<RegisterID> args;
+	const type::TypePtr type;
+	Call(RegisterID dest, RegisterID callee, Vec<RegisterID> args, type::TypePtr type);
+};
+
+struct BinaryOp : Instr {
+	const RegisterID dest, left, right;
+	const BinaryOpKind op;
+	const type::TypePtr type;
+	BinaryOp(RegisterID dest, RegisterID left, RegisterID right, BinaryOpKind op,
+			 type::TypePtr type);
+};
+
+struct UnaryOp : Instr {
+	const RegisterID dest, operand;
+	const UnaryOpKind op;
+	const type::TypePtr type;
+	UnaryOp(RegisterID dest, RegisterID operand, UnaryOpKind op, type::TypePtr type);
+};
+
+struct SPCreate : Instr {
+	const RegisterID reg;
+	const type::TypePtr type;
+	SPCreate(RegisterID reg, type::TypePtr type);
+};
+
+struct SPRetain : Instr {
+	const RegisterID reg;
+	const type::TypePtr type;
+	SPRetain(RegisterID reg, type::TypePtr type);
+};
+
+struct SPRelease : Instr {
+	const RegisterID reg;
+	SPRelease(RegisterID reg);
+};
+
+enum struct TermKind { Jump, Branch, Return };
+
+struct Term {
+	const TermKind kind;
+	virtual ~Term() = default;
+
+protected:
+	explicit Term(TermKind kind);
+};
+
+struct Jump : Term {
+	const BlockID target;
+	explicit Jump(BlockID target);
+};
+
+struct Branch : Term {
+	const RegisterID cond;
+	const BlockID then;
+	const BlockID else_;
+	Branch(RegisterID cond, BlockID then, BlockID else_);
+};
+
+struct Return : Term {
+	const RegisterID val;
+	const type::TypePtr type;
+	Return(RegisterID val, type::TypePtr type);
+};
+
 struct BasicBlock {
-	Id label;
-	Vec<Instruction> instructions;
+	const BlockID id;
+	Vec<Box<Instr>> instrs;
+	Box<Term> term;
+	BasicBlock(BlockID id);
 
-	explicit BasicBlock(Id label)
-		: label(std::move(label)) {}
-
-	// Helper to check if the block already has a terminating instruction
-	[[nodiscard]] bool isTerminated() const {
-		if (instructions.empty())
-			return false;
-		auto k = instructions.back().kind;
-		return k == InstKind::Jump || k == InstKind::Branch || k == InstKind::Return;
+	bool isTerminated() {
+		return term != nullptr;
 	}
 };
 
-// Represents a linearized function with its own control flow graph (CFG)
 struct Function {
-	Id name;
-	type::TypePtr returnType;
-	Vec<Id> params;				 // Parameter names
-	Vec<Box<BasicBlock>> blocks; // The actual code graph
-
-	u32 tempCounter = 0; // Generator for t0, t1, t2...
-
-	Function(Id name, type::TypePtr retType)
-		: name(std::move(name))
-		, returnType(std::move(retType)) {}
-
-	// Helper to generate unique temporary register names
-	Id nextTemp() {
-		return "t" + std::to_string(tempCounter++);
-	}
+	const U8String name;
+	Vec<RegisterID> params;
+	Vec<Box<BasicBlock>> blocks;
+	u32 nextRegId = 0;
+	u32 nextBlockId = 0;
+	Function(U8String name);
+	RegisterID nextRegisterID();
+	BasicBlock &createBlock();
 };
 
-// The top-level container for the linearized program
 struct Module {
-	Id name;
-	Vec<Box<Function>> functions;
-
-	explicit Module(Id name)
-		: name(std::move(name)) {}
+	const U8String name;
+	Vec<Box<Function>> funcs;
+	explicit Module(U8String name);
 };
-
-} // namespace mir
+}

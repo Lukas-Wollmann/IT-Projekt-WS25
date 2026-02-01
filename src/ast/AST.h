@@ -12,6 +12,7 @@ enum struct NodeKind {
 	CharLit,
 	BoolLit,
 	UnitLit,
+	HeapAlloc,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
@@ -77,6 +78,13 @@ struct BoolLit : Expr {
 
 struct UnitLit : Expr {
 	UnitLit();
+};
+
+struct HeapAlloc : Expr {
+	const type::TypePtr type;
+	const Box<Expr> expr;
+
+	HeapAlloc(type::TypePtr type, Box<Expr> expr);
 };
 
 struct UnaryExpr : Expr {
