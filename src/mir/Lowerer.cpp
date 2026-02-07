@@ -2,6 +2,9 @@
 
 namespace mir {
 
+Lowerer::Lowerer(U8String moduleName)
+	: m_Module(std::move(moduleName)) {}
+
 Module Lowerer::lowerModule(const ast::Module &n) {
 	for (const auto &d : n.decls)
 		lowerFuncDecl(*d);
@@ -63,6 +66,7 @@ void Lowerer::lowerFuncDecl(const ast::FuncDecl &n) {
 
 		// If param is a pointer, track it for cleanup.
 		// NOTE: Assuming caller retains arguments, so we own a reference locally.
+		// TODO: we should prob retain here and not at the call site
 		if (param.second->isTypeKind(type::TypeKind::Pointer))
 			m_TrackedValues.back().push_back({regID, param.second});
 	}
@@ -341,8 +345,78 @@ ExprResult Lowerer::lowerExpr(const ast::Expr &n) {
 			}
 			return {dest, false};
 		}
+		case ast::NodeKind::Assignment: {
+			const auto &assign = static_cast<const ast::Assignment &>(n);
+
+			LValue lhs = lowerLValue(*assign.left);
+			ExprResult rhs = lowerExpr(*assign.right); // lowerExpr tells us if it's managed
+
+			auto type = assign.left->inferredType.value();
+
+			if (type->isTypeKind(type::TypeKind::Pointer)) {
+				// 1. Handle RHS (The "Retain" step)
+				if (!rhs.isManaged) {
+					// RHS is an existing variable (x = y).
+					// We must increment the count because 'y' still owns it too.
+					emit(std::make_unique<SPRetain>(rhs.reg, type));
+				} else {
+					// RHS is a temporary (x = alloc Foo).
+					// It already has +1. We "take" that +1.
+					// We must remove it from temps so closeScope() doesn't release it!
+					for (auto it = m_ExprTemps.begin(); it != m_ExprTemps.end(); ++it) {
+						if (it->id == rhs.reg) {
+							m_ExprTemps.erase(it);
+							break;
+						}
+					}
+				}
+
+				// 2. Handle LHS (The "Release" step)
+				if (lhs.isMemory) {
+					// *ptr = ...
+					// We must release the pointer currently sitting in that memory
+					RegisterID oldVal = m_CurrentFunc->get().nextRegisterID();
+					emit(std::make_unique<Load>(oldVal, lhs.reg, type));
+					emit(std::make_unique<SPRelease>(oldVal));
+					emit(std::make_unique<Assign>(lhs.reg, rhs.reg));
+				} else {
+					// x = ...
+					// Release the pointer currently held in the variable's register
+					emit(std::make_unique<SPRelease>(lhs.reg));
+					emit(std::make_unique<Assign>(lhs.reg, rhs.reg));
+				}
+			} else {
+				// Standard scalar assignment (Int/Char)
+				emit(std::make_unique<Assign>(lhs.reg, rhs.reg));
+			}
+
+			RegisterID dest = newRegister();
+			emit(std::make_unique<UnitLit>(dest, assign.inferredType.value()));
+			return {dest, false};
+		}
 		default: UNREACHABLE(); // Unknown Expr
 	}
+}
+
+LValue Lowerer::lowerLValue(const ast::Expr &n) {
+	switch (n.kind) {
+		case ast::NodeKind::VarRef: {
+			const auto &ref = static_cast<const ast::VarRef &>(n);
+			// Local variables are just registers in our MIR
+			return {*lookup(ref.ident), false};
+		}
+		case ast::NodeKind::UnaryExpr: {
+			auto &un = static_cast<const ast::UnaryExpr &>(n);
+			if (un.op == UnaryOpKind::Dereference) {
+				// For *ptr, the LValue is the address held in the pointer
+				ExprResult addr = lowerExpr(*un.operand);
+				return {addr.reg, true};
+			}
+			break;
+		}
+		default: break;
+	}
+	UNREACHABLE();
 }
 
 void Lowerer::generateScopeCleanup() {

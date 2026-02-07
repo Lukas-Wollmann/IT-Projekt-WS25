@@ -1,15 +1,18 @@
 //link printf() -> i32;
 
-func count() -> **i32 {
-	{
-		a: **i32 = new *i32(new i32(10));
-		b: **i32 = a;
-		
-		return b;
-	}
+func count() -> i32 { 
+	return 10;
 }
 
 func main() -> i32 {
-	count();
-    return 0;
+
+	i: i32 = 0;
+	sum: i32 = 0;
+
+	while (count() != i) {
+		i += 1;
+		sum += i;
+	}
+
+	return sum;
 }

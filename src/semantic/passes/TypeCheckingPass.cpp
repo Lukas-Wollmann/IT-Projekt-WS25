@@ -245,7 +245,7 @@ bool TypeCheckingPass::visit(IfStmt &n) {
 	const auto type = checkExpression(*n.cond);
 	const auto boolType = std::make_shared<Typename>(u8"bool");
 
-	if (!typesMatch(type, boolType)) {
+	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
 		m_Context.submitError(msg, {});
 	}
@@ -260,7 +260,7 @@ bool TypeCheckingPass::visit(WhileStmt &n) {
 	const auto type = checkExpression(*n.cond);
 	const auto boolType = std::make_shared<Typename>(u8"bool");
 
-	if (!typesMatch(type, boolType)) {
+	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
 		m_Context.submitError(msg, {});
 	}

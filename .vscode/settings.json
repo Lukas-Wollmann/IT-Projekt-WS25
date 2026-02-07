@@ -4,7 +4,7 @@
         "*.hpp": "cpp",
         "*.cpp": "cpp"
     },
-    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++-18",
     "C_Cpp.clang_format_path": "/usr/bin/clang-format",
     "editor.formatOnSave": true,
     "editor.rulers": [

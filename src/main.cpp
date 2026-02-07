@@ -109,9 +109,12 @@ int main(const int argc, const char *argv[]) {
 		return 3;
 
 	if (debug) {
-		mir::Module mod = mir::Lowerer(u8"test").lowerModule(*module);
-		std::string s = mir::MIRGraphviz::generateDOT(mod);
-		util::print("{}\n", s);
+		try {
+			mir::Module mod = mir::Lowerer(u8"test").lowerModule(*module);
+			std::string s = mir::MIRGraphviz::generateDOT(mod);
+			util::print("{}\n", s);
+		} catch (const std::logic_error &) {
+		}
 	}
 
 	std::string llFilename = outputFilename + ".ll";

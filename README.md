@@ -64,3 +64,5 @@ two combined emojis like 🖕🏿 do not work: "🖕🏿🏿🏿"
 
 ## Resources
 https://dreampuf.github.io/GraphvizOnline/
+
+- Tabs dont work in error handler

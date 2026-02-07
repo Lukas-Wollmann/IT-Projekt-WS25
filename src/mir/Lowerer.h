@@ -16,6 +16,11 @@ struct ExprResult {
 	bool isManaged;
 };
 
+struct LValue {
+	RegisterID reg; // The register (either the variable itself or an address)
+	bool isMemory;	// If true, 'reg' contains an address. If false, 'reg' is the variable.
+};
+
 class Lowerer {
 	Module m_Module;
 
@@ -31,8 +36,7 @@ class Lowerer {
 	Vec<TrackedVar> m_ExprTemps;
 
 public:
-	explicit Lowerer(U8String moduleName)
-		: m_Module(std::move(moduleName)) {}
+	explicit Lowerer(U8String moduleName);
 
 	Module lowerModule(const ast::Module &n);
 
@@ -54,6 +58,7 @@ private:
 	void lowerIfStmt(const ast::IfStmt &n);
 	void lowerReturnStmt(const ast::ReturnStmt &n);
 	ExprResult lowerExpr(const ast::Expr &n);
+	LValue lowerLValue(const ast::Expr &n);
 
 	// RAII / Cleanup
 	void generateScopeCleanup();		   // Clean current scope
