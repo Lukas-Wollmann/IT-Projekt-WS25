@@ -4,80 +4,77 @@ namespace mir {
 Instr::Instr(const InstrKind kind)
 	: kind(kind) {}
 
-IntLit::IntLit(const RegisterID dest, const i32 value, type::TypePtr type)
+IntLit::IntLit(const RegID dest, const i32 value)
 	: Instr(InstrKind::IntLit)
 	, dest(dest)
-	, value(value)
-	, type(std::move(type)) {}
+	, value(value) {}
 
-LoadFunc::LoadFunc(const RegisterID dest, U8String funcName, type::TypePtr type)
+BoolLit::BoolLit(const RegID dest, const bool value)
+	: Instr(InstrKind::BoolLit)
+	, dest(dest)
+	, value(value) {}
+
+CharLit::CharLit(const RegID dest, const char32_t value)
+	: Instr(InstrKind::CharLit)
+	, dest(dest)
+	, value(value) {}
+
+UnitLit::UnitLit(const RegID dest)
+	: Instr(InstrKind::UnitLit)
+	, dest(dest) {}
+
+LoadFunc::LoadFunc(const RegID dest, U8String funcName, type::TypePtr type)
 	: Instr(InstrKind::LoadFunc)
 	, dest(dest)
 	, funcName(std::move(funcName))
 	, type(std::move(type)) {}
 
-CharLit::CharLit(const RegisterID dest, const char32_t value, type::TypePtr type)
-	: Instr(InstrKind::CharLit)
-	, dest(dest)
-	, value(value)
-	, type(std::move(type)) {}
-
-UnitLit::UnitLit(const RegisterID dest, type::TypePtr type)
-	: Instr(InstrKind::UnitLit)
-	, dest(dest)
-	, type(std::move(type)) {}
-
-Alloc::Alloc(const RegisterID dest, type::TypePtr type)
+Alloc::Alloc(const RegID dest, type::TypePtr type)
 	: Instr(InstrKind::Alloc)
 	, dest(dest)
 	, type(std::move(type)) {}
 
-Load::Load(const RegisterID dest, const RegisterID addr, type::TypePtr type)
+Load::Load(const RegID dest, const RegID addr, type::TypePtr type)
 	: Instr(InstrKind::Load)
 	, dest(dest)
 	, addr(addr)
 	, type(std::move(type)) {}
 
-Assign::Assign(const RegisterID dest, const RegisterID src)
+Assign::Assign(const RegID dest, const RegID src)
 	: Instr(InstrKind::Assign)
 	, dest(dest)
 	, src(src) {}
 
-Call::Call(RegisterID dest, RegisterID callee, Vec<RegisterID> args, type::TypePtr type)
+Call::Call(RegID dest, RegID callee, Vec<RegID> args)
 	: Instr(InstrKind::Call)
 	, dest(dest)
 	, callee(callee)
-	, args(std::move(args))
-	, type(std::move(type)) {}
+	, args(std::move(args)) {}
 
-BinaryOp::BinaryOp(const RegisterID dest, const RegisterID left, const RegisterID right,
-				   const BinaryOpKind op, type::TypePtr type)
+BinaryOp::BinaryOp(const RegID dest, const RegID left, const RegID right, const BinaryOpKind op)
 	: Instr(InstrKind::BinaryOp)
 	, dest(dest)
 	, left(left)
 	, right(right)
-	, op(op)
-	, type(std::move(type)) {}
+	, op(op) {}
 
-UnaryOp::UnaryOp(const RegisterID dest, const RegisterID operand, const UnaryOpKind op,
-				 type::TypePtr type)
+UnaryOp::UnaryOp(const RegID dest, const RegID operand, const UnaryOpKind op)
 	: Instr(InstrKind::UnaryOp)
 	, dest(dest)
 	, operand(operand)
-	, op(op)
-	, type(std::move(type)) {}
+	, op(op) {}
 
-SPCreate::SPCreate(const RegisterID reg, type::TypePtr type)
+SPCreate::SPCreate(const RegID reg, type::TypePtr type)
 	: Instr(InstrKind::SPCreate)
 	, reg(reg)
 	, type(std::move(type)) {}
 
-SPRetain::SPRetain(const RegisterID reg, type::TypePtr type)
+SPRetain::SPRetain(const RegID reg, type::TypePtr type)
 	: Instr(InstrKind::SPRetain)
 	, reg(reg)
 	, type(std::move(type)) {}
 
-SPRelease::SPRelease(const RegisterID reg)
+SPRelease::SPRelease(const RegID reg)
 	: Instr(InstrKind::SPRelease)
 	, reg(reg) {}
 
@@ -88,13 +85,13 @@ Jump::Jump(const BlockID target)
 	: Term(TermKind::Jump)
 	, target(target) {}
 
-Branch::Branch(const RegisterID cond, const BlockID then, const BlockID else_)
+Branch::Branch(const RegID cond, const BlockID then, const BlockID else_)
 	: Term(TermKind::Branch)
 	, cond(cond)
 	, then(then)
 	, else_(else_) {}
 
-Return::Return(const RegisterID val, type::TypePtr type)
+Return::Return(const RegID val, type::TypePtr type)
 	: Term(TermKind::Return)
 	, val(val)
 	, type(std::move(type)) {}
@@ -105,7 +102,7 @@ BasicBlock::BasicBlock(const BlockID id)
 Function::Function(U8String name)
 	: name(std::move(name)) {}
 
-RegisterID Function::nextRegisterID() {
+RegID Function::nextRegID() {
 	return ++nextRegId;
 }
 

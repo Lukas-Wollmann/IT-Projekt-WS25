@@ -1,6 +1,6 @@
 #include "Lowerer.h"
 
-namespace mir {
+namespace mir_old {
 
 Lowerer::Lowerer(U8String moduleName)
 	: m_Module(std::move(moduleName)) {}

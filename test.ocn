@@ -1,18 +1,12 @@
-//link printf() -> i32;
-
-func count() -> i32 { 
-	return 10;
+func half_until_0(n: i32) {
+    while (n > 0) {
+        print_i32(n);
+        n /= 2;
+    }
 }
 
+
 func main() -> i32 {
-
-	i: i32 = 0;
-	sum: i32 = 0;
-
-	while (count() != i) {
-		i += 1;
-		sum += i;
-	}
-
-	return sum;
+    half_until_0(1000);
+    return 0;
 }

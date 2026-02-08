@@ -12,8 +12,8 @@
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
-#include "mir/Lowerer.h"
-#include "mir/MIRGraphviz.h"
+#include "mir_old/Lowerer.h"
+#include "mir_old/MIRGraphviz.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
@@ -110,8 +110,8 @@ int main(const int argc, const char *argv[]) {
 
 	if (debug) {
 		try {
-			mir::Module mod = mir::Lowerer(u8"test").lowerModule(*module);
-			std::string s = mir::MIRGraphviz::generateDOT(mod);
+			mir_old::Module mod = mir_old::Lowerer(u8"test").lowerModule(*module);
+			std::string s = mir_old::MIRGraphviz::generateDOT(mod);
 			util::print("{}\n", s);
 		} catch (const std::logic_error &) {
 		}
@@ -125,8 +125,9 @@ int main(const int argc, const char *argv[]) {
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(), "-o",
-											   outputFilename.c_str(), nullptr};
+		std::vector<const char *> clangArgs = {"clang",		  llFilename.c_str(),
+											   "-o",		  outputFilename.c_str(),
+											   "print_i32.o", nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {

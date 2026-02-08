@@ -7,7 +7,7 @@
 
 #include "MIR.h"
 
-namespace mir {
+namespace mir_old {
 
 class MIRGraphviz {
 public:

@@ -4,6 +4,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 
 #include "CodeGenContext.h"
+#include "core/DefaultDecls.h"
 #include "type/Compare.h"
 
 namespace gen {
@@ -207,6 +208,19 @@ void CodeGen::visit(const FuncDecl &n) {
 }
 
 void CodeGen::visit(const Module &n) {
+	for (const auto &[name, type] : s_DefaultDecls) {
+		auto returnType = m_Context.convertType(type->returnType);
+
+		Vec<llvm::Type *> argTypes;
+		for (auto &param : type->paramTypes)
+			argTypes.push_back(m_Context.convertType(param));
+
+		auto funcType = llvm::FunctionType::get(returnType, argTypes, false);
+
+		llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name.asAscii(),
+							   m_Context.getLLVMModule());
+	}
+
 	for (auto &decl : n.decls) {
 		auto returnType = m_Context.convertType(decl->returnType);
 

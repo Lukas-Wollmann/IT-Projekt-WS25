@@ -2,13 +2,12 @@
 #include "core/Operators.h"
 #include "type/Type.h"
 
-namespace mir {
-using RegID = u32;
+namespace mir_old {
+using RegisterID = u32;
 using BlockID = u32;
 
 enum struct InstrKind {
 	IntLit,
-	BoolLit,
 	CharLit,
 	UnitLit,
 	Alloc,
@@ -32,92 +31,91 @@ protected:
 };
 
 struct IntLit : Instr {
-	const RegID dest;
+	const RegisterID dest;
 	const i32 value;
 	const type::TypePtr type;
-	IntLit(RegID dest, i32 value);
-};
-
-struct BoolLit : Instr {
-	const RegID dest;
-	const bool value;
-	BoolLit(RegID dest, bool value);
-};
-
-struct CharLit : Instr {
-	const RegID dest;
-	const char32_t value;
-	const type::TypePtr type;
-	CharLit(RegID dest, char32_t value);
-};
-
-struct UnitLit : Instr {
-	const RegID dest;
-	const type::TypePtr type;
-	UnitLit(RegID dest);
+	IntLit(RegisterID dest, i32 value, type::TypePtr type);
 };
 
 struct LoadFunc : Instr {
-	const RegID dest;
+	const RegisterID dest;
 	const U8String funcName;
 	const type::TypePtr type;
 
-	LoadFunc(RegID dest, U8String funcName, type::TypePtr type);
+	LoadFunc(RegisterID dest, U8String funcName, type::TypePtr type);
+};
+
+struct CharLit : Instr {
+	const RegisterID dest;
+	const char32_t value;
+	const type::TypePtr type;
+	CharLit(RegisterID dest, char32_t value, type::TypePtr type);
+};
+
+struct UnitLit : Instr {
+	const RegisterID dest;
+	const type::TypePtr type;
+	UnitLit(RegisterID dest, type::TypePtr type);
 };
 
 struct Alloc : Instr {
-	const RegID dest;
+	const RegisterID dest;
 	const type::TypePtr type;
-	Alloc(RegID dest, type::TypePtr type);
+	Alloc(RegisterID dest, type::TypePtr type);
 };
 
 struct Load : Instr {
-	const RegID dest;
-	const RegID addr;
+	const RegisterID dest;
+	const RegisterID addr;
 	const type::TypePtr type;
-	Load(RegID dest, RegID addr, type::TypePtr type);
+	Load(RegisterID dest, RegisterID addr, type::TypePtr type);
 };
 
 struct Assign : Instr {
-	const RegID dest;
-	const RegID src;
-	Assign(RegID dest, RegID src);
+	const RegisterID dest;
+	const RegisterID src;
+	Assign(RegisterID dest, RegisterID src);
 };
 
+// Added Call Struct
 struct Call : Instr {
-	const RegID dest;
-	const RegID callee;
-	const Vec<RegID> args;
-	Call(RegID dest, RegID callee, Vec<RegID> args);
+	const RegisterID dest;
+	const RegisterID callee;
+	const Vec<RegisterID> args;
+	const type::TypePtr type;
+	Call(RegisterID dest, RegisterID callee, Vec<RegisterID> args, type::TypePtr type);
 };
 
 struct BinaryOp : Instr {
-	const RegID dest, left, right;
+	const RegisterID dest, left, right;
 	const BinaryOpKind op;
-	BinaryOp(RegID dest, RegID left, RegID right, BinaryOpKind op);
+	const type::TypePtr type;
+	BinaryOp(RegisterID dest, RegisterID left, RegisterID right, BinaryOpKind op,
+			 type::TypePtr type);
 };
 
 struct UnaryOp : Instr {
-	const RegID dest, operand;
+	const RegisterID dest, operand;
 	const UnaryOpKind op;
-	UnaryOp(RegID dest, RegID operand, UnaryOpKind op);
+	const type::TypePtr type;
+	UnaryOp(RegisterID dest, RegisterID operand, UnaryOpKind op, type::TypePtr type);
 };
 
 struct SPCreate : Instr {
-	const RegID reg;
+	const RegisterID reg;
 	const type::TypePtr type;
-	SPCreate(RegID reg, type::TypePtr type);
+	SPCreate(RegisterID reg, type::TypePtr type);
 };
 
 struct SPRetain : Instr {
-	const RegID reg;
+	const RegisterID reg;
 	const type::TypePtr type;
-	SPRetain(RegID reg, type::TypePtr type);
+	SPRetain(RegisterID reg, type::TypePtr type);
 };
 
 struct SPRelease : Instr {
-	const RegID reg;
-	SPRelease(RegID reg);
+	const RegisterID reg;
+	SPRelease(RegisterID reg);
 };
 
 enum struct TermKind { Jump, Branch, Return };
@@ -136,16 +134,16 @@ struct Jump : Term {
 };
 
 struct Branch : Term {
-	const RegID cond;
+	const RegisterID cond;
 	const BlockID then;
 	const BlockID else_;
-	Branch(RegID cond, BlockID then, BlockID else_);
+	Branch(RegisterID cond, BlockID then, BlockID else_);
 };
 
 struct Return : Term {
-	const RegID val;
+	const RegisterID val;
 	const type::TypePtr type;
-	Return(RegID val, type::TypePtr type);
+	Return(RegisterID val, type::TypePtr type);
 };
 
 struct BasicBlock {
@@ -161,12 +159,12 @@ struct BasicBlock {
 
 struct Function {
 	const U8String name;
-	Vec<RegID> params;
+	Vec<RegisterID> params;
 	Vec<Box<BasicBlock>> blocks;
 	u32 nextRegId = 0;
 	u32 nextBlockId = 0;
 	Function(U8String name);
-	RegID nextRegID();
+	RegisterID nextRegisterID();
 	BasicBlock &createBlock();
 };
 

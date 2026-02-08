@@ -1,8 +1,9 @@
 #pragma once
 #include "MIR.h"
 #include "ast/AST.h"
+#include "ast/Visitor.h"
 
-namespace mir {
+namespace mir_old {
 struct TrackedVar {
 	RegisterID id;
 	type::TypePtr type;
@@ -21,7 +22,7 @@ struct LValue {
 	bool isMemory;	// If true, 'reg' contains an address. If false, 'reg' is the variable.
 };
 
-class Lowerer {
+struct Lowerer {
 	Module m_Module;
 
 	Opt<Ref<Function>> m_CurrentFunc;
@@ -51,7 +52,6 @@ private:
 	void emit(Box<Instr> instr);
 	void emitTerm(Box<Term> term);
 
-	// AST Visitors
 	void lowerFuncDecl(const ast::FuncDecl &n);
 	void lowerBlockStmt(const ast::BlockStmt &n);
 	void lowerStmt(const ast::Stmt &n);
