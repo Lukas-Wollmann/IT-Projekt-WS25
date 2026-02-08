@@ -1,6 +1,7 @@
 func half_until_0(n: i32) {
     while (n > 0) {
         print_i32(n);
+        print_newline();
         n /= 2;
     }
 }
@@ -8,5 +9,12 @@ func half_until_0(n: i32) {
 
 func main() -> i32 {
     half_until_0(1000);
+
+    print_bool(10 == 10);
+    print_newline();
+    
+    print_char('🌸');
+    print_newline();
+
     return 0;
 }

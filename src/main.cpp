@@ -125,9 +125,9 @@ int main(const int argc, const char *argv[]) {
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		std::vector<const char *> clangArgs = {"clang",		  llFilename.c_str(),
-											   "-o",		  outputFilename.c_str(),
-											   "print_i32.o", nullptr};
+		std::vector<const char *> clangArgs = {"clang",		   llFilename.c_str(),
+											   "-o",		   outputFilename.c_str(),
+											   "ocn_stdlib.o", nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {
