@@ -78,10 +78,10 @@ struct Load : Instr {
 	Load(RegID dest, RegID addr, type::TypePtr type);
 };
 
-struct Assign : Instr {
+struct Store : Instr {
 	const RegID dest;
 	const RegID src;
-	Assign(RegID dest, RegID src);
+	Store(RegID dest, RegID src);
 };
 
 struct Call : Instr {
@@ -163,9 +163,14 @@ struct Function {
 	const U8String name;
 	Vec<RegID> params;
 	Vec<Box<BasicBlock>> blocks;
+	Vec<Map<U8String, RegID>> m_NamedValues;
+
 	u32 nextRegId = 0;
 	u32 nextBlockId = 0;
 	Function(U8String name);
+
+	void bind(const U8String &ident, RegID reg);
+	Opt<RegID> lookup(const U8String &ident) const;
 	RegID nextRegID();
 	BasicBlock &createBlock();
 };

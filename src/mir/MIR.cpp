@@ -40,7 +40,7 @@ Load::Load(const RegID dest, const RegID addr, type::TypePtr type)
 	, addr(addr)
 	, type(std::move(type)) {}
 
-Assign::Assign(const RegID dest, const RegID src)
+Store::Store(const RegID dest, const RegID src)
 	: Instr(InstrKind::Assign)
 	, dest(dest)
 	, src(src) {}
@@ -101,6 +101,19 @@ BasicBlock::BasicBlock(const BlockID id)
 
 Function::Function(U8String name)
 	: name(std::move(name)) {}
+
+Opt<RegID> Function::lookup(const U8String &ident) const {
+	for (auto it = m_NamedValues.rbegin(); it != m_NamedValues.rend(); ++it) {
+		if (const auto item = it->find(name); item != it->end())
+			return item->second;
+	}
+
+	return {};
+}
+
+void Function::bind(const U8String &ident, RegID reg) {
+	m_NamedValues.back().emplace(ident, reg);
+}
 
 RegID Function::nextRegID() {
 	return ++nextRegId;

@@ -161,9 +161,11 @@ struct Function {
 	const U8String name;
 	Vec<RegisterID> params;
 	Vec<Box<BasicBlock>> blocks;
+
 	u32 nextRegId = 0;
 	u32 nextBlockId = 0;
 	Function(U8String name);
+
 	RegisterID nextRegisterID();
 	BasicBlock &createBlock();
 };

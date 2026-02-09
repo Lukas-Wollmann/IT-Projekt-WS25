@@ -1,20 +1,43 @@
-func half_until_0(n: i32) {
-    while (n > 0) {
-        print_i32(n);
-        print_newline();
-        n /= 2;
+func half(n: i32) -> () {
+    if (n == 0) {
+        return;
     }
+    
+    print_i32(n);
+    print_newline();
+
+    half(n / 2);
 }
 
-
 func main() -> i32 {
-    half_until_0(1000);
+    hello_world();
 
-    print_bool(10 == 10);
+    c: char = read_char();
+    print_char(c);
     print_newline();
-    
-    print_char('🌸');
-    print_newline();
+
+    while (read_bool()) {
+        n: i32 = read_i32();
+        half(n);
+    }
 
     return 0;
+}
+
+func hello_world() {
+    print_char('H');
+    print_char('e');
+    print_char('l');
+    print_char('l');
+    print_char('o');
+    print_char(' ');
+    print_char('W');
+    print_char('o');
+    print_char('r');
+    print_char('l');
+    print_char('d');
+    print_char('!');
+    print_char(' ');
+    print_char('🌸');
+    print_newline();
 }

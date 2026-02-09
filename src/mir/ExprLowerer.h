@@ -1,4 +1,4 @@
-#include "MIR.h"
+#include "LoweringContext.h"
 #include "ast/Visitor.h"
 #include "type/Type.h"
 
@@ -9,30 +9,27 @@ struct ExprResult {
 	type::TypePtr type;
 };
 
-struct TrackedValue {
+struct LValue {
 	RegID reg;
-	type::TypePtr type;
+	bool isMemory;
 };
 
 ///
-/// This class should lower exactly one expression, in the end it will produce a list of
-/// registers that contain values that need to be cleaned up.
+/// This class should lower exactly one expression-statement, in the end it will produce a
+/// list of registers that contain values that need to be cleaned up.
 ///
 struct ExprLowerer : ast::ConstVisitor<ExprResult> {
 private:
 	Function &m_CurrentFunc;
-	Vec<Box<Instr>> m_Instrs;
-	Vec<TrackedValue> m_CleanupValues;
+	LoweringContext &m_Context;
 
 public:
-	explicit ExprLowerer(Function &func);
+	ExprLowerer(Function &func, LoweringContext &ctx);
 
-	void lowerExpr(const ast::Expr &n);
+	ExprResult lowerExpr(const ast::Expr &n);
 
 private:
-	void emit(Box<Instr> instr);
-	void addToCleanup(RegID reg, type::TypePtr type);
-	void removeFromCleanup(RegID reg);
+	LValue lowerLValue(const ast::Expr &n);
 
 	ExprResult visit(const ast::IntLit &n) override;
 	ExprResult visit(const ast::BoolLit &n) override;
