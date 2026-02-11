@@ -9,6 +9,7 @@
 												   ":" STR(__LINE__) " should be unreachable")
 
 #define VERIFY(expr)                                                                               \
+	/* NOLINTNEXTLINE(*-avoid-do-while) */                                                         \
 	do {                                                                                           \
 		if (!(expr))                                                                               \
 			throw std::runtime_error("Assertion failed: " #expr " at " __FILE__                    \
