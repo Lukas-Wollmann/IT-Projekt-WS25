@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include "MIR.h"
+#include "mir/MIR.h"
 
-namespace mir_old {
+namespace mir {
 
 class MIRGraphviz {
 public:
@@ -118,8 +118,8 @@ private:
 				break;
 			}
 			case InstrKind::Assign: {
-				const auto &i = static_cast<const Assign &>(instr);
-				ss << "assign %" << i.dest << " %" << i.src;
+				const auto &i = static_cast<const Store &>(instr);
+				ss << "store %" << i.dest << " %" << i.src;
 				break;
 			}
 			case InstrKind::Load: {
@@ -133,17 +133,17 @@ private:
 				break;
 			}
 			case InstrKind::SPCreate: {
-				const auto &i = static_cast<const SPCreate &>(instr);
+				const auto &i = static_cast<const Construct &>(instr);
 				ss << "%" << i.reg << " = sp_create";
 				break;
 			}
 			case InstrKind::SPRetain: {
-				const auto &i = static_cast<const SPCreate &>(instr);
+				const auto &i = static_cast<const Construct &>(instr);
 				ss << "%" << i.reg << " = sp_retain";
 				break;
 			}
 			case InstrKind::SPRelease: {
-				const auto &i = static_cast<const SPRelease &>(instr);
+				const auto &i = static_cast<const Destruct &>(instr);
 				ss << "release %" << i.reg;
 				break;
 			}

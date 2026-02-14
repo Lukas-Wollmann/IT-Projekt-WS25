@@ -5,11 +5,12 @@
 namespace mir {
 struct StmtLowerer : ast::ConstVisitor<void> {
 private:
-	Function &m_CurrentFunc;
 	LoweringContext &m_Context;
 
 public:
-	StmtLowerer(Function &func, LoweringContext &ctx);
+	StmtLowerer(LoweringContext &ctx);
+
+    void lowerStmt(const ast::Stmt &n);
 
 private:
 	void visit(const ast::VarDef &n) override;

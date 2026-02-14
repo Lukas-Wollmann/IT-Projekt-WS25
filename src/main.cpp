@@ -12,7 +12,7 @@
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
-#include "mir_old/Lowerer.h"
+#include "mir/Lowerer.h"
 #include "mir_old/MIRGraphviz.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
@@ -110,8 +110,8 @@ int main(const int argc, const char *argv[]) {
 
 	if (debug) {
 		try {
-			mir_old::Module mod = mir_old::Lowerer(u8"test").lowerModule(*module);
-			std::string s = mir_old::MIRGraphviz::generateDOT(mod);
+			mir::Module mod = mir::Lowerer().lowerModule(*module);
+			std::string s = mir::MIRGraphviz::generateDOT(mod);
 			util::print("{}\n", s);
 		} catch (const std::logic_error &) {
 		}

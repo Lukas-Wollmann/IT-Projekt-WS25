@@ -20,11 +20,10 @@ struct LValue {
 ///
 struct ExprLowerer : ast::ConstVisitor<ExprResult> {
 private:
-	Function &m_CurrentFunc;
 	LoweringContext &m_Context;
 
 public:
-	ExprLowerer(Function &func, LoweringContext &ctx);
+	ExprLowerer(LoweringContext &ctx);
 
 	ExprResult lowerExpr(const ast::Expr &n);
 

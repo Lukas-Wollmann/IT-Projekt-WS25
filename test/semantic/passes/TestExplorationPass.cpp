@@ -1,4 +1,5 @@
 #include "Doctest.h"
+#include "core/DefaultDecls.h"
 #include "semantic/passes/ExplorationPass.h"
 
 using namespace sem;
@@ -27,7 +28,7 @@ TEST_CASE("ExplorationPass: Visit Module visits all FuncDecls") {
 
 	// Assert
 	auto &ns = ctx.getGlobalNamespace();
-	CHECK(ns.getSize() == 2);
+	CHECK(ns.getSize() == 2 + s_DefaultDecls.size());
 	CHECK(ns.getFunction(u8"foo").has_value());
 	CHECK(ns.getFunction(u8"bar").has_value());
 }

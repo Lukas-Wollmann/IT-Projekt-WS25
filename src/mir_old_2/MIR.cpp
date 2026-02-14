@@ -64,19 +64,20 @@ UnaryOp::UnaryOp(const RegID dest, const RegID operand, const UnaryOpKind op)
 	, operand(operand)
 	, op(op) {}
 
-SPCreate::SPCreate(const RegID reg, type::TypePtr type)
+Construct::Construct(const RegID reg, type::TypePtr type)
 	: Instr(InstrKind::SPCreate)
 	, reg(reg)
 	, type(std::move(type)) {}
 
-SPRetain::SPRetain(const RegID reg, type::TypePtr type)
+Copy::Copy(const RegID reg, type::TypePtr type)
 	: Instr(InstrKind::SPRetain)
 	, reg(reg)
 	, type(std::move(type)) {}
 
-SPRelease::SPRelease(const RegID reg)
+Destruct::Destruct(const RegID reg, type::TypePtr type)
 	: Instr(InstrKind::SPRelease)
-	, reg(reg) {}
+	, reg(reg)
+	, type(std::move(type)) {}
 
 Term::Term(const TermKind kind)
 	: kind(kind) {}
@@ -91,10 +92,9 @@ Branch::Branch(const RegID cond, const BlockID then, const BlockID else_)
 	, then(then)
 	, else_(else_) {}
 
-Return::Return(const RegID val, type::TypePtr type)
+Return::Return(const RegID val)
 	: Term(TermKind::Return)
-	, val(val)
-	, type(std::move(type)) {}
+	, val(val) {}
 
 BasicBlock::BasicBlock(const BlockID id)
 	: id(id) {}
@@ -102,26 +102,13 @@ BasicBlock::BasicBlock(const BlockID id)
 Function::Function(U8String name)
 	: name(std::move(name)) {}
 
-Opt<RegID> Function::lookup(const U8String &ident) const {
-	for (auto it = m_NamedValues.rbegin(); it != m_NamedValues.rend(); ++it) {
-		if (const auto item = it->find(name); item != it->end())
-			return item->second;
-	}
-
-	return {};
-}
-
-void Function::bind(const U8String &ident, RegID reg) {
-	m_NamedValues.back().emplace(ident, reg);
-}
-
 RegID Function::nextRegID() {
 	return ++nextRegId;
 }
 
-BasicBlock &Function::createBlock() {
-	blocks.push_back(std::make_unique<BasicBlock>(++nextBlockId));
-	return *blocks.back();
+Ptr<BasicBlock> Function::createBlock() {
+	blocks.push_back(std::make_shared<BasicBlock>(++nextBlockId));
+	return blocks.back();
 }
 
 Module::Module(U8String name)

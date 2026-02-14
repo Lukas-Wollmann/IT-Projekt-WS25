@@ -14,7 +14,7 @@ enum struct InstrKind {
 	Alloc,
 	Load,
 	Assign,
-	Call, // Added missing kind
+	Call,
 	LoadFunc,
 	BinaryOp,
 	UnaryOp,
@@ -103,21 +103,22 @@ struct UnaryOp : Instr {
 	UnaryOp(RegID dest, RegID operand, UnaryOpKind op);
 };
 
-struct SPCreate : Instr {
+struct Construct : Instr {
 	const RegID reg;
 	const type::TypePtr type;
-	SPCreate(RegID reg, type::TypePtr type);
+	Construct(RegID reg, type::TypePtr type);
 };
 
-struct SPRetain : Instr {
+struct Copy : Instr {
 	const RegID reg;
 	const type::TypePtr type;
-	SPRetain(RegID reg, type::TypePtr type);
+	Copy(RegID reg, type::TypePtr type);
 };
 
-struct SPRelease : Instr {
+struct Destruct : Instr {
 	const RegID reg;
-	SPRelease(RegID reg);
+	type::TypePtr type;
+	Destruct(RegID reg, type::TypePtr type);
 };
 
 enum struct TermKind { Jump, Branch, Return };
@@ -144,13 +145,13 @@ struct Branch : Term {
 
 struct Return : Term {
 	const RegID val;
-	const type::TypePtr type;
-	Return(RegID val, type::TypePtr type);
+	Return(RegID val);
 };
 
 struct BasicBlock {
 	const BlockID id;
 	Vec<Box<Instr>> instrs;
+
 	Box<Term> term;
 	BasicBlock(BlockID id);
 
@@ -162,22 +163,19 @@ struct BasicBlock {
 struct Function {
 	const U8String name;
 	Vec<RegID> params;
-	Vec<Box<BasicBlock>> blocks;
-	Vec<Map<U8String, RegID>> m_NamedValues;
+	Vec<Ptr<BasicBlock>> blocks;
 
 	u32 nextRegId = 0;
 	u32 nextBlockId = 0;
 	Function(U8String name);
 
-	void bind(const U8String &ident, RegID reg);
-	Opt<RegID> lookup(const U8String &ident) const;
 	RegID nextRegID();
-	BasicBlock &createBlock();
+	Ptr<BasicBlock> createBlock();
 };
 
 struct Module {
 	const U8String name;
-	Vec<Box<Function>> funcs;
+	Vec<Ptr<Function>> funcs;
 	explicit Module(U8String name);
 };
 }

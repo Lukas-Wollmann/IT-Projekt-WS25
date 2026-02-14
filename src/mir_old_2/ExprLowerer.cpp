@@ -1,9 +1,8 @@
 #include "ExprLowerer.h"
 
 namespace mir {
-ExprLowerer::ExprLowerer(Function &func, LoweringContext &ctx)
-	: m_CurrentFunc(func)
-	, m_Context(ctx) {}
+ExprLowerer::ExprLowerer(LoweringContext &ctx)
+	: m_Context(ctx) {}
 
 ExprResult ExprLowerer::lowerExpr(const ast::Expr &n) {
 	return dispatch(n);
@@ -13,7 +12,7 @@ LValue ExprLowerer::lowerLValue(const ast::Expr &n) {
 	switch (n.kind) {
 		case ast::NodeKind::VarRef: {
 			const auto &varRef = static_cast<const ast::VarRef &>(n);
-			const auto reg = m_CurrentFunc.lookup(varRef.ident);
+			const auto reg = m_Context.lookup(varRef.ident);
 
 			VERIFY(reg.has_value());
 
@@ -33,7 +32,7 @@ LValue ExprLowerer::lowerLValue(const ast::Expr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::IntLit &n) {
-	const auto reg = m_CurrentFunc.nextRegID();
+	const auto reg = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<IntLit>(reg, n.value));
@@ -42,7 +41,7 @@ ExprResult ExprLowerer::visit(const ast::IntLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::BoolLit &n) {
-	const auto reg = m_CurrentFunc.nextRegID();
+	const auto reg = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<BoolLit>(reg, n.value));
@@ -51,7 +50,7 @@ ExprResult ExprLowerer::visit(const ast::BoolLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::CharLit &n) {
-	const auto reg = m_CurrentFunc.nextRegID();
+	const auto reg = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<CharLit>(reg, n.value));
@@ -60,7 +59,7 @@ ExprResult ExprLowerer::visit(const ast::CharLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::UnitLit &n) {
-	const auto reg = m_CurrentFunc.nextRegID();
+	const auto reg = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<UnitLit>(reg));
@@ -69,26 +68,23 @@ ExprResult ExprLowerer::visit(const ast::UnitLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
-	const auto expr = dispatch(*n.expr);
+	const auto expr = lowerExpr(*n.expr);
 	const auto &type = n.inferredType.value();
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto dest = m_Context.nextRegID();
 
-	// Right now the only types that are RAII managed are pointers
-	if (expr.type->isTypeKind(type::TypeKind::Pointer)) {
-		if (expr.isTemp) {
-			// Temporarys can just be moved, they don't clean them up after the expression
-			m_Context.removeFromCleanup(expr.reg);
-		} else {
-			// Non temporary values need to be copied
-			m_Context.emit(std::make_unique<SPRetain>(expr.reg, expr.type));
-		}
+	if (expr.isTemp) {
+		// Temporarys can just be moved, so don't clean them up after the expression
+		m_Context.removeFromExprCleanup(expr.reg);
+	} else {
+		// Non temporary values need to be copied
+		m_Context.emit(std::make_unique<Copy>(expr.reg, expr.type));
 	}
 
 	// Create the actual requested pointer
-	m_Context.emit(std::make_unique<SPCreate>(dest, expr.type));
+	m_Context.emit(std::make_unique<Construct>(dest, expr.type));
 	m_Context.emit(std::make_unique<Store>(dest, expr.reg));
 
-	m_Context.addToCleanup(dest, type);
+	m_Context.addToExprCleanup(dest, type);
 
 	return {dest, true, type};
 }
@@ -97,11 +93,12 @@ ExprResult ExprLowerer::visit(const ast::VarRef &n) {
 	const auto &type = n.inferredType.value();
 
 	// Return a local variable as a borrow
-	if (const auto reg = m_CurrentFunc.lookup(n.ident))
+	if (const auto reg = m_Context.lookup(n.ident)) {
 		return {reg.value(), false, type};
+	}
 
 	// If not found locally, assume it is a global function
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto dest = m_Context.nextRegID();
 	m_Context.emit(std::make_unique<LoadFunc>(dest, n.ident, type));
 
 	return {dest, false, type};
@@ -109,7 +106,7 @@ ExprResult ExprLowerer::visit(const ast::VarRef &n) {
 
 ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 	const auto operand = dispatch(*n.operand);
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto dest = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<UnaryOp>(dest, operand.reg, n.op));
@@ -118,9 +115,9 @@ ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
-	const auto left = dispatch(*n.left);
-	const auto right = dispatch(*n.right);
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto left = lowerExpr(*n.left);
+	const auto right = lowerExpr(*n.right);
+	const auto dest = m_Context.nextRegID();
 	const auto &type = n.inferredType.value();
 
 	m_Context.emit(std::make_unique<BinaryOp>(dest, left.reg, right.reg, n.op));
@@ -130,32 +127,32 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	// This will result into a pointer to a function
-	const auto callee = dispatch(*n.expr);
+	const auto callee = lowerExpr(*n.expr);
 	const auto &funcReturnType = n.inferredType.value();
 	Vec<RegID> argRegs;
 
 	// The caller (here) will make sure that all the arguments are correctly retained,
 	// the called function will then only clean them up.
 	for (const auto &arg : n.args) {
-		const auto result = dispatch(*arg);
+		const auto result = lowerExpr(*arg);
 
 		if (result.type->isTypeKind(type::TypeKind::Pointer)) {
 			if (!result.isTemp) {
 				// It's a variable; we must increment for the callee
-				m_Context.emit(std::make_unique<SPRetain>(result.reg, result.type));
+				m_Context.emit(std::make_unique<Copy>(result.reg, result.type));
 			} else {
 				// It's a temporary; the callee takes over the cleanup
-				m_Context.removeFromCleanup(result.reg);
+				m_Context.removeFromExprCleanup(result.reg);
 			}
 		}
 	}
 
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto dest = m_Context.nextRegID();
 	m_Context.emit(std::make_unique<Call>(dest, callee.reg, argRegs));
 
 	// If the return type is a pointer, the callee gives us a +1 reference
 	if (funcReturnType->isTypeKind(type::TypeKind::Pointer)) {
-		m_Context.addToCleanup(dest, funcReturnType);
+		m_Context.addToExprCleanup(dest, funcReturnType);
 	}
 
 	return {dest, true, funcReturnType};
@@ -163,29 +160,27 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 
 ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	const auto left = lowerLValue(*n.left);
-	const auto right = dispatch(*n.right);
-	const auto dest = m_CurrentFunc.nextRegID();
+	const auto right = lowerExpr(*n.right);
+	const auto dest = m_Context.nextRegID();
 	const auto &leftType = n.left->inferredType.value();
 	const auto &type = n.inferredType.value();
 
-	if (leftType->isTypeKind(type::TypeKind::Pointer)) {
-		if (!right.isTemp) {
-			// It's a variable; we must increment for the callee
-			m_Context.emit(std::make_unique<SPRetain>(right.reg, right.type));
-		} else {
-			// It's a temporary; the callee takes over the cleanup
-			m_Context.removeFromCleanup(right.reg);
-		}
+	if (!right.isTemp) {
+		// It's a variable; we must increment for the callee
+		m_Context.emit(std::make_unique<Copy>(right.reg, right.type));
+	} else {
+		// It's a temporary; the callee takes over the cleanup
+		m_Context.removeFromExprCleanup(right.reg);
+	}
 
-		if (left.isMemory) {
-			// We must release the pointer currently sitting in that memory
-			const auto oldReg = m_CurrentFunc.nextRegID();
-			m_Context.emit(std::make_unique<Load>(oldReg, left.reg, type));
-			m_Context.emit(std::make_unique<SPRelease>(oldReg));
-		} else {
-			// Release the pointer currently held in the variable's register
-			m_Context.emit(std::make_unique<SPRelease>(left.reg));
-		}
+	if (left.isMemory) {
+		// We must release the pointer currently sitting in that memory
+		const auto oldReg = m_Context.nextRegID();
+		m_Context.emit(std::make_unique<Load>(oldReg, left.reg, type));
+		m_Context.emit(std::make_unique<Destruct>(oldReg, type));
+	} else {
+		// Release the pointer currently held in the variable's register
+		m_Context.emit(std::make_unique<Destruct>(left.reg, type));
 	}
 
 	m_Context.emit(std::make_unique<Store>(left.reg, right.reg));
