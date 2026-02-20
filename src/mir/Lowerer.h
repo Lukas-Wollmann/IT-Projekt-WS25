@@ -455,17 +455,17 @@ public:
 		const auto &llvmLeftType = m_Converter.convertType(n.left->inferredType.value());
 
 		if (n.assignmentKind == AssignmentKind::Simple) {
-			const auto &store = m_LLVMBuilder.CreateStore(right, leftLValue);
-			return {.value = store,
+			m_LLVMBuilder.CreateStore(right, leftLValue);
+			return {.value = llvm::ConstantInt::getNullValue(m_LLVMBuilder.getInt8Ty()),
 					.type = leftType,
-					.isTemp = true}; // TODO test and change TypeChecker
+					.isTemp = true};
 		}
 
 		llvm::Value *res = nullptr;
 		const auto &left = m_LLVMBuilder.CreateLoad(llvmLeftType, leftLValue);
 
 		using enum AssignmentKind;
-		switch (n.assignmentKind) { // TODO drop Pointers
+		switch (n.assignmentKind) { // TODO retain, drop and move Pointers
 			case Addition:
 				if (*leftType == type::Typename(u8"i32"))
 					res = m_LLVMBuilder.CreateAdd(left, right);
@@ -535,9 +535,9 @@ public:
 			default: UNREACHABLE();
 		}
 		const auto &store = m_LLVMBuilder.CreateStore(res, leftLValue);
-		return {.value = store,
+		return {.value = llvm::ConstantInt::getNullValue(m_LLVMBuilder.getInt8Ty()),
 				.type = leftType,
-				.isTemp = true}; // TODO test and change TypeChecker
+				.isTemp = true};
 	}
 
 	TrackedValue lowerLValue(const ast::Expr &n) {

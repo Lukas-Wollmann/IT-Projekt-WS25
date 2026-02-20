@@ -49,8 +49,8 @@ TEST_CASE("ExprLowerer: Sandbox") {
 						 std::make_unique<ast::HeapAlloc>(std::make_shared<type::Typename>(u8"i32"),
 														  std::make_unique<ast::IntLit>(12)));
 
-	pass.dispatch(expr2);
-	exprLowerer.lowerExpr(expr2);
+	pass.dispatch(expr);
+	exprLowerer.lowerExpr(expr);
 	exprLowerer.emitExprCleanup();
 	ctx.getIRBuilder().CreateRet(llvm::ConstantInt::get(i32Ty, 0));
 	ctx.getLLVMModule().print(llvm::errs(), nullptr);
