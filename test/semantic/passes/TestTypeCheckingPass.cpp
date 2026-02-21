@@ -5,7 +5,7 @@
 
 using namespace ast;
 using namespace type;
-using namespace semantic;
+using namespace sem;
 
 #if 0
 TEST_CASE("TypeCheckingPass: IntLit type will be infered as Typename i32") {

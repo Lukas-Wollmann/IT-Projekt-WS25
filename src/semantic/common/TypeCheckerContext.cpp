@@ -1,19 +1,25 @@
 #include "TypeCheckerContext.h"
 
-namespace semantic {
-	TypeCheckerContext::TypeCheckerContext(ErrorHandler &err)
-		: m_GlobalNamespace(u8"global")
-		, m_ErrorHandler(err) {}
+#include "core/DefaultDecls.h"
 
-	void TypeCheckerContext::submitError(U8String msg, SourceLoc loc, ErrorLevel level) {
-		m_ErrorHandler.addError(std::move(msg), loc, level);
-	}
+namespace sem {
+TypeCheckerContext::TypeCheckerContext(ErrorHandler &err)
+	: m_GlobalNamespace(u8"global")
+	, m_ErrorHandler(err) {
+	for (const auto &[name, type] : s_DefaultDecls)
+		m_GlobalNamespace.addFunction(name, type);
+}
 
-	Namespace &TypeCheckerContext::getGlobalNamespace() {
-		return m_GlobalNamespace;
-	}
+void TypeCheckerContext::submitError(U8String msg, const SourceLoc &loc,
+									 const ErrorLevel level) const {
+	m_ErrorHandler.addError(std::move(msg), loc, level);
+}
 
-	const OperatorTable &TypeCheckerContext::getOperatorTable() const {
-		return m_OperatorTable;
-	}
+Namespace &TypeCheckerContext::getGlobalNamespace() {
+	return m_GlobalNamespace;
+}
+
+const OperatorTable &TypeCheckerContext::getOperatorTable() const {
+	return m_OperatorTable;
+}
 }

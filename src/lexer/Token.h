@@ -3,44 +3,44 @@
 #include "core/SourceLoc.h"
 #include "core/U8String.h"
 
-namespace lexer {
-	enum struct TokenType {
-		Identifier,
-		StringLiteral,
-		IntLiteral,
-		CharLiteral,
-		BoolLiteral,
-		Keyword,
-		Operator,
-		Separator,
-		Comment,
-		Illegal,
-		EndOfFile
-	};
+namespace lex {
+enum struct TokenType {
+	Identifier,
+	StringLiteral,
+	IntLiteral,
+	CharLiteral,
+	BoolLiteral,
+	Keyword,
+	Operator,
+	Separator,
+	Comment,
+	Illegal,
+	EndOfFile
+};
 
-	struct Token {
-		TokenType type;
-		U8String lexeme;
-		SourceLoc loc;
+struct Token {
+	TokenType type;
+	U8String lexeme;
+	SourceLoc loc;
 
-		Token(TokenType type, U8String = u8"", const SourceLoc &loc = {0, 0, 0, 0});
+	explicit Token(TokenType type, U8String = u8"", const SourceLoc &loc = {});
 
-		bool matches(TokenType otherType, U8String otherLexeme) const;
-		bool matches(TokenType otherType) const;
-	};
+	[[nodiscard]] bool matches(TokenType otherType, const U8String &otherLexeme) const;
+	[[nodiscard]] bool matches(TokenType otherType) const;
 
-	bool operator==(const Token &left, const Token &right);
-	bool operator!=(const Token &left, const Token &right);
+	bool operator==(const Token &other) const;
+	bool operator!=(const Token &other) const;
+};
 }
 
 template <>
-struct std::formatter<lexer::TokenType> {
-	constexpr auto parse(format_parse_context &ctx) {
+struct std::formatter<lex::TokenType> {
+	constexpr auto parse(const format_parse_context &ctx) {
 		return ctx.begin();
 	}
 
-	auto format(lexer::TokenType type, format_context &ctx) const {
-		using enum lexer::TokenType;
+	auto format(const lex::TokenType type, format_context &ctx) const {
+		using enum lex::TokenType;
 
 		std::u8string_view out;
 
@@ -64,12 +64,12 @@ struct std::formatter<lexer::TokenType> {
 };
 
 template <>
-struct std::formatter<lexer::Token> {
+struct std::formatter<lex::Token> {
 	bool debug = false;
 
-	constexpr auto parse(format_parse_context &ctx) {
+	constexpr auto parse(const format_parse_context &ctx) {
 		auto it = ctx.begin();
-		auto end = ctx.end();
+		const auto end = ctx.end();
 
 		if (it != end && *it == '?') {
 			debug = true;
@@ -82,9 +82,9 @@ struct std::formatter<lexer::Token> {
 		return it;
 	}
 
-	auto format(const lexer::Token &token, format_context &ctx) const {
+	auto format(const lex::Token &token, format_context &ctx) const {
 		if (!debug) {
-			if (token.lexeme == u8"")
+			if (token.lexeme.empty())
 				return std::format_to(ctx.out(), "{}", token.type);
 
 			return std::format_to(ctx.out(), "'{}'", token.lexeme);

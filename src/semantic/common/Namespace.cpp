@@ -2,28 +2,26 @@
 
 #include "type/Printer.h"
 
-namespace semantic {
-	using namespace type;
+namespace sem {
+Namespace::Namespace(U8String name)
+	: m_Name(std::move(name)) {}
 
-	Namespace::Namespace(U8String name)
-		: m_Name(std::move(name)) {}
+void Namespace::addFunction(U8String name, type::FunctionTypePtr func) {
+	VERIFY(!m_Functions.contains(name));
 
-	void Namespace::addFunction(U8String name, FunctionTypePtr func) {
-		VERIFY(!m_Functions.contains(name));
+	m_Functions.emplace(std::move(name), std::move(func));
+}
 
-		m_Functions.emplace(std::move(name), std::move(func));
-	}
+Opt<type::FunctionTypePtr> Namespace::getFunction(const U8String &name) const {
+	const auto func = m_Functions.find(name);
 
-	Opt<FunctionTypePtr> Namespace::getFunction(const U8String &name) const {
-		const auto func = m_Functions.find(name);
+	if (func == m_Functions.end())
+		return {};
 
-		if (func == m_Functions.end())
-			return {};
+	return func->second;
+}
 
-		return func->second;
-	}
-
-	size_t Namespace::getSize() const {
-		return m_Functions.size();
-	}
+size_t Namespace::getSize() const {
+	return m_Functions.size();
+}
 }

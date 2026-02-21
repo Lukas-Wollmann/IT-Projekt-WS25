@@ -7,28 +7,41 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ZLIB REQUIRED)
 find_package(LLVM REQUIRED CONFIG)
 
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
-file(GLOB_RECURSE SRC_FILES "src/*.cpp")
-file(GLOB_RECURSE HEADER_FILES "src/*.h")
-set(APP_SRCS ${SRC_FILES} ${HEADER_FILES})
+if(TARGET LLVM)
+    set(llvm_libs LLVM)
+else()
+    llvm_map_components_to_libnames(llvm_libs support core irreader)
+endif()
 
-add_executable(app ${APP_SRCS})
-include_directories(lib src test)
+file(GLOB_RECURSE LOGIC_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+list(REMOVE_ITEM LOGIC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-file(GLOB_RECURSE SRC_FILES_TEST "test/*.cpp")
-file(GLOB_RECURSE HEADER_FILES_TEST "test/*.h")
-set(TEST_SRCS ${APP_SRCS} ${SRC_FILES_TEST} ${HEADER_FILES_TEST})
-list(FILTER TEST_SRCS EXCLUDE REGEX "src/main.cpp")
+add_library(project_configs INTERFACE)
+target_include_directories(project_configs INTERFACE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src 
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/test
+    ${LLVM_INCLUDE_DIRS}
+)
 
-add_executable(test ${TEST_SRCS})
+# 1. Target: app
+add_executable(app src/main.cpp ${LOGIC_SOURCES})
+target_link_libraries(app PRIVATE project_configs ${llvm_libs})
+target_precompile_headers(app PUBLIC 
+    "src/core/Typedef.h"
+    <vector>
+    <string>
+    <memory>
+    <llvm/IR/IRBuilder.h>
+    <llvm/IR/Module.h>
+)
 
-llvm_map_components_to_libnames(llvm_libs support core irreader)
+# 2. Target: test
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "test/*.cpp")
+add_executable(test ${TEST_SOURCES} ${LOGIC_SOURCES})
+target_link_libraries(test PRIVATE project_configs ${llvm_libs})
 
-target_link_libraries(app ${llvm_libs})
-target_link_libraries(test ${llvm_libs})
+target_precompile_headers(test REUSE_FROM app)

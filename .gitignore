@@ -4,7 +4,6 @@
 # Compiled Object files
 *.slo
 *.lo
-*.o
 *.obj
 
 # Precompiled Headers
@@ -40,9 +39,10 @@
 # debug information files
 *.dwo
 
+.idea
 bin
-build
 cmake-build
+cmake-build-debug
 
 out
 out.ll

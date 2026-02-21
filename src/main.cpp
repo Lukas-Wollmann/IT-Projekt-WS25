@@ -12,16 +12,18 @@
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
+#include "mir/Lowerer.h"
+#include "mir_old/MIRGraphviz.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
 
+using namespace lex;
+using namespace prs;
 using namespace ast;
+using namespace sem;
+using namespace gen;
 using namespace type;
-using namespace semantic;
-using namespace codegen;
-using namespace lexer;
-using namespace parser;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
@@ -106,6 +108,15 @@ int main(const int argc, const char *argv[]) {
 	if (err.hasError())
 		return 3;
 
+	if (debug) {
+		try {
+			mir::Module mod = mir::Lowerer().lowerModule(*module);
+			std::string s = mir::MIRGraphviz::generateDOT(mod);
+			util::print("{}\n", s);
+		} catch (const std::logic_error &) {
+		}
+	}
+
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
 	CodeGen::generate(output, *module);
@@ -114,8 +125,9 @@ int main(const int argc, const char *argv[]) {
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(), "-o",
-											   outputFilename.c_str(), nullptr};
+		std::vector<const char *> clangArgs = {"clang",		   llFilename.c_str(),
+											   "-o",		   outputFilename.c_str(),
+											   "ocn_stdlib.o", nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {
