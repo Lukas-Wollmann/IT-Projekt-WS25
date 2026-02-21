@@ -1,6 +1,7 @@
 #pragma once
 
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_os_ostream.h>
 
 #include "ExprLowerer.h"
 #include "core/DefaultDecls.h"
@@ -21,9 +22,30 @@ public:
 		, m_Converter(m_LoweringContext.getTypeConverter())
 		, m_LLVMModule(m_LoweringContext.getLLVMModule())
 		, m_Builder(m_LoweringContext.getIRBuilder())
-		, m_LLVMContext(m_LoweringContext.getLLVMContext()) {}
+		, m_LLVMContext(m_LoweringContext.getLLVMContext()) {
+		// TODO: move this somewhere else
+		llvm::Type *size_t_Ty = m_Builder.getIntPtrTy(m_LLVMModule.getDataLayout());
+		llvm::Type *ptrTy = m_Builder.getPtrTy();
+		llvm::Type *voidTy = m_Builder.getVoidTy();
 
-	void lower(const ast::Node &n) {
+		llvm::FunctionType *spCreateTy = llvm::FunctionType::get(ptrTy, {size_t_Ty, ptrTy}, false);
+		llvm::FunctionType *spCopyTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+		llvm::FunctionType *spDropTy = llvm::FunctionType::get(voidTy, {ptrTy}, false);
+
+		m_LLVMModule.getOrInsertFunction("__sp_create", spCreateTy);
+		m_LLVMModule.getOrInsertFunction("__sp_copy", spCopyTy);
+		m_LLVMModule.getOrInsertFunction("__sp_drop", spDropTy);
+	}
+
+	static void lower(std::ostream &os, const ast::Module &module) {
+		Lowerer lowerer(module);
+		lowerer.dispatch(module);
+
+		llvm::raw_os_ostream llvmOS(os);
+		lowerer.m_LLVMModule.print(llvmOS, nullptr);
+	}
+
+	void lowerNode(const ast::Node &n) {
 		// TODO: This is a bit hacky, we might want to refactor this later.
 		// We would need a ExprStmt Node or smth like that in the future.
 
@@ -35,7 +57,7 @@ public:
 			return;
 		}
 
-		lower(n);
+		dispatch(n);
 	}
 
 	void visit(const ast::Module &n) override {
@@ -63,7 +85,7 @@ public:
 		}
 
 		for (auto &d : n.decls) {
-			lower(*d);
+			lowerNode(*d);
 		}
 	}
 
@@ -88,9 +110,10 @@ public:
 			++i;
 		}
 
-		lower(*n.body);
+		lowerNode(*n.body);
 
 		if (!m_Builder.GetInsertBlock()->getTerminator()) {
+			m_LoweringContext.emitFullScopeCleanup();
 			m_Builder.CreateRet(llvm::Constant::getNullValue(func->getReturnType()));
 		}
 
@@ -106,10 +129,13 @@ public:
 				break;
 			}
 
-			lower(*stmt);
+			lowerNode(*stmt);
 		}
 
-		m_LoweringContext.emitScopeCleanup();
+		if (!m_Builder.GetInsertBlock()->getTerminator()) {
+			m_LoweringContext.emitScopeCleanup();
+		}
+
 		m_LoweringContext.closeScope();
 	}
 
@@ -129,7 +155,7 @@ public:
 		m_Builder.CreateCondBr(cond.value, then, else_);
 		m_Builder.SetInsertPoint(then);
 
-		lower(*n.then);
+		lowerNode(*n.then);
 
 		if (!then->getTerminator()) {
 			m_Builder.CreateBr(merge);
@@ -137,7 +163,7 @@ public:
 
 		m_Builder.SetInsertPoint(else_);
 
-		lower(*n.else_);
+		lowerNode(*n.else_);
 
 		if (!else_->getTerminator()) {
 			m_Builder.CreateBr(merge);
@@ -163,7 +189,7 @@ public:
 		m_Builder.CreateCondBr(cond.value, bodyBlock, afterBlock);
 		m_Builder.SetInsertPoint(bodyBlock);
 
-		lower(*n.body);
+		lowerNode(*n.body);
 
 		if (!m_Builder.GetInsertBlock()->getTerminator()) {
 			m_Builder.CreateBr(condBlock);
@@ -172,7 +198,7 @@ public:
 		m_Builder.SetInsertPoint(afterBlock);
 	}
 
-	void visit(const ast::ReturnStmt &n) {
+	void visit(const ast::ReturnStmt &n) override {
 		ExprLowerer exprLowerer(m_LoweringContext);
 		const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
 
@@ -182,10 +208,11 @@ public:
 			m_LoweringContext.copyValue(value, type);
 		}
 
+		m_LoweringContext.emitFullScopeCleanup();
 		m_Builder.CreateRet(value);
 	}
 
-	void visit(const ast::VarDef &n) {
+	void visit(const ast::VarDef &n) override {
 		auto alloca = m_LoweringContext.createAlloca(n.type, n.ident);
 
 		ExprLowerer exprLowerer(m_LoweringContext);

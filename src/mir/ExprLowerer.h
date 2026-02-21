@@ -49,7 +49,7 @@ public:
 		m_ExprCleanup.erase(first, last);
 	}
 
-	TrackedValue lowerLValue(const ast::Expr &n) {
+	ExprResult lowerLValue(const ast::Expr &n) {
 		switch (n.kind) {
 			case ast::NodeKind::VarRef: {
 				const auto &varRef = static_cast<const ast::VarRef &>(n);
@@ -57,7 +57,7 @@ public:
 
 				VERIFY(reg.has_value());
 
-				return reg.value();
+				return {.value = reg.value().value, .type = reg.value().type, .isTemp = false};
 			}
 			case ast::NodeKind::UnaryExpr: {
 				const auto &unaryExpr = static_cast<const ast::UnaryExpr &>(n);
@@ -65,7 +65,7 @@ public:
 
 				const auto expr = lowerExpr(*unaryExpr.operand);
 
-				return {.value = expr.value, .type = expr.type};
+				return expr;
 			}
 			default: UNREACHABLE();
 		}
@@ -334,6 +334,7 @@ public:
 	ExprResult visit(const ast::FuncCall &n) override {
 		const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
 		VERIFY(type->isTypeKind(type::TypeKind::Function));
+		const auto funcType = std::static_pointer_cast<const type::FunctionType>(type);
 
 		Vec<llvm::Value *> args;
 		args.reserve(n.args.size());
@@ -348,14 +349,17 @@ public:
 				args.push_back(m_LoweringContext.copyValue(resValue, resType));
 			}
 		}
-		auto *funcType = static_cast<llvm::FunctionType *>(m_Converter.convertType(type));
+		auto *llvmFuncType = static_cast<llvm::FunctionType *>(m_Converter.convertType(type));
 
-		const auto &call = m_LLVMBuilder.CreateCall(funcType, callee, args);
+		const auto &call = m_LLVMBuilder.CreateCall(llvmFuncType, callee, args);
+
+		addToExprCleanup(call, funcType->returnType);
+
 		return {.value = call, .type = n.inferredType.value(), .isTemp = true};
 	}
 
 	ExprResult visit(const ast::Assignment &n) override {
-		const auto &[leftLValue, leftType] = lowerLValue(*n.left);
+		const auto &[leftLValue, leftType, isLeftTemp] = lowerLValue(*n.left);
 		const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
 		const auto &llvmLeftType = m_Converter.convertType(n.left->inferredType.value());
 		const auto &left = m_LLVMBuilder.CreateLoad(llvmLeftType, leftLValue);
@@ -367,8 +371,10 @@ public:
 			m_LoweringContext.copyValue(right, rightType);
 		}
 
-		// And then destroy the left side
-		m_LoweringContext.dropValue(left, leftType);
+		// If left is temp the expression cleanup will take care of it
+		if (!isLeftTemp) {
+			m_LoweringContext.dropValue(left, leftType);
+		}
 
 		if (n.assignmentKind == AssignmentKind::Simple) {
 			m_LLVMBuilder.CreateStore(right, leftLValue);

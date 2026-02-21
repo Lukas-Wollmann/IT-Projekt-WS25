@@ -17,7 +17,7 @@ private:
 	Box<llvm::Module> m_LLVMModule;
 	llvm::IRBuilder<> m_IRBuilder;
 	gen::TypeConverter m_Converter;
-	Vec<Map<U8String, TrackedValue>> m_Allocas;
+	Vec<Pair<Map<U8String, TrackedValue>, bool>> m_Allocas;
 
 public:
 	explicit LoweringContext(const U8String &moduleName)
@@ -45,9 +45,9 @@ public:
 	Opt<TrackedValue> getAlloca(const U8String &ident) {
 		for (auto it = m_Allocas.rbegin(); it != m_Allocas.rend(); ++it) {
 			auto &currentScope = *it;
-			auto found = currentScope.find(ident);
+			auto found = currentScope.first.find(ident);
 
-			if (found != currentScope.end()) {
+			if (found != currentScope.first.end()) {
 				return found->second;
 			}
 		}
@@ -64,7 +64,7 @@ public:
 		const auto llvmType = m_Converter.convertType(type);
 		auto alloca = tmp.CreateAlloca(llvmType, nullptr, ident.asAscii());
 
-		m_Allocas.back().emplace(ident, TrackedValue{alloca, type});
+		m_Allocas.back().first.emplace(ident, TrackedValue{alloca, type});
 
 		return alloca;
 	}
@@ -73,8 +73,8 @@ public:
 		m_Allocas.clear();
 	}
 
-	void openScope() {
-		m_Allocas.emplace_back();
+	void openScope(bool cleanup = true) {
+		m_Allocas.emplace_back(Pair<Map<U8String, TrackedValue>, bool>{{}, cleanup});
 	}
 
 	void closeScope() {
@@ -82,8 +82,30 @@ public:
 	}
 
 	void emitScopeCleanup() {
-		for (const auto &[_, tracked] : m_Allocas.back()) {
-			dropValue(tracked.value, tracked.type);
+		const auto &scope = m_Allocas.back();
+
+		if (!scope.second) {
+			return;
+		}
+
+		for (const auto &[_, tracked] : scope.first) {
+			auto ptrTy = m_IRBuilder.getPtrTy();
+			auto value = m_IRBuilder.CreateLoad(ptrTy, tracked.value);
+			dropValue(value, tracked.type);
+		}
+	}
+
+	void emitFullScopeCleanup() {
+		for (const auto &[scope, cleanup] : m_Allocas) {
+			if (!cleanup) {
+				continue;
+			}
+
+			for (const auto &[_, tracked] : scope) {
+				auto ptrTy = m_IRBuilder.getPtrTy();
+				auto value = m_IRBuilder.CreateLoad(ptrTy, tracked.value);
+				dropValue(value, tracked.type);
+			}
 		}
 	}
 

@@ -108,7 +108,10 @@ int main(const int argc, const char *argv[]) {
 
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
-	CodeGen::generate(output, *module);
+
+	// CodeGen::generate(output, *module);
+	Lowerer::lower(output, *module);
+
 	output.close();
 
 	pid_t pid = fork();
