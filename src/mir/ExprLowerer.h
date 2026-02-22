@@ -65,7 +65,7 @@ public:
 
 				const auto expr = lowerExpr(*unaryExpr.operand);
 
-				return expr;
+				return {.value = expr.value, .type = n.inferredType.value(), .isTemp = false};
 			}
 			default: UNREACHABLE();
 		}

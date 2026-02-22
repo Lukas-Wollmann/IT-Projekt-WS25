@@ -208,6 +208,7 @@ public:
 			m_LoweringContext.copyValue(value, type);
 		}
 
+		exprLowerer.emitExprCleanup();
 		m_LoweringContext.emitFullScopeCleanup();
 		m_Builder.CreateRet(value);
 	}
@@ -225,5 +226,6 @@ public:
 		}
 
 		m_Builder.CreateStore(value, alloca);
+		exprLowerer.emitExprCleanup();
 	}
 };
