@@ -5,7 +5,7 @@
 using namespace lex;
 using enum TokenType;
 
-//Some Overall Tes
+//Some Overall Tests
 TEST_CASE("Lexer: Empty source") {
 	// Arrange
 	U8String source = u8"";
