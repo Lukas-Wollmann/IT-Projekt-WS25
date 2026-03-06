@@ -1,5 +1,4 @@
 #pragma once
-
 #include "type/Visitor.h"
 
 namespace llvm {
@@ -12,7 +11,7 @@ struct TypeConverter : public type::ConstVisitor<llvm::Type *> {
 public:
 	explicit TypeConverter(llvm::LLVMContext &ctx);
 
-	llvm::Type *convertType(type::TypePtr type) {
+	llvm::Type *convert(type::TypePtr type) {
 		return dispatch(*type);
 	}
 

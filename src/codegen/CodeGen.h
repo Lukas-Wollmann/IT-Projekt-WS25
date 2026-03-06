@@ -1,38 +1,28 @@
 #pragma once
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_os_ostream.h>
 
 #include "ExprCodeGen.h"
-
-namespace llvm {
-struct Value;
-}
+#include "core/DefaultDecls.h"
 
 namespace gen {
-struct CodeGenContext;
-
-struct CodeGen : public ast::ConstVisitor<void> {
+struct CodeGen : ast::ConstVisitor<void> {
+private:
 	CodeGenContext &m_Context;
-	LValueCodeGen m_LValueCodeGen;
-	llvm::Value *m_LastValue;
+	AllocManager m_AllocManager;
 
-	static void generate(std::ostream &os, const ast::Module &module);
+public:
+	explicit CodeGen(CodeGenContext &ctx);
 
-	CodeGen(CodeGenContext &ctx);
+	static void generate(std::ofstream &out, const ast::Module &module);
+	void visitNode(const ast::Node &n);
 
-	void visit(const ast::Assignment &n) override;
+	void visit(const ast::Module &n) override;
+	void visit(const ast::FuncDecl &n) override;
 	void visit(const ast::BlockStmt &n) override;
 	void visit(const ast::IfStmt &n) override;
 	void visit(const ast::WhileStmt &n) override;
 	void visit(const ast::ReturnStmt &n) override;
 	void visit(const ast::VarDef &n) override;
-	void visit(const ast::FuncDecl &n) override;
-	void visit(const ast::Module &n) override;
-	void visit(const ast::IntLit &n) override;
-	void visit(const ast::BoolLit &n) override;
-	void visit(const ast::UnitLit &n) override;
-	void visit(const ast::CharLit &n) override;
-	void visit(const ast::UnaryExpr &n) override;
-	void visit(const ast::BinaryExpr &n) override;
-	void visit(const ast::VarRef &n) override;
-	void visit(const ast::FuncCall &n) override;
 };
 }

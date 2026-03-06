@@ -11,7 +11,6 @@
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
-#include "mir/Lowerer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
@@ -109,8 +108,7 @@ int main(const int argc, const char *argv[]) {
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
 
-	// CodeGen::generate(output, *module);
-	Lowerer::lower(output, *module);
+	CodeGen::generate(output, *module);
 
 	output.close();
 

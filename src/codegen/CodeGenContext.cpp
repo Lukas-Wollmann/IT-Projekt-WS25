@@ -1,54 +1,97 @@
 #include "CodeGenContext.h"
 
+#include <ranges>
+
+#include "type/Compare.h"
+
 namespace gen {
 CodeGenContext::CodeGenContext(const U8String &moduleName)
-	: m_LLVMModule(std::make_unique<llvm::Module>(moduleName.asAscii(), m_LLVMContext))
-	, m_IRBuilder(m_LLVMContext)
-	, m_Converter(m_LLVMContext) {}
-
-llvm::Type *CodeGenContext::convertType(type::TypePtr type) {
-	return m_Converter.dispatch(*type);
+	: irBuilder(llvmContext)
+	, llvmModule(moduleName.asAscii(), llvmContext)
+	, typeConverter(llvmContext) {
+	registerRuntimeFunctions();
 }
 
-llvm::AllocaInst *CodeGenContext::getAlloca(const U8String &ident) {
-	auto it = m_Allocas.find(ident);
+void CodeGenContext::registerRuntimeFunctions() {
+	const auto &dataLayout = llvmModule.getDataLayout();
+	auto *sizeTy = irBuilder.getIntPtrTy(dataLayout);
+	auto *ptrTy = irBuilder.getPtrTy();
+	auto *voidTy = irBuilder.getVoidTy();
 
-	if (it == m_Allocas.end())
-		return nullptr;
+	llvm::FunctionType *spCreateTy = llvm::FunctionType::get(ptrTy, {sizeTy, ptrTy}, false);
+	llvm::FunctionType *spCopyTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+	llvm::FunctionType *spDropTy = llvm::FunctionType::get(voidTy, {ptrTy}, false);
 
-	return it->second;
+	llvmModule.getOrInsertFunction(sharedPtrCreate, spCreateTy);
+	llvmModule.getOrInsertFunction(sharedPtrCopy, spCopyTy);
+	llvmModule.getOrInsertFunction(sharedPtrDrop, spDropTy);
 }
 
-llvm::AllocaInst *CodeGenContext::createAlloca(llvm::Type *type, const U8String &ident) {
-	auto func = m_IRBuilder.GetInsertBlock()->getParent();
+llvm::Value *CodeGenContext::copyValue(llvm::Value *value, const type::TypePtr &type) {
+	if (type->isTypeKind(type::TypeKind::Unit)) {
+		return value;
+	}
 
-	VERIFY(func);
+	if (type->isTypeKind(type::TypeKind::Typename)) {
+		// TODO: For struct types emit a copy constructor here
+		return value;
+	}
 
-	llvm::IRBuilder<> tmp(&func->getEntryBlock(), func->getEntryBlock().begin());
+	if (type->isTypeKind(type::TypeKind::Pointer)) {
+		// For pointers, we need to increment the reference count
+		auto *const func = llvmModule.getFunction(sharedPtrCopy);
+		VERIFY(func);
+		auto *const result = irBuilder.CreateCall(func, {value});
 
-	auto alloca = tmp.CreateAlloca(type, nullptr, ident.asAscii());
-	m_Allocas[ident] = alloca;
+		return result;
+	}
 
-	return alloca;
+	UNREACHABLE();
 }
 
-const std::unordered_map<U8String, llvm::AllocaInst *> &CodeGenContext::getAllocas() const {
-	return m_Allocas;
+void CodeGenContext::dropValue(llvm::Value *value, const type::TypePtr &type) {
+	if (auto dtor = getDestructor(type)) {
+		irBuilder.CreateCall(getDestructorType(), dtor.value(), {value});
+	}
 }
 
-void CodeGenContext::setAllocas(std::unordered_map<U8String, llvm::AllocaInst *> allocas) {
-	m_Allocas = std::move(allocas);
+Opt<llvm::Value *> CodeGenContext::getDestructor(const type::TypePtr &type) {
+	if (type->isTypeKind(type::TypeKind::Unit)) {
+		return {};
+	}
+
+	if (type->isTypeKind(type::TypeKind::Typename)) {
+		return {}; // TODO recursive for structs / emit dtor
+	}
+
+	if (type->isTypeKind(type::TypeKind::Pointer)) {
+		auto *const dtor = llvmModule.getFunction(sharedPtrDrop);
+		VERIFY(dtor);
+		return dtor;
+	}
+
+	UNREACHABLE();
 }
 
-llvm::LLVMContext &CodeGenContext::getLLVMContext() {
-	return m_LLVMContext;
+llvm::Value *CodeGenContext::getNullDestructor() {
+	auto *functionType = getDestructorType();
+	auto *functionPtrType = llvm::PointerType::getUnqual(functionType);
+	return llvm::ConstantPointerNull::get(functionPtrType);
 }
 
-llvm::IRBuilder<> &CodeGenContext::getIRBuilder() {
-	return m_IRBuilder;
+[[nodiscard]] llvm::FunctionType *CodeGenContext::getDestructorType() {
+	llvm::Type *voidType = llvm::Type::getVoidTy(llvmContext);
+	auto *const i8Type = llvm::Type::getInt8Ty(llvmContext);
+	auto *const voidPtrType = llvm::PointerType::getUnqual(i8Type);
+	return llvm::FunctionType::get(voidType, {voidPtrType}, false);
 }
 
-llvm::Module &CodeGenContext::getLLVMModule() {
-	return *m_LLVMModule;
+[[nodiscard]] llvm::Value *CodeGenContext::sizeOf(const type::TypePtr &type) {
+	auto *const llvmType = typeConverter.convert(type);
+	const auto &layout = llvmModule.getDataLayout();
+	auto *const sizeType = layout.getIntPtrType(llvmContext);
+	const auto size = layout.getTypeAllocSize(llvmType);
+
+	return llvm::ConstantInt::get(sizeType, size);
 }
 }
