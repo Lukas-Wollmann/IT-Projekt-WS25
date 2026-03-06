@@ -7,162 +7,170 @@
 #include "type/Type.h"
 
 namespace ast {
-	enum struct NodeKind {
-		IntLit,
-		CharLit,
-		BoolLit,
-		UnitLit,
-		UnaryExpr,
-		BinaryExpr,
-		Assignment,
-		VarRef,
-		FuncCall,
-		BlockStmt,
-		IfStmt,
-		WhileStmt,
-		ReturnStmt,
-		VarDef,
-		FuncDecl,
-		Module
-	};
+enum struct NodeKind {
+	IntLit,
+	CharLit,
+	BoolLit,
+	UnitLit,
+	HeapAlloc,
+	UnaryExpr,
+	BinaryExpr,
+	Assignment,
+	VarRef,
+	FuncCall,
+	BlockStmt,
+	IfStmt,
+	WhileStmt,
+	ReturnStmt,
+	VarDef,
+	FuncDecl,
+	Module
+};
 
-	enum struct ValueCategory {
-		LValue,
-		RValue,
-	};
+enum struct ValueCategory {
+	LValue,
+	RValue,
+};
 
-	struct Node {
-		const NodeKind kind;
-		const SourceLoc loc;
+struct Node {
+	const NodeKind kind;
+	const SourceLoc loc;
 
-		virtual ~Node() = default;
+	virtual ~Node() = default;
 
-	protected:
-		explicit Node(NodeKind kind, SourceLoc loc = {});
-	};
+protected:
+	explicit Node(NodeKind kind, const SourceLoc &loc = {});
+};
 
-	struct Stmt : Node {
-	protected:
-		explicit Stmt(NodeKind kind);
-	};
+struct Stmt : Node {
+protected:
+	explicit Stmt(NodeKind kind);
+};
 
-	struct Expr : Stmt {
-		Opt<type::TypePtr> inferredType;
-		Opt<ValueCategory> valueCategory;
+struct Expr : Stmt {
+	Opt<type::TypePtr> inferredType;
+	Opt<ValueCategory> valueCategory;
 
-		void infer(type::TypePtr type, ValueCategory category);
-		[[nodiscard]] bool isInferred() const;
+	void infer(type::TypePtr type, ValueCategory category);
+	[[nodiscard]] bool isInferred() const;
 
-	protected:
-		explicit Expr(NodeKind kind);
-	};
+protected:
+	explicit Expr(NodeKind kind);
+};
 
-	struct IntLit : Expr {
-		const i32 value;
+struct IntLit : Expr {
+	const i32 value;
 
-		explicit IntLit(i32 value);
-	};
+	explicit IntLit(i32 value);
+};
 
-	struct CharLit : Expr {
-		const char32_t value;
+struct CharLit : Expr {
+	const char32_t value;
 
-		explicit CharLit(char32_t value);
-	};
+	explicit CharLit(char32_t value);
+};
 
-	struct BoolLit : Expr {
-		const bool value;
+struct BoolLit : Expr {
+	const bool value;
 
-		explicit BoolLit(bool value);
-	};
+	explicit BoolLit(bool value);
+};
 
-	struct UnitLit : Expr {
-		UnitLit();
-	};
+struct UnitLit : Expr {
+	UnitLit();
+};
 
-	struct UnaryExpr : Expr {
-		const UnaryOpKind op;
-		const Box<Expr> operand;
+struct HeapAlloc : Expr {
+	const type::TypePtr type;
+	const Box<Expr> expr;
 
-		UnaryExpr(UnaryOpKind op, Box<Expr> operand);
-	};
+	HeapAlloc(type::TypePtr type, Box<Expr> expr);
+};
 
-	struct BinaryExpr : Expr {
-		const BinaryOpKind op;
-		const Box<Expr> left, right;
+struct UnaryExpr : Expr {
+	const UnaryOpKind op;
+	const Box<Expr> operand;
 
-		BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
-	};
+	UnaryExpr(UnaryOpKind op, Box<Expr> operand);
+};
 
-	struct Assignment : Expr {
-		const AssignmentKind assignmentKind;
-		const Box<Expr> left, right;
+struct BinaryExpr : Expr {
+	const BinaryOpKind op;
+	const Box<Expr> left, right;
 
-		Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
-	};
+	BinaryExpr(BinaryOpKind op, Box<Expr> left, Box<Expr> right);
+};
 
-	struct VarRef : Expr {
-		const U8String ident;
+struct Assignment : Expr {
+	const AssignmentKind assignmentKind;
+	const Box<Expr> left, right;
 
-		explicit VarRef(U8String ident);
-	};
+	Assignment(AssignmentKind assignmentKind, Box<Expr> left, Box<Expr> right);
+};
 
-	struct FuncCall : Expr {
-		const Box<Expr> expr;
-		const Vec<Box<Expr>> args;
+struct VarRef : Expr {
+	const U8String ident;
 
-		FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
-	};
+	explicit VarRef(U8String ident);
+};
 
-	struct BlockStmt : Stmt {
-		const Vec<Box<Stmt>> stmts;
+struct FuncCall : Expr {
+	const Box<Expr> expr;
+	const Vec<Box<Expr>> args;
 
-		explicit BlockStmt(Vec<Box<Stmt>> stmts);
-	};
+	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
+};
 
-	struct IfStmt : Stmt {
-		const Box<Expr> cond;
-		const Box<BlockStmt> then;
-		const Box<BlockStmt> else_;
+struct BlockStmt : Stmt {
+	const Vec<Box<Stmt>> stmts;
 
-		IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
-	};
+	explicit BlockStmt(Vec<Box<Stmt>> stmts);
+};
 
-	struct WhileStmt : Stmt {
-		const Box<Expr> cond;
-		const Box<BlockStmt> body;
+struct IfStmt : Stmt {
+	const Box<Expr> cond;
+	const Box<BlockStmt> then;
+	const Box<BlockStmt> else_;
 
-		WhileStmt(Box<Expr> cond, Box<BlockStmt> body);
-	};
+	IfStmt(Box<Expr> cond, Box<BlockStmt> then, Box<BlockStmt> else_);
+};
 
-	struct ReturnStmt : Stmt {
-		const Box<Expr> expr;
+struct WhileStmt : Stmt {
+	const Box<Expr> cond;
+	const Box<BlockStmt> body;
 
-		explicit ReturnStmt(Box<Expr> expr);
-	};
+	WhileStmt(Box<Expr> cond, Box<BlockStmt> body);
+};
 
-	struct VarDef : Stmt {
-		const U8String ident;
-		const type::TypePtr type;
-		const Box<Expr> value;
+struct ReturnStmt : Stmt {
+	const Box<Expr> expr;
 
-		VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
-	};
+	explicit ReturnStmt(Box<Expr> expr);
+};
 
-	using Param = Pair<U8String, type::TypePtr>;
+struct VarDef : Stmt {
+	const U8String ident;
+	const type::TypePtr type;
+	const Box<Expr> value;
 
-	struct FuncDecl : Node {
-		const U8String ident;
-		const Vec<Param> params;
-		const type::TypePtr returnType;
-		const Box<BlockStmt> body;
+	VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
+};
 
-		FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
-	};
+using Param = Pair<U8String, type::TypePtr>;
 
-	struct Module : Node {
-		const U8String name;
-		const Vec<Box<FuncDecl>> decls;
+struct FuncDecl : Node {
+	const U8String ident;
+	const Vec<Param> params;
+	const type::TypePtr returnType;
+	const Box<BlockStmt> body;
 
-		Module(U8String name, Vec<Box<FuncDecl>> decls);
-	};
+	FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
+};
+
+struct Module : Node {
+	const U8String name;
+	const Vec<Box<FuncDecl>> decls;
+
+	Module(U8String name, Vec<Box<FuncDecl>> decls);
+};
 }

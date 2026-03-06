@@ -1,230 +1,455 @@
 #include "ExprCodeGen.h"
 
-#include "CodeGenContext.h"
+#include <algorithm>
+
 #include "type/Compare.h"
 
-namespace codegen {
-	using namespace ast;
-	using namespace type;
+namespace gen {
+ExprLowerer::ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager)
+	: m_Context(ctx)
+	, m_AllocManager(allocManager) {}
 
-	RValueCodeGen::RValueCodeGen(CodeGenContext &ctx)
-		: m_Context(ctx) {}
+ExprResult ExprLowerer::lowerExpr(const ast::Expr &n) {
+	return dispatch(n);
+}
 
-	llvm::Value *RValueCodeGen::visit(const IntLit &n) {
-		auto type = llvm::Type::getInt32Ty(m_Context.getLLVMContext());
-		return llvm::ConstantInt::get(type, n.value);
+void ExprLowerer::addToExprCleanup(llvm::Value *value, const type::TypePtr &type) {
+	m_ExprCleanup.emplace_back(value, type);
+}
+
+void ExprLowerer::emitExprCleanup() {
+	for (const auto &[value, type] : m_ExprCleanup) {
+		if (auto dtor = m_Context.getDestructor(type)) {
+			const auto dtorType = m_Context.getDestructorType();
+			m_Context.irBuilder.CreateCall(dtorType, dtor.value(), {value});
+		}
+	}
+	m_ExprCleanup.clear();
+}
+
+void ExprLowerer::removeFromExprCleanup(llvm::Value *value) {
+	const auto cond = [value](const TrackedValue &tracked) { return tracked.value == value; };
+	const auto it = std::remove_if(m_ExprCleanup.begin(), m_ExprCleanup.end(), cond);
+	m_ExprCleanup.erase(it, m_ExprCleanup.end());
+}
+
+ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
+	switch (n.kind) {
+		case ast::NodeKind::VarRef: {
+			const auto &varRef = static_cast<const ast::VarRef &>(n);
+			const auto reg = m_AllocManager.getAlloca(varRef.ident);
+
+			VERIFY(reg.has_value());
+
+			return {.value = reg.value().value, .type = reg.value().type, .isTemp = false};
+		}
+
+		case ast::NodeKind::UnaryExpr: {
+			const auto &unaryExpr = static_cast<const ast::UnaryExpr &>(n);
+			VERIFY(unaryExpr.op == UnaryOpKind::Dereference);
+
+			const auto expr = lowerExpr(*unaryExpr.operand);
+
+			return expr;
+		}
+
+		default: UNREACHABLE();
+	}
+}
+
+ExprResult ExprLowerer::visit(const ast::IntLit &n) {
+	const auto &type = n.inferredType.value();
+	auto *const llvmType = m_Context.typeConverter.convert(type);
+	auto *const value = llvm::ConstantInt::get(llvmType, n.value);
+
+	return {.value = value, .type = type, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::BoolLit &n) {
+	const auto &type = n.inferredType.value();
+	auto *const llvmType = m_Context.typeConverter.convert(type);
+	auto *const value = llvm::ConstantInt::get(llvmType, static_cast<uint64_t>(n.value));
+
+	return {.value = value, .type = type, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::CharLit &n) {
+	const auto &type = n.inferredType.value();
+	auto *const llvmType = m_Context.typeConverter.convert(type);
+	auto *const value = llvm::ConstantInt::get(llvmType, n.value);
+
+	return {.value = value, .type = type, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::UnitLit &n) {
+	const auto &type = n.inferredType.value();
+	auto *const llvmType = m_Context.typeConverter.convert(type);
+	auto *const value = llvm::ConstantInt::get(llvmType, 0);
+
+	return {.value = value, .type = type, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
+	const auto [value, type, isTemp] = lowerExpr(*n.expr);
+	const auto &ptrType = n.inferredType.value();
+
+	// If the value is a temporary, we can just move it into the heap allocation.
+	// If it's not a temporary, we need to copy it first so that the heap allocation
+	// owns the data that was put inside it.
+	if (isTemp) {
+		removeFromExprCleanup(value);
+	} else {
+		m_Context.copyValue(value, type);
 	}
 
-	llvm::Value *RValueCodeGen::visit(const BoolLit &n) {
-		auto type = llvm::Type::getInt1Ty(m_Context.getLLVMContext());
-		return llvm::ConstantInt::get(type, n.value);
+	// Create a new shared pointer via the runtime
+	auto *const func = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrCreate);
+	VERIFY(func);
+	auto *const size = m_Context.sizeOf(type);
+	const auto nullDtor = m_Context.getNullDestructor();
+	auto *const dtor = m_Context.getDestructor(type).value_or(nullDtor);
+	auto *const sharedPtr = m_Context.irBuilder.CreateCall(func, {size, dtor});
+
+	// Store the value into the shared pointer
+	auto *const elemType = m_Context.typeConverter.convert(type);
+	auto *const destPointerType = llvm::PointerType::getUnqual(elemType);
+	auto *const dest = m_Context.irBuilder.CreateBitCast(sharedPtr, destPointerType);
+	m_Context.irBuilder.CreateStore(value, dest);
+
+	// Now the pointer is owned by the current expression, so we need to clean it up after
+	// the expression is done. The pointer might still be moved by an outer node.
+	addToExprCleanup(sharedPtr, ptrType);
+
+	return {.value = sharedPtr, .type = ptrType, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::VarRef &n) {
+	const auto &type = n.inferredType.value();
+	auto *const llvmType = m_Context.typeConverter.convert(type);
+
+	if (const auto alloc = m_AllocManager.getAlloca(n.ident)) {
+		auto *const ptrToValue = alloc.value().value;
+		auto *const value = m_Context.irBuilder.CreateLoad(llvmType, ptrToValue);
+
+		// Return local variable as a borrow
+		return {.value = value, .type = type, .isTemp = false};
 	}
 
-	llvm::Value *RValueCodeGen::visit(const UnitLit &n) {
-		auto type = llvm::Type::getInt1Ty(m_Context.getLLVMContext());
-		return llvm::ConstantInt::get(type, 0);
+	if (auto *const func = m_Context.llvmModule.getFunction(n.ident.asAscii())) {
+		// Return a function pointer
+		return {.value = func, .type = type, .isTemp = false};
 	}
 
-	llvm::Value *RValueCodeGen::visit(const CharLit &n) {
-		auto type = llvm::Type::getInt32Ty(m_Context.getLLVMContext());
-		return llvm::ConstantInt::get(type, n.value);
+	UNREACHABLE();
+}
+
+ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
+	const auto [value, type, _] = lowerExpr(*n.operand);
+
+	switch (n.op) {
+		case UnaryOpKind::Positive: {
+			return {.value = value, .type = type, .isTemp = true};
+		}
+
+		case UnaryOpKind::Negative: {
+			auto *const result = m_Context.irBuilder.CreateNeg(value);
+			return {.value = result, .type = type, .isTemp = true};
+		}
+
+		case UnaryOpKind::LogicalNot: {
+			auto *const result = m_Context.irBuilder.CreateNot(value);
+			return {.value = result, .type = type, .isTemp = true};
+		}
+
+		case UnaryOpKind::BitwiseNot: {
+			auto *const result = m_Context.irBuilder.CreateNot(value);
+			return {.value = result, .type = type, .isTemp = true};
+		}
+
+		case UnaryOpKind::Dereference: {
+			const auto ptrType = std::dynamic_pointer_cast<const type::PointerType>(type);
+			VERIFY(ptrType);
+
+			const auto actualPointeeType = ptrType->pointeeType;
+			auto *const llvmPointeeType = m_Context.typeConverter.convert(actualPointeeType);
+			auto *const result = m_Context.irBuilder.CreateLoad(llvmPointeeType, value);
+
+			return {.value = result, .type = actualPointeeType, .isTemp = false};
+		}
+
+		default: UNREACHABLE();
 	}
+}
 
-	llvm::Value *RValueCodeGen::visit(const UnaryExpr &n) {
-		auto value = dispatch(*n.operand);
-		auto type = n.inferredType.value();
-		auto &builder = m_Context.getIRBuilder();
+ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
+	const auto &[left, leftType, isLeftTemp] = lowerExpr(*n.left);
+	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
 
-		using enum UnaryOpKind;
-
-		switch (n.op) {
-			case Positive: return value;
-
-			case Negative:
-				if (*type == Typename(u8"i32"))
-					return builder.CreateNeg(value);
-				if (*type == Typename(u8"f32"))
-					return builder.CreateFNeg(value);
-				UNREACHABLE();
-
-			case LogicalNot:
-				if (*type == Typename(u8"bool"))
-					return builder.CreateNot(value);
-				UNREACHABLE();
-
-			case BitwiseNot:
-				if (*type == Typename(u8"i32"))
-					return builder.CreateNot(value);
-				if (*type == Typename(u8"u32"))
-					return builder.CreateNot(value);
-				UNREACHABLE();
-
-			case Dereference: {
-				VERIFY(type->isTypeKind(TypeKind::Pointer));
-
-				auto ptrType = std::static_pointer_cast<const PointerType>(type);
-				auto pointeeType = m_Context.convertType(ptrType->pointeeType);
-
-				return builder.CreateLoad(pointeeType, value, "deref");
+	using enum BinaryOpKind;
+	switch (n.op) {
+		case Addition:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateAdd(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
 			}
+			UNREACHABLE();
 
-			default: UNREACHABLE();
+		case Subtraction:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateSub(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case Multiplication:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateMul(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case Division:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateSDiv(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case Modulo:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateSRem(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case Equality:
+			if (*leftType == type::Typename(u8"char") || *leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case Inequality:
+			if (*leftType == type::Typename(u8"i32") || *leftType == type::Typename(u8"char")) {
+				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case LessThan:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateICmpSLT(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case LessThanOrEqual:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateICmpSLE(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case GreaterThan:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateICmpSGT(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case GreaterThanOrEqual:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateICmpSGE(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case LogicalAnd:
+			if (*leftType == type::Typename(u8"bool")) {
+				auto *const val = m_Context.irBuilder.CreateAnd(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case LogicalOr:
+			if (*leftType == type::Typename(u8"bool")) {
+				auto *const val = m_Context.irBuilder.CreateOr(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case BitwiseAnd:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateAnd(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case BitwiseOr:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateOr(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case BitwiseXor:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateXor(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case LeftShift:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateShl(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		case RightShift:
+			if (*leftType == type::Typename(u8"i32")) {
+				auto *const val = m_Context.irBuilder.CreateAShr(left, right);
+				return {.value = val, .type = leftType, .isTemp = true};
+			}
+			UNREACHABLE();
+
+		default: UNREACHABLE();
+	}
+}
+
+ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
+	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
+	VERIFY(type->isTypeKind(type::TypeKind::Function));
+	const auto funcType = std::static_pointer_cast<const type::FunctionType>(type);
+
+	Vec<llvm::Value *> args;
+	args.reserve(n.args.size());
+
+	for (const auto &arg : n.args) {
+		const auto &[resValue, resType, resIsTemp] = lowerExpr(*arg);
+
+		if (resIsTemp) {
+			removeFromExprCleanup(resValue);
+			args.push_back(resValue);
+		} else {
+			args.push_back(m_Context.copyValue(resValue, resType));
 		}
 	}
+	auto *llvmFuncType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
 
-	llvm::Value *RValueCodeGen::visit(const BinaryExpr &n) {
-		auto leftValue = dispatch(*n.left);
-		auto leftType = n.left->inferredType.value();
-		auto rightValue = dispatch(*n.right);
-		auto rightType = n.right->inferredType.value();
-		auto &builder = m_Context.getIRBuilder();
+	const auto &call = m_Context.irBuilder.CreateCall(llvmFuncType, callee, args);
 
-		using enum BinaryOpKind;
+	addToExprCleanup(call, funcType->returnType);
 
-		switch (n.op) {
-			case Addition:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateAdd(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateAdd(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFAdd(leftValue, rightValue);
-				if (*leftType == Typename(u8"string"))
-					UNREACHABLE(); // TODO: Implement string concatination here
-				UNREACHABLE();
+	return {.value = call, .type = n.inferredType.value(), .isTemp = true};
+}
 
-			case Subtraction:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateSub(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateSub(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFSub(leftValue, rightValue);
-				UNREACHABLE();
+ExprResult ExprLowerer::visit(const ast::Assignment &n) {
+	const auto &[leftLValue, leftType, isLeftTemp] = lowerLValue(*n.left);
+	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
+	const auto &llvmLeftType = m_Context.typeConverter.convert(n.left->inferredType.value());
+	const auto &left = m_Context.irBuilder.CreateLoad(llvmLeftType, leftLValue);
 
-			case Multiplication:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateMul(leftValue, rightValue);
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateMul(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFMul(leftValue, rightValue);
-				UNREACHABLE();
-
-			case Division:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateSDiv(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateUDiv(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFDiv(leftValue, rightValue);
-				UNREACHABLE();
-
-			case Modulo:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateSRem(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateURem(leftValue, rightValue);
-				UNREACHABLE();
-
-			case Equality:
-				if (*leftType == Typename(u8"char"))
-					return builder.CreateICmpEQ(leftValue, rightValue);
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpEQ(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpEQ(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpOEQ(leftValue, rightValue);
-				UNREACHABLE();
-
-			case Inequality:
-				if (*leftType == Typename(u8"char"))
-					return builder.CreateICmpNE(leftValue, rightValue);
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpNE(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpNE(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpONE(leftValue, rightValue);
-				UNREACHABLE();
-
-			case LessThan:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpSLT(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpULT(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpOLT(leftValue, rightValue);
-				UNREACHABLE();
-
-			case LessThanOrEqual:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpSLE(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpULE(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpOLE(leftValue, rightValue);
-				UNREACHABLE();
-
-			case GreaterThan:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpSGT(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpUGT(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpOGT(leftValue, rightValue);
-				UNREACHABLE();
-
-			case GreaterThanOrEqual:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateICmpSGE(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateICmpUGE(leftValue, rightValue);
-				if (*leftType == Typename(u8"f32"))
-					return builder.CreateFCmpOGE(leftValue, rightValue);
-				UNREACHABLE();
-
-			case LogicalAnd: return builder.CreateAnd(leftValue, rightValue);
-
-			case LogicalOr:	 return builder.CreateOr(leftValue, rightValue);
-
-			case BitwiseAnd: return builder.CreateAnd(leftValue, rightValue);
-
-			case BitwiseOr:	 return builder.CreateOr(leftValue, rightValue);
-
-			case BitwiseXor: return builder.CreateXor(leftValue, rightValue);
-
-			case LeftShift:	 return builder.CreateShl(leftValue, rightValue);
-
-			case RightShift:
-				if (*leftType == Typename(u8"i32"))
-					return builder.CreateAShr(leftValue, rightValue);
-				if (*leftType == Typename(u8"u32"))
-					return builder.CreateLShr(leftValue, rightValue);
-				UNREACHABLE();
-
-			default: UNREACHABLE();
-		}
+	// First retain the right side
+	if (isRightTemp) {
+		removeFromExprCleanup(right);
+	} else {
+		m_Context.copyValue(right, rightType);
 	}
 
-	llvm::Value *RValueCodeGen::visit(const VarRef &n) {
-		auto alloca = m_Context.getAlloca(n.ident);
-		auto type = alloca->getAllocatedType();
-
-		return m_Context.getIRBuilder().CreateLoad(type, alloca);
+	// If left is temp the expression cleanup will take care of it
+	if (!isLeftTemp) {
+		m_Context.dropValue(left, leftType);
 	}
 
-	LValueCodeGen::LValueCodeGen(CodeGenContext &ctx)
-		: m_Context(ctx) {}
-
-	llvm::Value *LValueCodeGen::visit(const VarRef &n) {
-		return m_Context.getAlloca(n.ident);
+	if (n.assignmentKind == AssignmentKind::Simple) {
+		m_Context.irBuilder.CreateStore(right, leftLValue);
+		return {.value = llvm::ConstantInt::getNullValue(m_Context.irBuilder.getInt8Ty()),
+				.type = leftType,
+				.isTemp = true};
 	}
 
-	llvm::Value *LValueCodeGen::visit(const UnaryExpr &n) {
-		VERIFY(n.op == UnaryOpKind::Dereference);
+	llvm::Value *res = nullptr;
 
-		return RValueCodeGen(m_Context).dispatch(*n.operand);
+	using enum AssignmentKind;
+	switch (n.assignmentKind) {
+		case Addition:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateAdd(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case Subtraction:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateSub(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case Multiplication:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateMul(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case Division:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateSDiv(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case Modulo:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateSRem(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case BitwiseAnd:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateAnd(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case BitwiseOr:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateOr(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case BitwiseXor:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateXor(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case LeftShift:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateShl(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		case RightShift:
+			if (*leftType == type::Typename(u8"i32")) {
+				res = m_Context.irBuilder.CreateAShr(left, right);
+				break;
+			}
+			UNREACHABLE();
+
+		default: UNREACHABLE();
 	}
+
+	m_Context.irBuilder.CreateStore(res, leftLValue);
+
+	return {.value = llvm::ConstantInt::getNullValue(m_Context.irBuilder.getInt8Ty()),
+			.type = leftType,
+			.isTemp = true};
+}
 }

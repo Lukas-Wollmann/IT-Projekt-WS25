@@ -1,33 +1,37 @@
 #pragma once
-
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 
 #include "TypeConverter.h"
-#include "core/Typedef.h"
 
-namespace codegen {
-	struct CodeGenContext {
-	private:
-		llvm::LLVMContext m_LLVMContext;
-		Box<llvm::Module> m_LLVMModule;
-		llvm::IRBuilder<> m_IRBuilder;
-		TypeConverter m_Converter;
-		std::unordered_map<U8String, llvm::AllocaInst *> m_Allocas;
+namespace gen {
+struct TrackedValue {
+	llvm::Value *value;
+	type::TypePtr type;
+};
 
-	public:
-		explicit CodeGenContext(const U8String &moduleName);
+struct CodeGenContext {
+public:
+	constexpr static auto sharedPtrCreate = "__sp_create";
+	constexpr static auto sharedPtrCopy = "__sp_copy";
+	constexpr static auto sharedPtrDrop = "__sp_drop";
 
-		llvm::Type *convertType(type::TypePtr type);
+	llvm::LLVMContext llvmContext;
+	llvm::IRBuilder<> irBuilder;
+	llvm::Module llvmModule;
+	gen::TypeConverter typeConverter;
 
-		llvm::AllocaInst *getAlloca(const U8String &ident);
-		llvm::AllocaInst *createAlloca(llvm::Type *type, const U8String &ident);
-		const std::unordered_map<U8String, llvm::AllocaInst *> &getAllocas() const;
-		void setAllocas(std::unordered_map<U8String, llvm::AllocaInst *> allocas);
+	explicit CodeGenContext(const U8String &moduleName);
 
-		llvm::LLVMContext &getLLVMContext();
-		llvm::IRBuilder<> &getIRBuilder();
-		llvm::Module &getLLVMModule();
-	};
+	void registerRuntimeFunctions();
+
+	llvm::Value *copyValue(llvm::Value *value, const type::TypePtr &type);
+	void dropValue(llvm::Value *value, const type::TypePtr &type);
+
+	[[nodiscard]] Opt<llvm::Value *> getDestructor(const type::TypePtr &type);
+	[[nodiscard]] llvm::Value *getNullDestructor();
+	[[nodiscard]] llvm::FunctionType *getDestructorType();
+	[[nodiscard]] llvm::Value *sizeOf(const type::TypePtr &type);
+};
 }

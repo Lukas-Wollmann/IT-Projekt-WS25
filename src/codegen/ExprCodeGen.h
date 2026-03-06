@@ -1,40 +1,40 @@
 #pragma once
+#include "AllocManager.h"
+#include "CodeGenContext.h"
 #include "ast/Visitor.h"
 
-namespace llvm {
-	class Value;
-}
+namespace gen {
+struct ExprResult {
+	llvm::Value *value;
+	type::TypePtr type;
+	bool isTemp;
+};
 
-namespace codegen {
+struct ExprLowerer : ast::ConstVisitor<ExprResult> {
+private:
+	CodeGenContext &m_Context;
+	AllocManager &m_AllocManager;
+	Vec<TrackedValue> m_ExprCleanup;
 
-	struct CodeGenContext;
+public:
+	ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager);
 
-	struct RValueCodeGen : public ast::ConstVisitor<llvm::Value *> {
-	private:
-		CodeGenContext &m_Context;
+	ExprResult lowerExpr(const ast::Expr &n);
 
-	public:
-		RValueCodeGen(CodeGenContext &ctx);
+	void addToExprCleanup(llvm::Value *value, const type::TypePtr &type);
+	void emitExprCleanup();
+	void removeFromExprCleanup(llvm::Value *value);
 
-	private:
-		llvm::Value *visit(const ast::IntLit &n) override;
-		llvm::Value *visit(const ast::BoolLit &n) override;
-		llvm::Value *visit(const ast::UnitLit &n) override;
-		llvm::Value *visit(const ast::CharLit &n) override;
-		llvm::Value *visit(const ast::VarRef &n) override;
-		llvm::Value *visit(const ast::UnaryExpr &n) override;
-		llvm::Value *visit(const ast::BinaryExpr &n) override;
-	};
-
-	struct LValueCodeGen : public ast::ConstVisitor<llvm::Value *> {
-	private:
-		CodeGenContext &m_Context;
-
-	public:
-		LValueCodeGen(CodeGenContext &ctx);
-
-	private:
-		llvm::Value *visit(const ast::VarRef &n) override;
-		llvm::Value *visit(const ast::UnaryExpr &n) override;
-	};
+	ExprResult lowerLValue(const ast::Expr &n);
+	ExprResult visit(const ast::IntLit &n) override;
+	ExprResult visit(const ast::BoolLit &n) override;
+	ExprResult visit(const ast::CharLit &n) override;
+	ExprResult visit(const ast::UnitLit &n) override;
+	ExprResult visit(const ast::HeapAlloc &n) override;
+	ExprResult visit(const ast::VarRef &n) override;
+	ExprResult visit(const ast::UnaryExpr &n) override;
+	ExprResult visit(const ast::BinaryExpr &n) override;
+	ExprResult visit(const ast::FuncCall &n) override;
+	ExprResult visit(const ast::Assignment &n) override;
+};
 }

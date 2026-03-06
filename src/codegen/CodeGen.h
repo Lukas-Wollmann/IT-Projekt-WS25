@@ -1,27 +1,28 @@
 #pragma once
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_os_ostream.h>
 
 #include "ExprCodeGen.h"
+#include "core/DefaultDecls.h"
 
-namespace codegen {
-	struct CodeGen : public ast::ConstVisitor<void> {
-	private:
-		CodeGenContext &m_Context;
-        RValueCodeGen m_RValueCodeGen;
-        LValueCodeGen m_LValueCodeGen;
+namespace gen {
+struct CodeGen : ast::ConstVisitor<void> {
+private:
+	CodeGenContext &m_Context;
+	AllocManager m_AllocManager;
 
-	public:
-        static void generate(std::ostream &os, const ast::Module &module);
+public:
+	explicit CodeGen(CodeGenContext &ctx);
 
-	private:
-		CodeGen(CodeGenContext &ctx);
-        
-		void visit(const ast::Assignment &n) override;
-		void visit(const ast::BlockStmt &n) override;
-		void visit(const ast::IfStmt &n) override;
-		void visit(const ast::WhileStmt &n) override;
-		void visit(const ast::ReturnStmt &n) override;
-		void visit(const ast::VarDef &n) override;
-		void visit(const ast::FuncDecl &n) override;
-		void visit(const ast::Module &n) override;
-	};
+	static void generate(std::ofstream &out, const ast::Module &module);
+	void visitNode(const ast::Node &n);
+
+	void visit(const ast::Module &n) override;
+	void visit(const ast::FuncDecl &n) override;
+	void visit(const ast::BlockStmt &n) override;
+	void visit(const ast::IfStmt &n) override;
+	void visit(const ast::WhileStmt &n) override;
+	void visit(const ast::ReturnStmt &n) override;
+	void visit(const ast::VarDef &n) override;
+};
 }
