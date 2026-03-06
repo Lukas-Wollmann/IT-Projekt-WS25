@@ -22,7 +22,6 @@ The built artifact can be found in `./cmake-build/app`. Just execute the file an
 ## Mitglieder:
 
 - Jonas Ewert
-- Robin Nowak
 - Phillip Reiß
 - Leon Vogel
 - Lukas Wollmann
@@ -56,11 +55,6 @@ Three-Address-Code (TAC) kompiliert, oder zu C transpiliert werden.
 - Multithreading
 - Lambda Funktionen
 - Referenzen
-
-# TODO
-
-add BOOL_LIT in lexer
-two combined emojis like 🖕🏿 do not work: "🖕🏿🏿🏿"
 
 ## Resources
 https://dreampuf.github.io/GraphvizOnline/
