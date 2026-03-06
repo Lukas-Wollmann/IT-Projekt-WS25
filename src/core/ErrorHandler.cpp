@@ -76,7 +76,6 @@ size_t ErrorHandler::getLineNumberWidth() const {
 void ErrorHandler::printError(const ErrorMessage &error) const {
 	size_t lineWidth = getLineNumberWidth();
 
-	// Bestimme Farbe und Level-String
 	std::string colorCode;
 	std::string levelStr;
 
@@ -98,26 +97,26 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	// Header: "error: message"
 	std::cerr << colorCode << BOLD << levelStr << RESET << BOLD << ": " << error.message << "\n";
 
-	// Dateiname und Position: "--> file.cpp:2:11" (1-based)
+	// Source location: "--> file.cpp:2:11" (1-based)
 	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
 			  << error.location.column << "\n";
 
-	// Leere Zeile mit Pipe
+	// Empty line with line number column for alignment
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " |" << RESET << "\n";
 
-	// Code-Zeile
+	// Source line
 	U8String snippet = getLineFromSource(error.location.line);
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << error.location.line << " | " << RESET
 			  << snippet << "\n";
 
-	// Markierung (^^^^^) - use 0-based column for spacing
+	// marker line (^^^^^)
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " | " << RESET;
 
-	// Column is 1-based, so subtract 1 to get 0-based position for spacing
+	// Calculate the number of spaces before the first ^ and the number of ^
 	size_t snippetLength = snippet.length();
 	size_t zeroBasedColumn = (error.location.column > 0) ? error.location.column - 1 : 0;
 
-	// Bounds check: don't go past the end of the line
+	// Bounds check for column number
 	if (zeroBasedColumn > snippetLength) {
 		zeroBasedColumn = snippetLength;
 	}
@@ -129,12 +128,13 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	// Minimum highlight length von 1
 	size_t safeHighlightLength = (error.highlightLength == 0) ? 1 : error.highlightLength;
 
-	// Highlight sollte nicht über die Zeilenlänge hinausgehen
+	// Highlight length should not exceed the remaining characters in the line
 	size_t remainingLength = snippetLength - zeroBasedColumn;
 	if (safeHighlightLength > remainingLength && remainingLength > 0) {
 		safeHighlightLength = remainingLength;
 	}
 
+	// Print the ^ markers
 	std::cerr << colorCode << BOLD;
 	for (size_t i = 0; i < safeHighlightLength; ++i) {
 		std::cerr << "^";
