@@ -145,12 +145,33 @@ void Printer::visit(const FuncDecl &n) {
 	body.child(true).printNode(*n.body);
 }
 
+void Printer::visit(const StructDecl &n) {
+	printLine(std::format("StructDecl(\"{}\")", n.ident));
+
+	for (size_t i = 0; i < n.fields.size(); ++i) {
+		const auto &[name, type] = n.fields[i];
+		const auto isLast = i + 1 == n.fields.size();
+		child(isLast).printLine(std::format("{}: {}", name, *type));
+	}
+}
+
 void Printer::visit(const Module &n) {
 	printLine(u8"Module(\"" + n.name + u8"\")");
 
+	auto funcs = child();
+	funcs.printLine(u8"Funcs");
+
 	for (size_t i = 0; i < n.funcs.size(); ++i) {
 		const auto isLast = i + 1 == n.funcs.size();
-		child(isLast).printNode(*n.funcs[i]);
+		funcs.child(isLast).printNode(*n.funcs[i]);
+	}
+
+	auto structs = child(true);
+	structs.printLine(u8"Structs");
+
+	for (size_t i = 0; i < n.structs.size(); ++i) {
+		const auto isLast = i + 1 == n.structs.size();
+		structs.child(isLast).printNode(*n.structs[i]);
 	}
 }
 }

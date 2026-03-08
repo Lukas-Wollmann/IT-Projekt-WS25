@@ -42,6 +42,7 @@ private:
 	void visit(const ReturnStmt &n) override;
 	void visit(const VarDef &n) override;
 	void visit(const FuncDecl &n) override;
+	void visit(const StructDecl &n) override;
 	void visit(const Module &n) override;
 };
 }

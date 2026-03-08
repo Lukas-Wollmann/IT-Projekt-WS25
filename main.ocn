@@ -1,5 +1,8 @@
-func main() -> i32 {
-    a: i32 = *new i32(1);
+struct Point {
+    a: i32,
+    a: i32,
+}
 
-    return 0;
+func main() -> i32 {
+    return 1;
 }

@@ -66,15 +66,6 @@ void Parser::reportError(ParsingError &e) const {
 	m_ErrorHandler.addError(std::move(e.msg), m_Current->loc);
 }
 
-void Parser::advanceToNext(const TokenType type, const U8String &lexeme) {
-	while (!m_Current->matches(TokenType::EndOfFile)) {
-		if (m_Current->matches(type, lexeme))
-			return;
-
-		advance();
-	}
-}
-
 Box<Module> Parser::parseModule() {
 	Vec<Box<FuncDecl>> funcs;
 	Vec<Box<StructDecl>> structs;
@@ -86,8 +77,8 @@ Box<Module> Parser::parseModule() {
 			} else if (m_Current->matches(TokenType::Keyword, u8"func")) {
 				funcs.push_back(parseFuncDecl());
 			} else {
-				U8String msg = std::format("Expected 'func' or 'struct' declaration, found {} instead.", *m_Current);
-				throw ParsingError(std::move(msg));
+				constexpr auto msg = "Expected 'func' or 'struct' declaration, found {} instead.";
+				throw ParsingError(std::format(msg, *m_Current));
 			}
 		} catch (ParsingError &e) {
 			reportError(e);
@@ -96,7 +87,7 @@ Box<Module> Parser::parseModule() {
 				   !m_Current->matches(TokenType::Keyword, u8"func") &&
 				   !m_Current->matches(TokenType::Keyword, u8"struct")) {
 				advance();
-				   }
+			}
 		}
 	}
 
@@ -129,22 +120,19 @@ Box<StructDecl> Parser::parseStructDecl() {
 
 	Vec<StructField> fields;
 
-	while (!m_Current->matches(TokenType::Separator, u8"}")) {
-		if (m_Current->matches(TokenType::EndOfFile)) {
-			throw ParsingError(u8"Unterminated struct definition, expected '}'.");
-		}
-
+	while (m_Current->matches(TokenType::Identifier)) {
 		auto fieldName = consume(TokenType::Identifier).lexeme;
 		consume(TokenType::Separator, u8":");
 		auto fieldType = parseType();
 
 		fields.emplace_back(std::move(fieldName), std::move(fieldType));
 
-		//idk mach wie du willst? Komma oder Strichpunkt! ig
-		if (m_Current->matches(TokenType::Separator, u8";") ||
-			m_Current->matches(TokenType::Separator, u8",")) {
+		if (m_Current->matches(TokenType::Separator, u8",")) {
 			advance();
-			}
+			continue;
+		}
+
+		break;
 	}
 
 	consume(TokenType::Separator, u8"}");

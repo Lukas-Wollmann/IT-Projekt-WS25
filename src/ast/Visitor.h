@@ -33,6 +33,7 @@ struct Visitor {
 			case NodeKind::ReturnStmt: return visit(static_cast<Constness<ReturnStmt> &>(node));
 			case NodeKind::VarDef:	   return visit(static_cast<Constness<VarDef> &>(node));
 			case NodeKind::FuncDecl:   return visit(static_cast<Constness<FuncDecl> &>(node));
+			case NodeKind::StructDecl: return visit(static_cast<Constness<StructDecl> &>(node));
 			case NodeKind::Module:	   return visit(static_cast<Constness<Module> &>(node));
 			default:				   UNREACHABLE();
 		}
@@ -99,6 +100,10 @@ struct Visitor {
 	}
 
 	virtual T visit(Constness<FuncDecl> &) {
+		UNREACHABLE();
+	}
+
+	virtual T visit(Constness<StructDecl> &) {
 		UNREACHABLE();
 	}
 

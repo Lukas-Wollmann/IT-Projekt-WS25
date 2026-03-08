@@ -110,3 +110,4 @@ Module::Module(U8String name, Vec<Box<FuncDecl>> funcs, Vec<Box<StructDecl>> str
 	, name(std::move(name))
 	, funcs(std::move(funcs))
 	, structs(std::move(structs)) {}
+}

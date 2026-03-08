@@ -109,21 +109,6 @@ TEST_CASE("Parser: consume() throws if called with incorrect token type and lexe
 	CHECK_THROWS_AS(parser.consume(TokenType::Separator, u8"if"), ParsingError);
 }
 
-TEST_CASE("Parser: advanceToNext() finds next occurance of token") {
-	// Arrange
-	U8String source = u8"";
-	ErrorHandler err(u8"", source);
-	const Vec<Token> tokens = {Token(TokenType::StringLiteral), Token(TokenType::BoolLiteral),
-							   Token(TokenType::Keyword, u8"func")};
-	Parser parser(tokens, err, u8"test-module");
-
-	// Act
-	parser.advanceToNext(TokenType::Keyword, u8"func");
-
-	// Assert
-	CHECK(parser.m_Current->matches(TokenType::Keyword, u8"func"));
-}
-
 TEST_CASE("Parser: parseType() - Simple typename") {
 	// Arrange
 	U8String source = u8"i32";

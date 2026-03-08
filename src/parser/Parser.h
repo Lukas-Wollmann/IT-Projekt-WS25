@@ -34,7 +34,6 @@ struct Parser {
 	const lex::Token &consume(lex::TokenType type, U8String lexeme);
 	const lex::Token &consume(lex::TokenType type);
 	void reportError(ParsingError &e) const;
-	void advanceToNext(lex::TokenType type, const U8String &lexeme);
 
 	Box<ast::Module> parseModule();
 	Box<ast::FuncDecl> parseFuncDecl();
