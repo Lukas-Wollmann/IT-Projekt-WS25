@@ -100,8 +100,13 @@ FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, 
 	, returnType(std::move(returnType))
 	, body(std::move(body)) {}
 
-Module::Module(U8String name, Vec<Box<FuncDecl>> decls)
+StructDecl::StructDecl(U8String ident, Vec<StructField> fields)
+	: Node(NodeKind::StructDecl)
+	, ident(std::move(ident))
+	, fields(std::move(fields)) {}
+
+Module::Module(U8String name, Vec<Box<FuncDecl>> funcs, Vec<Box<StructDecl>> structs)
 	: Node(NodeKind::Module)
 	, name(std::move(name))
-	, decls(std::move(decls)) {}
-}
+	, funcs(std::move(funcs))
+	, structs(std::move(structs)) {}

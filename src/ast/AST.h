@@ -24,7 +24,8 @@ enum struct NodeKind {
 	ReturnStmt,
 	VarDef,
 	FuncDecl,
-	Module
+	Module,
+	StructDecl
 };
 
 enum struct ValueCategory {
@@ -157,6 +158,7 @@ struct VarDef : Stmt {
 };
 
 using Param = Pair<U8String, type::TypePtr>;
+using StructField = Pair<U8String, type::TypePtr>;
 
 struct FuncDecl : Node {
 	const U8String ident;
@@ -167,10 +169,18 @@ struct FuncDecl : Node {
 	FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
 };
 
+struct StructDecl : Node {
+	const U8String ident;
+	const Vec<StructField> fields;
+
+	StructDecl(U8String ident, Vec<StructField> fields);
+};
+
 struct Module : Node {
 	const U8String name;
-	const Vec<Box<FuncDecl>> decls;
+	const Vec<Box<FuncDecl>> funcs;
+	const Vec<Box<StructDecl>> structs;
 
-	Module(U8String name, Vec<Box<FuncDecl>> decls);
+	Module(U8String name, Vec<Box<FuncDecl>> decls, Vec<Box<StructDecl>> structs);
 };
 }
