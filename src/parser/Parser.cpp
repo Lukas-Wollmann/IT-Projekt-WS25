@@ -129,6 +129,11 @@ Box<StructDecl> Parser::parseStructDecl() {
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			advance();
+
+			if (m_Current->matches(TokenType::Separator, u8"}")) {
+				throw ParsingError(u8"Expected another struct field.");
+			}
+
 			continue;
 		}
 
@@ -153,6 +158,11 @@ Vec<Param> Parser::parseParamList() {
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				throw ParsingError(u8"Expected another parameter.");
+			}
+
 			continue;
 		}
 
@@ -482,6 +492,11 @@ Vec<Box<ast::Expr>> Parser::parseExprList() {
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				throw ParsingError(u8"Expected another argument.");
+			}
+
 			continue;
 		}
 

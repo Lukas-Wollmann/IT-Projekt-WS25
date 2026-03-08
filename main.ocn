@@ -1,6 +1,6 @@
 struct Point {
-    a: i32,
-    a: i32,
+    x: i32,
+    y: i32
 }
 
 func main() -> i32 {
