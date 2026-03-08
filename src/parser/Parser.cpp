@@ -77,17 +77,30 @@ void Parser::advanceToNext(const TokenType type, const U8String &lexeme) {
 
 Box<Module> Parser::parseModule() {
 	Vec<Box<FuncDecl>> funcs;
+	Vec<Box<StructDecl>> structs;
 
 	while (!m_Current->matches(TokenType::EndOfFile)) {
 		try {
-			funcs.push_back(parseFuncDecl());
+			if (m_Current->matches(TokenType::Keyword, u8"struct")) {
+				structs.push_back(parseStructDecl());
+			} else if (m_Current->matches(TokenType::Keyword, u8"func")) {
+				funcs.push_back(parseFuncDecl());
+			} else {
+				U8String msg = std::format("Expected 'func' or 'struct' declaration, found {} instead.", *m_Current);
+				throw ParsingError(std::move(msg));
+			}
 		} catch (ParsingError &e) {
 			reportError(e);
-			advanceToNext(TokenType::Keyword, u8"func");
+
+			while (!m_Current->matches(TokenType::EndOfFile) &&
+				   !m_Current->matches(TokenType::Keyword, u8"func") &&
+				   !m_Current->matches(TokenType::Keyword, u8"struct")) {
+				advance();
+				   }
 		}
 	}
 
-	return std::make_unique<Module>(m_ModuleName, std::move(funcs));
+	return std::make_unique<Module>(m_ModuleName, std::move(funcs), std::move(structs));
 }
 
 Box<FuncDecl> Parser::parseFuncDecl() {
@@ -106,6 +119,37 @@ Box<FuncDecl> Parser::parseFuncDecl() {
 
 	return std::make_unique<FuncDecl>(std::move(name), std::move(params), std::move(returnType),
 									  std::move(body));
+}
+
+Box<StructDecl> Parser::parseStructDecl() {
+	consume(TokenType::Keyword, u8"struct");
+	auto name = consume(TokenType::Identifier).lexeme;
+
+	consume(TokenType::Separator, u8"{");
+
+	Vec<StructField> fields;
+
+	while (!m_Current->matches(TokenType::Separator, u8"}")) {
+		if (m_Current->matches(TokenType::EndOfFile)) {
+			throw ParsingError(u8"Unterminated struct definition, expected '}'.");
+		}
+
+		auto fieldName = consume(TokenType::Identifier).lexeme;
+		consume(TokenType::Separator, u8":");
+		auto fieldType = parseType();
+
+		fields.emplace_back(std::move(fieldName), std::move(fieldType));
+
+		//idk mach wie du willst? Komma oder Strichpunkt! ig
+		if (m_Current->matches(TokenType::Separator, u8";") ||
+			m_Current->matches(TokenType::Separator, u8",")) {
+			advance();
+			}
+	}
+
+	consume(TokenType::Separator, u8"}");
+
+	return std::make_unique<StructDecl>(std::move(name), std::move(fields));
 }
 
 Vec<Param> Parser::parseParamList() {

@@ -38,6 +38,7 @@ struct Parser {
 
 	Box<ast::Module> parseModule();
 	Box<ast::FuncDecl> parseFuncDecl();
+	Box<ast::StructDecl> parseStructDecl();
 	Vec<ast::Param> parseParamList();
 	type::TypePtr parseType();
 	Box<ast::Stmt> parseStmt();
