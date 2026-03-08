@@ -14,7 +14,7 @@ ExplorationPass::ExplorationPass(TypeCheckerContext &ctx)
 	: m_Context(ctx) {}
 
 void ExplorationPass::visit(const Module &n) {
-	for (auto &d : n.decls)
+	for (auto &d : n.funcs)
 		dispatch(*d);
 }
 

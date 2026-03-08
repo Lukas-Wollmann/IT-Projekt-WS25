@@ -148,9 +148,9 @@ void Printer::visit(const FuncDecl &n) {
 void Printer::visit(const Module &n) {
 	printLine(u8"Module(\"" + n.name + u8"\")");
 
-	for (size_t i = 0; i < n.decls.size(); ++i) {
-		const auto isLast = i + 1 == n.decls.size();
-		child(isLast).printNode(*n.decls[i]);
+	for (size_t i = 0; i < n.funcs.size(); ++i) {
+		const auto isLast = i + 1 == n.funcs.size();
+		child(isLast).printNode(*n.funcs[i]);
 	}
 }
 }

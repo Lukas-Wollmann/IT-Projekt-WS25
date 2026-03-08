@@ -42,7 +42,7 @@ void CodeGen::visit(const ast::Module &n) {
 	}
 
 	// Forward declare user defined functions decls
-	for (auto &decl : n.decls) {
+	for (auto &decl : n.funcs) {
 		auto returnType = m_Context.typeConverter.convert(decl->returnType);
 
 		Vec<llvm::Type *> argTypes;
@@ -56,7 +56,7 @@ void CodeGen::visit(const ast::Module &n) {
 							   m_Context.llvmModule);
 	}
 
-	for (auto &d : n.decls) {
+	for (auto &d : n.funcs) {
 		visitNode(*d);
 	}
 }

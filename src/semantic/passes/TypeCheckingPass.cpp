@@ -335,7 +335,7 @@ bool TypeCheckingPass::visit(FuncDecl &n) {
 }
 
 bool TypeCheckingPass::visit(Module &n) {
-	for (auto &d : n.decls)
+	for (auto &d : n.funcs)
 		dispatch(*d);
 
 	return false;

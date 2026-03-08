@@ -847,7 +847,7 @@ TEST_CASE("Parser: parseModule() - Empty module") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 0);
+	CHECK(module->funcs.size() == 0);
 }
 
 TEST_CASE("Parser: parseModule() - Module with single function") {
@@ -862,8 +862,8 @@ TEST_CASE("Parser: parseModule() - Module with single function") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 1);
-	CHECK(module->decls[0]->ident == u8"main");
+	CHECK(module->funcs.size() == 1);
+	CHECK(module->funcs[0]->ident == u8"main");
 }
 
 TEST_CASE("Parser: parseModule() - Module with multiple functions") {
@@ -878,9 +878,9 @@ TEST_CASE("Parser: parseModule() - Module with multiple functions") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 2);
-	CHECK(module->decls[0]->ident == u8"foo");
-	CHECK(module->decls[1]->ident == u8"bar");
+	CHECK(module->funcs.size() == 2);
+	CHECK(module->funcs[0]->ident == u8"foo");
+	CHECK(module->funcs[1]->ident == u8"bar");
 }
 
 TEST_CASE("Parser: Complex expression - Operator precedence") {
