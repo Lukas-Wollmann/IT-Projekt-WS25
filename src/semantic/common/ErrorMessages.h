@@ -11,6 +11,8 @@ enum struct ErrorMessageKind {
 	TooManyArguments,
 	UnreachableStatement,
 	SymbolRedefinition,
+	StructFieldRedefinition,
+	StructInfiniteSize,
 	NonReturningPaths,
 	UndefinedReference,
 	AssignToRValue
@@ -74,6 +76,22 @@ template <>
 struct ErrorMessage<ErrorMessageKind::SymbolRedefinition> {
 	[[nodiscard]] static U8String str(const U8String &ident) {
 		return std::format("Illegal redefinition of symbol: '{}'.", ident);
+	}
+};
+
+template <>
+struct ErrorMessage<ErrorMessageKind::StructFieldRedefinition> {
+	[[nodiscard]] static U8String str(const U8String &ident) {
+		return std::format("Illegal redefinition of struct field: '{}'.", ident);
+	}
+};
+
+template <>
+struct ErrorMessage<ErrorMessageKind::StructInfiniteSize> {
+	[[nodiscard]] static U8String str(Type type, const U8String &fieldName) {
+		return std::format(
+				"Struct '{}' has infinite size due to a circular dependency in field '{}'.", type,
+				fieldName);
 	}
 };
 

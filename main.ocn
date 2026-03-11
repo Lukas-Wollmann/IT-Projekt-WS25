@@ -1,6 +1,10 @@
-struct Point {
-    x: i32,
-    y: i32
+struct Parent {
+    a: Child
+}
+
+struct Child {
+    mother: Parent,
+    father: Parent
 }
 
 func main() -> i32 {

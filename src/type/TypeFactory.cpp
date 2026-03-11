@@ -60,7 +60,7 @@ FunctionType *TypeFactory::getFunction(TypeList paramTypes, Type returnType) {
 }
 
 StructType *TypeFactory::getStruct(U8String name) {
-	auto type = intern(StructType(std::move(name), {}));
+	auto type = intern(StructType(std::move(name)));
 	return static_cast<StructType *>(type);
 }
 

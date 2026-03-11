@@ -81,9 +81,10 @@ using StructField = Pair<U8String, Type>;
 
 struct StructType : public TypeBase {
 	const U8String name;
-	Vec<StructField> fields;
+	Map<U8String, Type> fields;
+	bool isDeclared;
 
-	StructType(U8String name, Vec<StructField> fields);
+	StructType(U8String name);
 
 	U8String str() const override;
 	bool equals(const TypeBase *other) const override;

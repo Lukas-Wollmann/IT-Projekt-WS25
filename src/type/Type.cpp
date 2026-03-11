@@ -103,6 +103,7 @@ bool FunctionType::equals(const TypeBase *other) const {
 			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -110,23 +111,25 @@ Box<TypeBase> FunctionType::clone() const {
 	return std::make_unique<FunctionType>(paramTypes, returnType);
 }
 
-StructType::StructType(U8String name, Vec<StructField> fields)
+StructType::StructType(U8String name)
 	: TypeBase(TypeKind::Struct)
 	, name(std::move(name))
-	, fields(std::move(fields)) {}
+	, isDeclared(false) {}
 
 U8String StructType::str() const {
-	return name;
+	return isDeclared ? name : std::format("<unknown> {}", name);
 }
 
 bool StructType::equals(const TypeBase *other) const {
-	if (!other || other->kind != TypeKind::Struct)
+	if (!other || other->kind != TypeKind::Struct) {
 		return false;
+	}
+
 	auto *otherStruct = static_cast<const StructType *>(other);
 
 	return name == otherStruct->name;
 }
 
 Box<TypeBase> StructType::clone() const {
-	return std::make_unique<StructType>(name, fields);
+	return std::make_unique<StructType>(name);
 }

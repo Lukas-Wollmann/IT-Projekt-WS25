@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_set>
+
 #include "ast/Visitor.h"
 #include "semantic/common/TypeCheckerContext.h"
 
@@ -12,12 +14,18 @@ namespace sem {
 struct ExplorationPass : ast::ConstVisitor<void> {
 private:
 	TypeCheckerContext &m_Context;
+	std::unordered_set<StructType *> m_ValidatedStructs;
+	StructType *m_CurrentRootBeingValidated = nullptr;
 
 public:
 	explicit ExplorationPass(TypeCheckerContext &ctx);
 
 private:
 	void visit(const ast::Module &n) override;
+	void visit(const ast::StructDecl &n) override;
 	void visit(const ast::FuncDecl &n) override;
+
+	void validateNoCycles(StructType *root);
+	bool checkRecursive(StructType *current, Vec<StructType *> &path);
 };
 }
