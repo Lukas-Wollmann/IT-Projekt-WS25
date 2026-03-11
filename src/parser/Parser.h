@@ -3,7 +3,7 @@
 #include "core/ErrorHandler.h"
 #include "core/Operators.h"
 #include "lexer/Token.h"
-#include "type/Type.h"
+#include "type/TypeFactory.h"
 
 namespace prs {
 struct ParsingError : std::exception {
@@ -39,7 +39,7 @@ struct Parser {
 	Box<ast::FuncDecl> parseFuncDecl();
 	Box<ast::StructDecl> parseStructDecl();
 	Vec<ast::Param> parseParamList();
-	type::TypePtr parseType();
+	Type parseType();
 	Box<ast::Stmt> parseStmt();
 	Box<ast::BlockStmt> parseBlockStmt();
 	Box<ast::WhileStmt> parseWhileStmt();

@@ -1,7 +1,5 @@
 #include "Printer.h"
 
-#include "type/Printer.h"
-
 namespace ast {
 Printer::Printer(const Iterator out)
 	: m_Out(out)
@@ -52,7 +50,7 @@ void Printer::visit(const UnitLit &n) {
 }
 
 void Printer::visit(const HeapAlloc &n) {
-	printLine(std::format("HeapAlloc: {}", *n.type));
+	printLine(std::format("HeapAlloc: {}", n.type->str()));
 	child(true).printNode(*n.expr);
 }
 
@@ -134,11 +132,11 @@ void Printer::visit(const FuncDecl &n) {
 	for (size_t i = 0; i < n.params.size(); ++i) {
 		const auto &[name, type] = n.params[i];
 		const auto isLast = i + 1 == n.params.size();
-		params.child(isLast).printLine(std::format("{}: {}", name, *type));
+		params.child(isLast).printLine(std::format("{}: {}", name, type->str()));
 	}
 
 	auto ret = child();
-	ret.printLine(std::format("ReturnType: {}", *n.returnType));
+	ret.printLine(std::format("ReturnType: {}", n.returnType->str()));
 
 	auto body = child(true);
 	body.printLine(u8"Body");
@@ -151,7 +149,7 @@ void Printer::visit(const StructDecl &n) {
 	for (size_t i = 0; i < n.fields.size(); ++i) {
 		const auto &[name, type] = n.fields[i];
 		const auto isLast = i + 1 == n.fields.size();
-		child(isLast).printLine(std::format("{}: {}", name, *type));
+		child(isLast).printLine(std::format("{}: {}", name, type->str()));
 	}
 }
 

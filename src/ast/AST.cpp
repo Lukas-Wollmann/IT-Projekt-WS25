@@ -13,8 +13,8 @@ Stmt::Stmt(const NodeKind kind)
 Expr::Expr(const NodeKind kind)
 	: Stmt(kind) {}
 
-void Expr::infer(type::TypePtr type, ValueCategory category) {
-	inferredType = std::move(type);
+void Expr::infer(Type type, ValueCategory category) {
+	inferredType = type;
 	valueCategory = category;
 }
 
@@ -37,9 +37,9 @@ BoolLit::BoolLit(const bool value)
 UnitLit::UnitLit()
 	: Expr(NodeKind::UnitLit) {}
 
-HeapAlloc::HeapAlloc(type::TypePtr type, Box<Expr> expr)
+HeapAlloc::HeapAlloc(Type type, Box<Expr> expr)
 	: Expr(NodeKind::HeapAlloc)
-	, type(std::move(type))
+	, type(type)
 	, expr(std::move(expr)) {}
 
 UnaryExpr::UnaryExpr(const UnaryOpKind op, Box<Expr> operand)
@@ -87,17 +87,17 @@ ReturnStmt::ReturnStmt(Box<Expr> expr)
 	: Stmt(NodeKind::ReturnStmt)
 	, expr(std::move(expr)) {}
 
-VarDef::VarDef(U8String ident, type::TypePtr type, Box<Expr> value)
+VarDef::VarDef(U8String ident, Type type, Box<Expr> value)
 	: Stmt(NodeKind::VarDef)
 	, ident(std::move(ident))
-	, type(std::move(type))
+	, type(type)
 	, value(std::move(value)) {}
 
-FuncDecl::FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body)
+FuncDecl::FuncDecl(U8String ident, Vec<Param> params, Type returnType, Box<BlockStmt> body)
 	: Node(NodeKind::FuncDecl)
 	, ident(std::move(ident))
 	, params(std::move(params))
-	, returnType(std::move(returnType))
+	, returnType(returnType)
 	, body(std::move(body)) {}
 
 StructDecl::StructDecl(U8String ident, Vec<StructField> fields)

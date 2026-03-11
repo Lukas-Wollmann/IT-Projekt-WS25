@@ -1,0 +1,8 @@
+/workspace/build-report/CMakeFiles/intrinsics_gen.dir
+/workspace/build-report/CMakeFiles/omp_gen.dir
+/workspace/build-report/CMakeFiles/acc_gen.dir
+/workspace/build-report/CMakeFiles/RISCVTargetParserTableGen.dir
+/workspace/build-report/CMakeFiles/app.dir
+/workspace/build-report/CMakeFiles/test.dir
+/workspace/build-report/CMakeFiles/edit_cache.dir
+/workspace/build-report/CMakeFiles/rebuild_cache.dir

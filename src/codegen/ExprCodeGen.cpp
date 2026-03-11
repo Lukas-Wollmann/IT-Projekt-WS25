@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "type/Compare.h"
+#include "type/TypeFactory.h"
 
 namespace gen {
 ExprLowerer::ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager)
@@ -13,7 +13,7 @@ ExprResult ExprLowerer::lowerExpr(const ast::Expr &n) {
 	return dispatch(n);
 }
 
-void ExprLowerer::addToExprCleanup(llvm::Value *value, const type::TypePtr &type) {
+void ExprLowerer::addToExprCleanup(llvm::Value *value, Type type) {
 	m_ExprCleanup.emplace_back(value, type);
 }
 
@@ -167,7 +167,7 @@ ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 		}
 
 		case UnaryOpKind::Dereference: {
-			const auto ptrType = std::dynamic_pointer_cast<const type::PointerType>(type);
+			const auto ptrType = static_cast<PointerType *>(type);
 			VERIFY(ptrType);
 
 			const auto actualPointeeType = ptrType->pointeeType;
@@ -188,126 +188,126 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 	using enum BinaryOpKind;
 	switch (n.op) {
 		case Addition:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateAdd(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Subtraction:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateSub(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Multiplication:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateMul(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Division:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateSDiv(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Modulo:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateSRem(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Equality:
-			if (*leftType == type::Typename(u8"char") || *leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getChar() || leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Inequality:
-			if (*leftType == type::Typename(u8"i32") || *leftType == type::Typename(u8"char")) {
+			if (leftType == TypeFactory::getI32() || leftType == TypeFactory::getChar()) {
 				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case LessThan:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateICmpSLT(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case LessThanOrEqual:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateICmpSLE(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case GreaterThan:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateICmpSGT(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case GreaterThanOrEqual:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateICmpSGE(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case LogicalAnd:
-			if (*leftType == type::Typename(u8"bool")) {
+			if (leftType == TypeFactory::getBool()) {
 				auto *const val = m_Context.irBuilder.CreateAnd(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case LogicalOr:
-			if (*leftType == type::Typename(u8"bool")) {
+			if (leftType == TypeFactory::getBool()) {
 				auto *const val = m_Context.irBuilder.CreateOr(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case BitwiseAnd:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateAnd(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case BitwiseOr:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateOr(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case BitwiseXor:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateXor(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case LeftShift:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateShl(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case RightShift:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				auto *const val = m_Context.irBuilder.CreateAShr(left, right);
 				return {.value = val, .type = leftType, .isTemp = true};
 			}
@@ -319,8 +319,8 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
-	VERIFY(type->isTypeKind(type::TypeKind::Function));
-	const auto funcType = std::static_pointer_cast<const type::FunctionType>(type);
+	VERIFY(type->isTypeKind(TypeKind::Function));
+	const auto funcType = static_cast<FunctionType *>(type);
 
 	Vec<llvm::Value *> args;
 	args.reserve(n.args.size());
@@ -374,70 +374,70 @@ ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	using enum AssignmentKind;
 	switch (n.assignmentKind) {
 		case Addition:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateAdd(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case Subtraction:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateSub(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case Multiplication:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateMul(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case Division:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateSDiv(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case Modulo:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateSRem(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case BitwiseAnd:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateAnd(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case BitwiseOr:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateOr(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case BitwiseXor:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateXor(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case LeftShift:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateShl(left, right);
 				break;
 			}
 			UNREACHABLE();
 
 		case RightShift:
-			if (*leftType == type::Typename(u8"i32")) {
+			if (leftType == TypeFactory::getI32()) {
 				res = m_Context.irBuilder.CreateAShr(left, right);
 				break;
 			}

@@ -109,7 +109,7 @@ TEST_CASE("Parser: consume() throws if called with incorrect token type and lexe
 	CHECK_THROWS_AS(parser.consume(TokenType::Separator, u8"if"), ParsingError);
 }
 
-TEST_CASE("Parser: parseType() - Simple typename") {
+TEST_CASE("Parser: parseType() - Simple primitive") {
 	// Arrange
 	U8String source = u8"i32";
 	ErrorHandler err(u8"", source);
@@ -120,7 +120,7 @@ TEST_CASE("Parser: parseType() - Simple typename") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Typename);
+	CHECK(type->kind == TypeKind::Primitive);
 }
 
 TEST_CASE("Parser: parseType() - Unit type") {
@@ -134,7 +134,7 @@ TEST_CASE("Parser: parseType() - Unit type") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Unit);
+	CHECK(type->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parseType() - Pointer type") {
@@ -148,7 +148,7 @@ TEST_CASE("Parser: parseType() - Pointer type") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Pointer);
+	CHECK(type->kind == TypeKind::Pointer);
 }
 
 TEST_CASE("Parser: parsePrimaryExpr() - Integer literal") {
@@ -800,7 +800,7 @@ TEST_CASE("Parser: parseFuncDecl() - Simple function") {
 	CHECK(func->kind == ast::NodeKind::FuncDecl);
 	CHECK(func->ident == u8"main");
 	CHECK(func->params.size() == 0);
-	CHECK(func->returnType->kind == type::TypeKind::Unit);
+	CHECK(func->returnType->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parseFuncDecl() - Function with params and return type") {
@@ -817,7 +817,7 @@ TEST_CASE("Parser: parseFuncDecl() - Function with params and return type") {
 	CHECK(func->kind == ast::NodeKind::FuncDecl);
 	CHECK(func->ident == u8"add");
 	CHECK(func->params.size() == 2);
-	CHECK(func->returnType->kind == type::TypeKind::Typename);
+	CHECK(func->returnType->kind == TypeKind::Primitive);
 }
 
 TEST_CASE("Parser: parseModule() - Empty module") {

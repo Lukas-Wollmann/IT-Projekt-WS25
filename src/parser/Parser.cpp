@@ -5,7 +5,6 @@
 #include "lexer/Token.h"
 
 using namespace ast;
-using namespace type;
 using namespace lex;
 
 namespace prs {
@@ -99,7 +98,7 @@ Box<FuncDecl> Parser::parseFuncDecl() {
 	auto name = consume(TokenType::Identifier).lexeme;
 	auto params = parseParamList();
 
-	TypePtr returnType = std::make_shared<UnitType>();
+	Type returnType = TypeFactory::getUnit();
 
 	if (m_Current->matches(TokenType::Operator, u8"->")) {
 		consume(TokenType::Operator, u8"->");
@@ -108,7 +107,7 @@ Box<FuncDecl> Parser::parseFuncDecl() {
 
 	auto body = parseBlockStmt();
 
-	return std::make_unique<FuncDecl>(std::move(name), std::move(params), std::move(returnType),
+	return std::make_unique<FuncDecl>(std::move(name), std::move(params), returnType,
 									  std::move(body));
 }
 
@@ -125,7 +124,7 @@ Box<StructDecl> Parser::parseStructDecl() {
 		consume(TokenType::Separator, u8":");
 		auto fieldType = parseType();
 
-		fields.emplace_back(std::move(fieldName), std::move(fieldType));
+		fields.emplace_back(std::move(fieldName), fieldType);
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			advance();
@@ -174,25 +173,35 @@ Vec<Param> Parser::parseParamList() {
 	return params;
 }
 
-TypePtr Parser::parseType() {
+Type Parser::parseType() {
 	if (m_Current->matches(TokenType::Identifier)) {
 		auto typename_ = consume(TokenType::Identifier).lexeme;
 
-		return std::make_shared<Typename>(typename_);
+		if (typename_ == u8"i32") {
+			return TypeFactory::getI32();
+		}
+		if (typename_ == u8"char") {
+			return TypeFactory::getChar();
+		}
+		if (typename_ == u8"bool") {
+			return TypeFactory::getBool();
+		}
+
+		return TypeFactory::getStruct(typename_);
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"(")) {
 		consume(TokenType::Separator, u8"(");
 		consume(TokenType::Separator, u8")");
 
-		return std::make_shared<UnitType>();
+		return TypeFactory::getUnit();
 	}
 
 	if (m_Current->matches(TokenType::Operator, u8"*")) {
 		consume(TokenType::Operator, u8"*");
 		auto type = parseType();
 
-		return std::make_unique<PointerType>(std::move(type));
+		return TypeFactory::getPointer(type);
 	}
 
 	throw ParsingError(u8"Expected a type.");

@@ -2,10 +2,9 @@
 
 #include "core/Macros.h"
 #include "semantic/common/ErrorMessages.h"
-#include "type/Compare.h"
+#include "type/TypeFactory.h"
 
 namespace sem {
-using namespace type;
 using namespace ast;
 using enum ErrorMessageKind;
 
@@ -14,39 +13,39 @@ TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &ctx)
 
 bool TypeCheckingPass::visit(IntLit &n) {
 	VERIFY(!n.isInferred());
-	n.infer(std::make_shared<Typename>(u8"i32"), ValueCategory::RValue);
+	n.infer(TypeFactory::getI32(), ValueCategory::RValue);
 	return false;
 }
 
 bool TypeCheckingPass::visit(CharLit &n) {
 	VERIFY(!n.isInferred());
-	n.infer(std::make_shared<Typename>(u8"char"), ValueCategory::RValue);
+	n.infer(TypeFactory::getChar(), ValueCategory::RValue);
 	return false;
 }
 
 bool TypeCheckingPass::visit(BoolLit &n) {
 	VERIFY(!n.isInferred());
-	n.infer(std::make_shared<Typename>(u8"bool"), ValueCategory::RValue);
+	n.infer(TypeFactory::getBool(), ValueCategory::RValue);
 	return false;
 }
 
 bool TypeCheckingPass::visit(UnitLit &n) {
 	VERIFY(!n.isInferred());
-	n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
+	n.infer(TypeFactory::getUnit(), ValueCategory::RValue);
 	return false;
 }
 
 bool TypeCheckingPass::visit(HeapAlloc &n) {
 	VERIFY(!n.isInferred());
 	const auto actualType = checkExpression(*n.expr);
-	const auto &expectedType = n.type;
+	const auto expectedType = n.type;
 
-	if (*actualType != *expectedType) {
+	if (!typesMatch(actualType, expectedType)) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(expectedType, actualType);
 		m_Context.submitError(msg, {});
 	}
 
-	n.infer(std::make_shared<PointerType>(expectedType), ValueCategory::RValue);
+	n.infer(TypeFactory::getPointer(expectedType), ValueCategory::RValue);
 	return false;
 }
 
@@ -64,12 +63,11 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 			const auto msg = ErrorMessage<DereferenceNonPointerType>::str(type);
 			m_Context.submitError(msg, {});
 
-			n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+			n.infer(TypeFactory::getError(), ValueCategory::RValue);
 			return false;
 		}
 
-		const auto ptrType = std::static_pointer_cast<const PointerType>(type);
-
+		const auto ptrType = dynamic_cast<const PointerType *>(type);
 		n.infer(ptrType->pointeeType, ValueCategory::LValue);
 		return false;
 	}
@@ -77,7 +75,7 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 	auto &operatorTable = m_Context.getOperatorTable();
 
 	if (const auto opFunc = operatorTable.getUnaryOperator(n.op, type)) {
-		const auto returnType = opFunc.value().returnType;
+		const auto returnType = opFunc.value()->returnType;
 
 		n.infer(returnType, ValueCategory::RValue);
 		return false;
@@ -86,7 +84,7 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 	const auto msg = ErrorMessage<UnaryOperatorNotFound>::str(type, n.op);
 	m_Context.submitError(msg, {});
 
-	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+	n.infer(TypeFactory::getError(), ValueCategory::RValue);
 	return false;
 }
 
@@ -95,14 +93,14 @@ bool TypeCheckingPass::visit(BinaryExpr &n) {
 	const auto right = checkExpression(*n.right);
 
 	if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error)) {
-		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
 		return false;
 	}
 
 	auto &operatorTable = m_Context.getOperatorTable();
 
 	if (const auto opFunc = operatorTable.getBinaryOperator(n.op, left, right)) {
-		const auto returnType = opFunc.value().returnType;
+		const auto returnType = opFunc.value()->returnType;
 
 		n.infer(returnType, ValueCategory::RValue);
 		return false;
@@ -111,13 +109,13 @@ bool TypeCheckingPass::visit(BinaryExpr &n) {
 	const auto msg = ErrorMessage<BinaryOperatorNotFound>::str(left, right, n.op);
 	m_Context.submitError(msg, {});
 
-	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+	n.infer(TypeFactory::getError(), ValueCategory::RValue);
 	return false;
 }
 
 bool TypeCheckingPass::visit(Assignment &n) {
 	// For now assignments don't return anything, so i = j = 5 won't work.
-	n.infer(std::make_shared<UnitType>(), ValueCategory::RValue);
+	n.infer(TypeFactory::getUnit(), ValueCategory::RValue);
 
 	const auto left = checkExpression(*n.left);
 	const auto right = checkExpression(*n.right);
@@ -137,11 +135,10 @@ bool TypeCheckingPass::visit(Assignment &n) {
 
 	// Normal assignment '='
 	if (!compoundOp.has_value()) {
-		if (typesMatch(left, right))
-			return false;
-
-		const auto msg = ErrorMessage<TypeMissmatch>::str(left, right);
-		m_Context.submitError(msg, {});
+		if (!typesMatch(left, right)) {
+			const auto msg = ErrorMessage<TypeMissmatch>::str(left, right);
+			m_Context.submitError(msg, {});
+		}
 
 		return false;
 	}
@@ -156,16 +153,15 @@ bool TypeCheckingPass::visit(Assignment &n) {
 		return false;
 	}
 
-	const auto resultType = opFunc.value().returnType;
+	const auto resultType = opFunc.value()->returnType;
 
 	// The expression is only legal if the result type is equal to the left type of the
 	// assignment. If we have 'a += b' this will be expanded to 'a = a + b', then the type
 	// of 'a' has to be equal to the type of 'a + b' to make the assignment legal.
-	if (*left == *resultType)
-		return false;
-
-	const auto msg = ErrorMessage<TypeMissmatch>::str(left, resultType);
-	m_Context.submitError(msg, {});
+	if (!typesMatch(left, resultType)) {
+		const auto msg = ErrorMessage<TypeMissmatch>::str(left, resultType);
+		m_Context.submitError(msg, {});
+	}
 
 	return false;
 }
@@ -174,7 +170,7 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 	const auto type = checkExpression(*n.expr);
 
 	if (type->isTypeKind(TypeKind::Error)) {
-		n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
 		return false;
 	}
 
@@ -185,7 +181,7 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 		return false;
 	}
 
-	const auto funcType = std::static_pointer_cast<const FunctionType>(type);
+	const auto funcType = dynamic_cast<const FunctionType *>(type);
 
 	TypeList argTypes;
 	argTypes.reserve(n.args.size());
@@ -215,7 +211,7 @@ bool TypeCheckingPass::visit(VarRef &n) {
 	const auto msg = ErrorMessage<UndefinedReference>::str(n.ident);
 	m_Context.submitError(msg, {});
 
-	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
+	n.infer(TypeFactory::getError(), ValueCategory::RValue);
 	return false;
 }
 
@@ -243,7 +239,7 @@ bool TypeCheckingPass::visit(BlockStmt &n) {
 
 bool TypeCheckingPass::visit(IfStmt &n) {
 	const auto type = checkExpression(*n.cond);
-	const auto boolType = std::make_shared<Typename>(u8"bool");
+	const auto boolType = TypeFactory::getBool();
 
 	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
@@ -258,7 +254,7 @@ bool TypeCheckingPass::visit(IfStmt &n) {
 
 bool TypeCheckingPass::visit(WhileStmt &n) {
 	const auto type = checkExpression(*n.cond);
-	const auto boolType = std::make_shared<Typename>(u8"bool");
+	const auto boolType = TypeFactory::getBool();
 
 	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
@@ -341,7 +337,7 @@ bool TypeCheckingPass::visit(Module &n) {
 	return false;
 }
 
-TypePtr TypeCheckingPass::checkExpression(Expr &n) {
+Type TypeCheckingPass::checkExpression(Expr &n) {
 	VERIFY(!n.inferredType.has_value());
 	dispatch(n);
 	VERIFY(n.inferredType.has_value());
@@ -349,15 +345,15 @@ TypePtr TypeCheckingPass::checkExpression(Expr &n) {
 	return n.inferredType.value();
 }
 
-bool TypeCheckingPass::typesMatch(const TypePtr &left, const TypePtr &right) {
+bool TypeCheckingPass::typesMatch(Type left, Type right) {
 	if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
 		return false;
 
-	return *left == *right;
+	return left == right;
 }
 
 void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args,
-												  const FunctionTypePtr &func) const {
+												  const FunctionType *func) const {
 	const auto &params = func->paramTypes;
 
 	if (args.size() != params.size()) {

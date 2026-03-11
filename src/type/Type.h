@@ -1,55 +1,133 @@
 #pragma once
+
+#include <format>
+
+#include "core/Macros.h"
 #include "core/Typedef.h"
 #include "core/U8String.h"
 
-namespace type {
-enum struct TypeKind : u8 { Typename, Pointer, Array, Function, Error, Unit };
+enum struct TypeKind : u8 { Primitive, Unit, Error, Pointer, Function, Struct };
 
-struct Type {
+enum struct PrimitiveKind : u8 { I32, Char, Bool };
+
+struct TypeBase {
 	const TypeKind kind;
 
-	virtual ~Type() = default;
-	[[nodiscard]] bool isTypeKind(TypeKind other) const;
+	explicit TypeBase(TypeKind kind)
+		: kind(kind) {}
 
-protected:
-	explicit Type(TypeKind kind);
+	virtual ~TypeBase() = default;
+
+	bool isTypeKind(TypeKind other) const {
+		return kind == other;
+	}
+
+	virtual U8String str() const = 0;
+	virtual bool equals(const TypeBase *other) const = 0;
+	virtual Box<TypeBase> clone() const = 0;
 };
 
-using TypePtr = Ptr<const Type>;
-using TypeList = Vec<TypePtr>;
+using Type = TypeBase *;
+using TypeList = Vec<Type>;
 
-struct Typename : Type {
-	const U8String typename_;
+struct PrimitiveType : public TypeBase {
+	const PrimitiveKind primitiveKind;
 
-	explicit Typename(U8String typename_);
+	explicit PrimitiveType(PrimitiveKind primitiveKind);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
 };
 
-struct PointerType : Type {
-	const TypePtr pointeeType;
-
-	explicit PointerType(TypePtr pointeeType);
-};
-
-struct ArrayType : Type {
-	const TypePtr elementType;
-
-	explicit ArrayType(TypePtr elementType);
-};
-
-struct FunctionType : Type {
-	const TypeList paramTypes;
-	const TypePtr returnType;
-
-	FunctionType(TypeList paramTypes, TypePtr returnType);
-};
-
-using FunctionTypePtr = Ptr<const FunctionType>;
-
-struct ErrorType : Type {
-	ErrorType();
-};
-
-struct UnitType : Type {
+struct UnitType : public TypeBase {
 	UnitType();
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
 };
-}
+
+struct ErrorType : public TypeBase {
+	ErrorType();
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
+struct PointerType : public TypeBase {
+	const Type pointeeType;
+
+	explicit PointerType(Type pointeeType);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
+struct FunctionType : public TypeBase {
+	const TypeList paramTypes;
+	const Type returnType;
+
+	FunctionType(TypeList paramTypes, Type returnType);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
+using StructField = Pair<U8String, Type>;
+
+struct StructType : public TypeBase {
+	const U8String name;
+	Vec<StructField> fields;
+
+	StructType(U8String name, Vec<StructField> fields);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
+template <typename T>
+	requires std::derived_from<T, TypeBase>
+struct std::formatter<T> {
+	constexpr auto parse(const std::format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const T &t, std::format_context &ctx) const {
+		return std::format_to(ctx.out(), "{}", t.str());
+	}
+};
+
+template <>
+struct std::formatter<Type> {
+	constexpr auto parse(const std::format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const Type &t, std::format_context &ctx) const {
+		return std::format_to(ctx.out(), "{}", t->str());
+	}
+};
+
+template <>
+struct std::formatter<TypeList> {
+	constexpr auto parse(const std::format_parse_context &ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const TypeList &list, std::format_context &ctx) const {
+		auto out = ctx.out();
+		for (size_t i = 0; i < list.size(); ++i) {
+			if (i > 0) {
+				out = std::format_to(out, ", ");
+			}
+
+			out = std::format_to(out, "{}", list[i]);
+		}
+		return out;
+	}
+};

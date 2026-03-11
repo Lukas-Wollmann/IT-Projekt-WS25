@@ -15,7 +15,7 @@ Opt<TrackedValue> AllocManager::getAlloca(const U8String &ident) const {
 	return {};
 }
 
-llvm::AllocaInst *AllocManager::createAlloca(type::TypePtr type, const U8String &ident) {
+llvm::AllocaInst *AllocManager::createAlloca(Type type, const U8String &ident) {
 	auto *func = m_Context.irBuilder.GetInsertBlock()->getParent();
 	VERIFY(func);
 

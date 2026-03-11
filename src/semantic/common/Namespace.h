@@ -6,7 +6,7 @@ namespace sem {
 struct Namespace {
 private:
 	U8String m_Name;
-	Map<U8String, type::FunctionTypePtr> m_Functions;
+	Map<U8String, FunctionType *> m_Functions;
 
 public:
 	explicit Namespace(U8String name);
@@ -16,8 +16,8 @@ public:
 	Namespace &operator=(const Namespace &) = delete;
 	Namespace &operator=(Namespace &&) = delete;
 
-	void addFunction(U8String name, type::FunctionTypePtr func);
-	Opt<type::FunctionTypePtr> getFunction(const U8String &name) const;
+	void addFunction(U8String name, FunctionType *func);
+	Opt<FunctionType *> getFunction(const U8String &name) const;
 	size_t getSize() const;
 };
 }

@@ -1,10 +1,8 @@
 #include "Doctest.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
-#include "type/Compare.h"
 
 using namespace ast;
-using namespace type;
 using namespace sem;
 
 #if 0

@@ -20,7 +20,6 @@ using namespace prs;
 using namespace ast;
 using namespace sem;
 using namespace gen;
-using namespace type;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {

@@ -2,12 +2,10 @@
 
 #include "ast/AST.h"
 #include "core/Macros.h"
-#include "type/Compare.h"
-#include "type/Type.h"
+#include "type/TypeFactory.h"
 
 namespace sem {
 using namespace ast;
-using namespace type;
 
 OperatorTable::OperatorTable() {
 	using enum UnaryOpKind;
@@ -58,51 +56,63 @@ OperatorTable::OperatorTable() {
 	// operator as it works on all operand types that are a PointerType.
 }
 
-Opt<FunctionType> OperatorTable::getUnaryOperator(const UnaryOpKind op, const TypePtr &t) const {
+Opt<const FunctionType *> OperatorTable::getUnaryOperator(UnaryOpKind op, Type t) const {
 	for (auto &[unaryOp, funcType] : m_UnaryOps) {
 		if (unaryOp != op)
 			continue;
 
-		auto &params = funcType.paramTypes;
+		auto &params = funcType->paramTypes;
 		VERIFY(params.size() == 1);
 
-		if (*params[0] == *t)
+		if (params[0]->equals(t))
 			return funcType;
 	}
 
 	return {};
 }
 
-Opt<FunctionType> OperatorTable::getBinaryOperator(BinaryOpKind op, const TypePtr &t1,
-												   const TypePtr &t2) const {
+Opt<const FunctionType *> OperatorTable::getBinaryOperator(BinaryOpKind op, Type t1,
+														   Type t2) const {
 	for (auto &[binaryOp, funcType] : m_BinaryOps) {
 		if (binaryOp != op)
 			continue;
 
-		auto &params = funcType.paramTypes;
+		auto &params = funcType->paramTypes;
 		VERIFY(params.size() == 2);
 
-		if (*params[0] == *t1 && *params[1] == *t2)
+		if (params[0]->equals(t1) && params[1]->equals(t2))
 			return funcType;
 	}
 
 	return {};
 }
 
-void OperatorTable::addBinaryOperator(const U8String &left, const U8String &right,
-									  const BinaryOpKind op, const U8String &ret) {
-	const auto leftType = std::make_shared<Typename>(left);
-	const auto rightType = std::make_shared<Typename>(right);
-	const auto retType = std::make_shared<Typename>(ret);
+void OperatorTable::addBinaryOperator(const U8String &left, const U8String &right, BinaryOpKind op,
+									  const U8String &ret) {
+	Type leftType = getTypeFromName(left);
+	Type rightType = getTypeFromName(right);
+	Type retType = getTypeFromName(ret);
 
-	m_BinaryOps.emplace_back(op, FunctionType({leftType, rightType}, retType));
+	auto funcType = TypeFactory::getFunction(TypeList{leftType, rightType}, retType);
+	m_BinaryOps.emplace_back(op, funcType);
 }
 
-void OperatorTable::addUnaryOperator(const U8String &operand, const UnaryOpKind op,
-									 const U8String &ret) {
-	const auto operandType = std::make_shared<Typename>(operand);
-	const auto retType = std::make_shared<Typename>(ret);
+void OperatorTable::addUnaryOperator(const U8String &operand, UnaryOpKind op, const U8String &ret) {
+	Type operandType = getTypeFromName(operand);
+	Type retType = getTypeFromName(ret);
 
-	m_UnaryOps.emplace_back(op, FunctionType({operandType}, retType));
+	auto funcType = TypeFactory::getFunction(TypeList{operandType}, retType);
+	m_UnaryOps.emplace_back(op, funcType);
+}
+
+Type OperatorTable::getTypeFromName(const U8String &name) {
+	if (name == u8"i32")
+		return TypeFactory::getI32();
+	if (name == u8"char")
+		return TypeFactory::getChar();
+	if (name == u8"bool")
+		return TypeFactory::getBool();
+
+	UNREACHABLE();
 }
 }

@@ -4,9 +4,9 @@
 
 #include "semantic/common/ErrorMessages.h"
 #include "semantic/common/OperatorTable.h"
+#include "type/TypeFactory.h"
 
 namespace sem {
-using namespace type;
 using namespace ast;
 using enum ErrorMessageKind;
 
@@ -23,7 +23,7 @@ void ExplorationPass::visit(const FuncDecl &n) {
 
 	std::ranges::copy(n.params | std::views::values, std::back_inserter(params));
 
-	const auto funcType = std::make_shared<FunctionType>(std::move(params), n.returnType);
+	const auto funcType = TypeFactory::getFunction(std::move(params), n.returnType);
 	auto &global = m_Context.getGlobalNamespace();
 
 	if (global.getFunction(n.ident)) {

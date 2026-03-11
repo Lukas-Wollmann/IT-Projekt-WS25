@@ -2,8 +2,6 @@
 
 #include <ranges>
 
-#include "type/Compare.h"
-
 namespace gen {
 CodeGenContext::CodeGenContext(const U8String &moduleName)
 	: irBuilder(llvmContext)
@@ -27,17 +25,17 @@ void CodeGenContext::registerRuntimeFunctions() {
 	llvmModule.getOrInsertFunction(sharedPtrDrop, spDropTy);
 }
 
-llvm::Value *CodeGenContext::copyValue(llvm::Value *value, const type::TypePtr &type) {
-	if (type->isTypeKind(type::TypeKind::Unit)) {
+llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
+	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive)) {
 		return value;
 	}
 
-	if (type->isTypeKind(type::TypeKind::Typename)) {
+	if (type->isTypeKind(TypeKind::Struct)) {
 		// TODO: For struct types emit a copy constructor here
 		return value;
 	}
 
-	if (type->isTypeKind(type::TypeKind::Pointer)) {
+	if (type->isTypeKind(TypeKind::Pointer)) {
 		// For pointers, we need to increment the reference count
 		auto *const func = llvmModule.getFunction(sharedPtrCopy);
 		VERIFY(func);
@@ -49,22 +47,22 @@ llvm::Value *CodeGenContext::copyValue(llvm::Value *value, const type::TypePtr &
 	UNREACHABLE();
 }
 
-void CodeGenContext::dropValue(llvm::Value *value, const type::TypePtr &type) {
+void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 	if (auto dtor = getDestructor(type)) {
 		irBuilder.CreateCall(getDestructorType(), dtor.value(), {value});
 	}
 }
 
-Opt<llvm::Value *> CodeGenContext::getDestructor(const type::TypePtr &type) {
-	if (type->isTypeKind(type::TypeKind::Unit)) {
+Opt<llvm::Value *> CodeGenContext::getDestructor(Type type) {
+	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive)) {
 		return {};
 	}
 
-	if (type->isTypeKind(type::TypeKind::Typename)) {
+	if (type->isTypeKind(TypeKind::Struct)) {
 		return {}; // TODO recursive for structs / emit dtor
 	}
 
-	if (type->isTypeKind(type::TypeKind::Pointer)) {
+	if (type->isTypeKind(TypeKind::Pointer)) {
 		auto *const dtor = llvmModule.getFunction(sharedPtrDrop);
 		VERIFY(dtor);
 		return dtor;
@@ -86,7 +84,7 @@ llvm::Value *CodeGenContext::getNullDestructor() {
 	return llvm::FunctionType::get(voidType, {voidPtrType}, false);
 }
 
-[[nodiscard]] llvm::Value *CodeGenContext::sizeOf(const type::TypePtr &type) {
+[[nodiscard]] llvm::Value *CodeGenContext::sizeOf(Type type) {
 	auto *const llvmType = typeConverter.convert(type);
 	const auto &layout = llvmModule.getDataLayout();
 	auto *const sizeType = layout.getIntPtrType(llvmContext);

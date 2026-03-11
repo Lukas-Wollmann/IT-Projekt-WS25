@@ -3,7 +3,7 @@
 #include "core/Operators.h"
 #include "semantic/common/SymbolTable.h"
 #include "semantic/common/TypeCheckerContext.h"
-#include "type/Type.h"
+#include "type/TypeFactory.h"
 
 namespace sem {
 ///
@@ -16,7 +16,7 @@ struct TypeCheckingPass : ast::Visitor<bool> {
 private:
 	TypeCheckerContext &m_Context;
 	SymbolTable m_SymbolTable;
-	Opt<type::TypePtr> m_CurrentFunctionReturnType;
+	Opt<Type> m_CurrentFunctionReturnType;
 
 public:
 	explicit TypeCheckingPass(TypeCheckerContext &ctx);
@@ -40,10 +40,9 @@ private:
 	bool visit(ast::VarDef &n) override;
 	bool visit(ast::FuncDecl &n) override;
 
-	type::TypePtr checkExpression(ast::Expr &n);
-	[[nodiscard]] static bool typesMatch(const type::TypePtr &left, const type::TypePtr &right);
-	void checkIfArgsCanCallFunction(const type::TypeList &args,
-									const type::FunctionTypePtr &func) const;
+	Type checkExpression(ast::Expr &n);
+	[[nodiscard]] static bool typesMatch(Type left, Type right);
+	void checkIfArgsCanCallFunction(const TypeList &args, const FunctionType *func) const;
 	[[nodiscard]] static Opt<BinaryOpKind> getBinaryOpFromAssignment(AssignmentKind kind);
 };
 }

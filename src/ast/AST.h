@@ -49,10 +49,10 @@ protected:
 };
 
 struct Expr : Stmt {
-	Opt<type::TypePtr> inferredType;
+	Opt<Type> inferredType;
 	Opt<ValueCategory> valueCategory;
 
-	void infer(type::TypePtr type, ValueCategory category);
+	void infer(Type type, ValueCategory category);
 	[[nodiscard]] bool isInferred() const;
 
 protected:
@@ -82,10 +82,10 @@ struct UnitLit : Expr {
 };
 
 struct HeapAlloc : Expr {
-	const type::TypePtr type;
+	const Type type;
 	const Box<Expr> expr;
 
-	HeapAlloc(type::TypePtr type, Box<Expr> expr);
+	HeapAlloc(Type type, Box<Expr> expr);
 };
 
 struct UnaryExpr : Expr {
@@ -151,22 +151,22 @@ struct ReturnStmt : Stmt {
 
 struct VarDef : Stmt {
 	const U8String ident;
-	const type::TypePtr type;
+	const Type type;
 	const Box<Expr> value;
 
-	VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
+	VarDef(U8String ident, Type type, Box<Expr> value);
 };
 
-using Param = Pair<U8String, type::TypePtr>;
-using StructField = Pair<U8String, type::TypePtr>;
+using Param = Pair<U8String, Type>;
+using StructField = Pair<U8String, Type>;
 
 struct FuncDecl : Node {
 	const U8String ident;
 	const Vec<Param> params;
-	const type::TypePtr returnType;
+	const Type returnType;
 	const Box<BlockStmt> body;
 
-	FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
+	FuncDecl(U8String ident, Vec<Param> params, Type returnType, Box<BlockStmt> body);
 };
 
 struct StructDecl : Node {
