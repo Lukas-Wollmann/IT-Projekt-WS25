@@ -1,35 +1,51 @@
 #!/usr/bin/env bash
 
-# To run this file run:
-# cd ./test/_integration && chmod +x ./run_tests.sh && ./run_tests.sh
-
 set -euo pipefail
 
 FOLDER="./cases"
 COMPILER="./../../cmake-build/app"
+LOGFILE="./valgrind.log"
+
+# Clear logfile at start
+> "$LOGFILE"
+
+echo "Starting integration tests..."
+echo "Logfile: $LOGFILE"
 
 for file in "$FOLDER"/*.ocn; do
+    echo "----------------------------------------"
     echo "Compiling $file..."
-    "$COMPILER" "$file" -o "${file%.ocn}.out"
 
-    echo "Running ${file%.ocn}.out with valgrind..."
-    
-    # Temp file for Valgrind logs
-    VALGRIND_LOG=$(mktemp)
+    OUTFILE="${file%.ocn}.out"
+    "$COMPILER" "$file" -o "$OUTFILE"
 
-    # Run valgrind; do not fail the script on program's exit
-    valgrind --leak-check=full --error-exitcode=1 --log-file="$VALGRIND_LOG" "${file%.ocn}.out" &>/dev/null || true
+    echo "Running with valgrind..."
 
-    # Check if valgrind detected errors
-    if grep -q "ERROR SUMMARY: [1-9]" "$VALGRIND_LOG"; then
-        echo "Valgrind detected memory errors in $file!"
-        cat "$VALGRIND_LOG"
-        rm -f "$VALGRIND_LOG" "${file%.ocn}.out"
+    {
+        echo ""
+        echo "========================================"
+        echo "Test: $file"
+        echo "Time: $(date)"
+        echo "========================================"
+
+        valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            "$OUTFILE"
+    } >> "$LOGFILE" 2>&1 || true
+
+    if grep -q "ERROR SUMMARY: [1-9]" "$LOGFILE"; then
+        echo "Valgrind detected memory errors in $file"
+        echo "Check logfile: $LOGFILE"
+        rm -f "$OUTFILE"
         exit 1
     fi
 
-    # Clean up
-    rm -f "$VALGRIND_LOG" "${file%.ocn}.out"
+    echo "$file passed"
+    rm -f "$OUTFILE"
 done
 
-echo "All tests passed with no valgrind errors."
+echo "----------------------------------------"
+echo "All tests passed."
+echo "Full log: $LOGFILE"

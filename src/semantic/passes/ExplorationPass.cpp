@@ -11,41 +11,47 @@ using namespace ast;
 using enum ErrorMessageKind;
 
 void ExplorationPass::validateNoCycles(StructType *root) {
-	if (m_ValidatedStructs.contains(root)) {
+	if (m_ValidatedStructs.contains(root))
 		return;
-	}
 
-	std::vector<StructType *> path = {root};
-	checkRecursive(root, path);
+	for (const auto &[name, type] : root->fields) {
+		if (!type->isTypeKind(TypeKind::Struct))
+			continue;
+
+		auto struct_ = static_cast<StructType *>(type);
+		std::vector<StructType *> path = {root};
+		checkRecursive(struct_, path, name); // pass root field
+	}
 
 	m_ValidatedStructs.insert(root);
 }
 
-bool ExplorationPass::checkRecursive(StructType *current, Vec<StructType *> &path) {
+bool ExplorationPass::checkRecursive(StructType *current, Vec<StructType *> &path,
+									 const U8String &rootField) {
 	for (const auto &[name, type] : current->fields) {
-		if (type->isTypeKind(TypeKind::Struct)) {
-			auto struct_ = static_cast<StructType *>(type);
+		if (!type->isTypeKind(TypeKind::Struct))
+			continue;
 
-			for (const auto *seen : path) {
-				if (struct_ == seen) {
-					// Only error for the root
-					if (path.front() == m_CurrentRootBeingValidated) {
-						const auto msg = ErrorMessage<StructInfiniteSize>::str(path.front(), name);
-						m_Context.submitError(msg, {});
-					}
+		auto struct_ = static_cast<StructType *>(type);
 
-					return false;
+		for (const auto *seen : path) {
+			if (struct_ == seen) {
+				if (path.front() == m_CurrentRootBeingValidated) {
+					const auto msg =
+							ErrorMessage<StructInfiniteSize>::str(m_CurrentRootBeingValidated,
+																  rootField);
+					m_Context.submitError(msg, {});
 				}
-			}
-
-			path.push_back(struct_);
-			bool success = checkRecursive(struct_, path);
-			path.pop_back();
-
-			if (!success) {
 				return false;
 			}
 		}
+
+		path.push_back(struct_);
+		bool success = checkRecursive(struct_, path, rootField); // propagate root field
+		path.pop_back();
+
+		if (!success)
+			return false;
 	}
 
 	return true;

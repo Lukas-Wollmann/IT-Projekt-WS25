@@ -104,6 +104,9 @@ int main(const int argc, const char *argv[]) {
 	if (err.hasError())
 		return 3;
 
+	if (debug)
+		util::print("{}\n", *module);
+
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
 

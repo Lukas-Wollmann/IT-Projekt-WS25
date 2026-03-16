@@ -48,9 +48,36 @@ ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
 			const auto &unaryExpr = static_cast<const ast::UnaryExpr &>(n);
 			VERIFY(unaryExpr.op == UnaryOpKind::Dereference);
 
-			const auto expr = lowerExpr(*unaryExpr.operand);
+			// We must return the address at which the pointee lives, not the loaded pointee value.
+			llvm::Value *ptrValue = nullptr;
+			Type operandType;
 
-			return expr;
+			// If operand is a plain VarRef, get its alloca and load it to obtain the pointer value.
+			if (unaryExpr.operand->kind == ast::NodeKind::VarRef) {
+				const auto &varRef = static_cast<const ast::VarRef &>(*unaryExpr.operand);
+				const auto reg = m_AllocManager.getAlloca(varRef.ident);
+				VERIFY(reg.has_value());
+
+				auto *const llvmOperandType = m_Context.typeConverter.convert(reg.value().type);
+				ptrValue = m_Context.irBuilder.CreateLoad(llvmOperandType, reg.value().value);
+				operandType = reg.value().type;
+			} else {
+				// For other operands (heap alloc, function returns pointer, complex expr),
+				// lowerExpr should produce the pointer value directly.
+				const auto [val, ty, _] = lowerExpr(*unaryExpr.operand);
+				ptrValue = val;
+				operandType = ty;
+			}
+
+			// operandType should be a pointer type; dereferencing yields the pointee type.
+			const auto ptrType = static_cast<PointerType *>(operandType);
+			VERIFY(ptrType);
+
+			const auto pointeeType = ptrType->pointeeType;
+
+			// Return the pointer (address) to the pointee as the lvalue.
+			// isTemp=false because this represents an addressable location.
+			return {.value = ptrValue, .type = pointeeType, .isTemp = false};
 		}
 
 		default: UNREACHABLE();

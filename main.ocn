@@ -1,12 +1,3 @@
-struct Parent {
-    a: Child
-}
-
-struct Child {
-    mother: Parent,
-    father: Parent
-}
-
 func main() -> i32 {
     return 1;
 }

@@ -1,0 +1,31 @@
+func main() -> i32 {
+    
+    // Here the expression cleanup rule will apply.
+    make_char_ptr();
+    make_i32_ptr();
+
+    // Here the scope variable rule will apply.
+    c: *char = make_char_ptr();
+    i: *i32 = make_i32_ptr();
+
+
+    return 0;
+}
+
+// Lets assume we have a factory function that created a random character.
+func make_char_ptr() -> *char {
+    
+    return new char('A');
+    //     ^^^^^^^^^^^^^ when parsed this is just an ordenary expression. Again here, we need to
+    // extends the lifetime of the pointer to outlive the function. The caller has to cleanup the
+    // pointer now.
+
+}
+
+// This also works for functions that return a pointer from a variable
+func make_i32_ptr() -> *i32 {
+    a: *i32 = new i32(10);
+
+    // We extend the lifetime of a outside of this function.
+    return a;
+}

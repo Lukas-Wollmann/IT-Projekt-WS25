@@ -26,6 +26,6 @@ private:
 	void visit(const ast::FuncDecl &n) override;
 
 	void validateNoCycles(StructType *root);
-	bool checkRecursive(StructType *current, Vec<StructType *> &path);
+	bool checkRecursive(StructType *current, Vec<StructType *> &path, const U8String &rootField);
 };
 }

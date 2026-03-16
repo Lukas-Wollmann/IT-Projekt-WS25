@@ -1,4 +1,7 @@
 func main() -> i32 {
+
+    // Pointers created in an expression are not really owned by anything and will
+    // be destroyed after the expression ends (after the ';').  
     
     new *i32(new i32(10));
 

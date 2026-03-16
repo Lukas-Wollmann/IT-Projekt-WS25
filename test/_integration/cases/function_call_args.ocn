@@ -1,0 +1,20 @@
+func main() -> i32 {
+    // Arguments of a function are never cleaned up by the function itself, but rather by the
+    // function who called it.
+    a: *i32 = print_i32_ptr(new i32(12));
+    // Here we move the returned data into a. Now the scope rule applys.
+
+    print_i32(*a);
+
+    return 0;
+}
+
+func print_i32_ptr(a: *i32) -> *i32 {
+    // a is not a scoped variable, its a argument to the function. We do not need to clean a up.
+
+    print_i32(*a);
+
+    // Here we copy a and increment its refcount, so when the callee cleans up the original a,
+    // the data behind a is still alive.
+    return a;
+} 
