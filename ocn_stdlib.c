@@ -42,6 +42,11 @@ void print_newline() {
 	putchar('\n');
 }
 
+void __panic_null_deref() {
+	fputs("panic: null pointer dereference\n", stderr);
+	abort();
+}
+
 OCN_I32 read_i32() {
 	OCN_I32 num;
 

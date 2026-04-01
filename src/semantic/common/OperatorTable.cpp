@@ -73,6 +73,18 @@ Opt<const FunctionType *> OperatorTable::getUnaryOperator(UnaryOpKind op, Type t
 
 Opt<const FunctionType *> OperatorTable::getBinaryOperator(BinaryOpKind op, Type t1,
 														   Type t2) const {
+	if (op == BinaryOpKind::Equality || op == BinaryOpKind::Inequality) {
+		const bool leftPtr = t1->isTypeKind(TypeKind::Pointer);
+		const bool rightPtr = t2->isTypeKind(TypeKind::Pointer);
+		const bool leftNull = t1->isTypeKind(TypeKind::Null);
+		const bool rightNull = t2->isTypeKind(TypeKind::Null);
+
+		if ((leftPtr && rightPtr && t1->equals(t2)) || (leftPtr && rightNull) ||
+			(leftNull && rightPtr)) {
+			return TypeFactory::getFunction(TypeList{t1, t2}, TypeFactory::getBool());
+		}
+	}
+
 	for (auto &[binaryOp, funcType] : m_BinaryOps) {
 		if (binaryOp != op)
 			continue;

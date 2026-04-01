@@ -34,16 +34,9 @@ void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 	ctx.irBuilder.CreateCondBr(isNull, panicBB, contBB);
 
 	ctx.irBuilder.SetInsertPoint(panicBB);
-	auto *putsType =
-			llvm::FunctionType::get(ctx.irBuilder.getInt32Ty(), {ctx.irBuilder.getPtrTy()}, false);
-	auto puts = ctx.llvmModule.getOrInsertFunction("puts", putsType);
-
-	auto *abortType = llvm::FunctionType::get(ctx.irBuilder.getVoidTy(), false);
-	auto abort = ctx.llvmModule.getOrInsertFunction("abort", abortType);
-
-	auto *msg = ctx.irBuilder.CreateGlobalStringPtr("panic: null pointer dereference");
-	ctx.irBuilder.CreateCall(puts, {msg});
-	ctx.irBuilder.CreateCall(abort, {});
+	auto *panicType = llvm::FunctionType::get(ctx.irBuilder.getVoidTy(), false);
+	auto panic = ctx.llvmModule.getOrInsertFunction("__panic_null_deref", panicType);
+	ctx.irBuilder.CreateCall(panic, {});
 	ctx.irBuilder.CreateUnreachable();
 
 	ctx.irBuilder.SetInsertPoint(contBB);
@@ -299,8 +292,8 @@ ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
-	const auto &[left, leftType, isLeftTemp] = lowerExpr(*n.left);
-	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
+	auto [left, leftType, isLeftTemp] = lowerExpr(*n.left);
+	auto [right, rightType, isRightTemp] = lowerExpr(*n.right);
 
 	using enum BinaryOpKind;
 	switch (n.op) {
@@ -340,16 +333,48 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 			UNREACHABLE();
 
 		case Equality:
-			if (leftType == TypeFactory::getChar() || leftType == TypeFactory::getI32()) {
+			if (leftType == TypeFactory::getChar() || leftType == TypeFactory::getI32() ||
+				leftType == TypeFactory::getBool()) {
 				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
-				return {.value = val, .type = leftType, .isTemp = true};
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if ((leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Null)) ||
+				(leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) ||
+				(leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Pointer))) {
+				if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) {
+					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+				}
+
+				if (rightType->isTypeKind(TypeKind::Null) && leftType->isTypeKind(TypeKind::Pointer)) {
+					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+				}
+
+				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 			UNREACHABLE();
 
 		case Inequality:
-			if (leftType == TypeFactory::getI32() || leftType == TypeFactory::getChar()) {
+			if (leftType == TypeFactory::getI32() || leftType == TypeFactory::getChar() ||
+				leftType == TypeFactory::getBool()) {
 				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
-				return {.value = val, .type = leftType, .isTemp = true};
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if ((leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Null)) ||
+				(leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) ||
+				(leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Pointer))) {
+				if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) {
+					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+				}
+
+				if (rightType->isTypeKind(TypeKind::Null) && leftType->isTypeKind(TypeKind::Pointer)) {
+					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+				}
+
+				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 			UNREACHABLE();
 

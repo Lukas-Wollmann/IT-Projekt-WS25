@@ -516,7 +516,7 @@ Box<Expr> Parser::parseAdditiveExpr() {
 }
 
 Box<Expr> Parser::parseMultiplicativeExpr() {
-	auto left = parseUnaryExpr();
+	auto left = parsePostfixExpr();
 
 	while (m_Current->matches(TokenType::Operator)) {
 		Opt<BinaryOpKind> kind = {};
@@ -532,7 +532,7 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 			break;
 
 		consume(TokenType::Operator);
-		auto right = parseUnaryExpr();
+		auto right = parsePostfixExpr();
 
 		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
 	}
@@ -542,7 +542,7 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parsePostfixExpr();
+		return parsePrimaryExpr();
 
 	Opt<UnaryOpKind> kind = {};
 	const auto &op = consume(TokenType::Operator).lexeme;
@@ -628,7 +628,7 @@ Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 }
 
 Box<Expr> Parser::parsePostfixExpr() {
-	auto left = parsePrimaryExpr();
+	auto left = parseUnaryExpr();
 
 	while (m_Current->matches(TokenType::Separator)) {
 		if (m_Current->matches(TokenType::Separator, u8"(")) {

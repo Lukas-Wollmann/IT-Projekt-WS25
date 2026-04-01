@@ -32,13 +32,25 @@ void CodeGenContext::registerRuntimeFunctions() {
 }
 
 llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
-	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive)) {
+	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive) ||
+		type->isTypeKind(TypeKind::Null)) {
 		return value;
 	}
 
 	if (type->isTypeKind(TypeKind::Struct)) {
-		// TODO: For struct types emit a copy constructor here
-		return value;
+		auto *structType = static_cast<StructType *>(type);
+		auto *llvmStructType = static_cast<llvm::StructType *>(typeConverter.convert(type));
+
+		llvm::Value *result = llvm::UndefValue::get(llvmStructType);
+
+		for (u32 i = 0; i < structType->orderedFields.size(); ++i) {
+			const auto &[_, fieldType] = structType->orderedFields[i];
+			auto *fieldValue = irBuilder.CreateExtractValue(value, {i});
+			auto *copiedField = copyValue(fieldValue, fieldType);
+			result = irBuilder.CreateInsertValue(result, copiedField, {i});
+		}
+
+		return result;
 	}
 
 	if (type->isTypeKind(TypeKind::Pointer)) {
@@ -67,7 +79,20 @@ void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 	}
 
 	if (type->isTypeKind(TypeKind::Struct)) {
-		// TODO: introduce alloca-backed dropping for non-temporary struct values.
+		auto *func = irBuilder.GetInsertBlock()->getParent();
+		VERIFY(func);
+
+		// Materialize the rvalue in a stack slot so the generated struct destructor
+		// can recursively drop members through a stable address.
+		llvm::IRBuilder<> entryBuilder(&func->getEntryBlock(), func->getEntryBlock().begin());
+		auto *llvmStructType = typeConverter.convert(type);
+		auto *tmpAlloca = entryBuilder.CreateAlloca(llvmStructType, nullptr, "tmp.struct.drop");
+		irBuilder.CreateStore(value, tmpAlloca);
+
+		auto dtor = getDestructor(type);
+		VERIFY(dtor.has_value());
+		auto *payload = irBuilder.CreateBitCast(tmpAlloca, irBuilder.getPtrTy());
+		irBuilder.CreateCall(getDestructorType(), dtor.value(), {payload});
 		return;
 	}
 
