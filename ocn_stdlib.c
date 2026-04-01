@@ -127,17 +127,23 @@ void *__sp_create(size_t size, void (*dtor)(void *)) {
 }
 
 void *__sp_copy(void *ptr) {
+	if (!ptr)
+		return NULL;
+
 	ControlBlock *cbptr = (ControlBlock *) ptr - 1;
 	cbptr->refCount++;
 	return ptr;
 }
 
 void __sp_drop(void *ptr) {
+	if (!ptr)
+		return;
+
 	ControlBlock *cbptr = (ControlBlock *) ptr - 1;
 	cbptr->refCount--;
 	if (cbptr->refCount == 0) {
 		if (cbptr->dtor)
-			cbptr->dtor(*(void**)ptr);
+			cbptr->dtor(ptr);
 		free(cbptr);
 	}
 }

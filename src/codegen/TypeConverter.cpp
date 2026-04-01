@@ -13,6 +13,10 @@ llvm::Type *TypeConverter::convert(Type type) {
 	switch (type->kind) {
 		case TypeKind::Primitive:
 			return convertPrimitive(static_cast<const PrimitiveType &>(*type));
+		case TypeKind::Null: {
+			auto *i8 = llvm::Type::getInt8Ty(m_Context);
+			return llvm::PointerType::getUnqual(i8);
+		}
 		case TypeKind::Pointer:	 return convertPointer(static_cast<const PointerType &>(*type));
 		case TypeKind::Function: return convertFunction(static_cast<const FunctionType &>(*type));
 		case TypeKind::Unit:	 return convertUnit(static_cast<const UnitType &>(*type));

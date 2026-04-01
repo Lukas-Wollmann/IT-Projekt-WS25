@@ -29,9 +29,11 @@ public:
 	ExprResult visit(const ast::IntLit &n) override;
 	ExprResult visit(const ast::BoolLit &n) override;
 	ExprResult visit(const ast::CharLit &n) override;
+	ExprResult visit(const ast::NullLit &n) override;
 	ExprResult visit(const ast::UnitLit &n) override;
 	ExprResult visit(const ast::HeapAlloc &n) override;
 	ExprResult visit(const ast::VarRef &n) override;
+	ExprResult visit(const ast::FieldAccess &n) override;
 	ExprResult visit(const ast::UnaryExpr &n) override;
 	ExprResult visit(const ast::BinaryExpr &n) override;
 	ExprResult visit(const ast::FuncCall &n) override;

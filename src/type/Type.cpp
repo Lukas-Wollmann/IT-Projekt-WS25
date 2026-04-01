@@ -54,6 +54,21 @@ Box<TypeBase> ErrorType::clone() const {
 	return std::make_unique<ErrorType>();
 }
 
+NullType::NullType()
+	: TypeBase(TypeKind::Null) {}
+
+U8String NullType::str() const {
+	return u8"null";
+}
+
+bool NullType::equals(const TypeBase *other) const {
+	return other && other->kind == TypeKind::Null;
+}
+
+Box<TypeBase> NullType::clone() const {
+	return std::make_unique<NullType>();
+}
+
 PointerType::PointerType(Type pointeeType)
 	: TypeBase(TypeKind::Pointer)
 	, pointeeType(pointeeType) {}

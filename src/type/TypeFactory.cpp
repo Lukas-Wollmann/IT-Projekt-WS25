@@ -49,6 +49,11 @@ ErrorType *TypeFactory::getError() {
 	return static_cast<ErrorType *>(type);
 }
 
+NullType *TypeFactory::getNull() {
+	auto type = intern(NullType());
+	return static_cast<NullType *>(type);
+}
+
 PointerType *TypeFactory::getPointer(Type pointeeType) {
 	auto type = intern(PointerType(pointeeType));
 	return static_cast<PointerType *>(type);

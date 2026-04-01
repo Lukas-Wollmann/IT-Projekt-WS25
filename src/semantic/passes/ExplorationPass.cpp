@@ -94,6 +94,7 @@ void ExplorationPass::visit(const StructDecl &n) {
 			m_Context.submitError(msg, {});
 		} else {
 			structType->fields.insert({name, type});
+			structType->orderedFields.emplace_back(name, type);
 		}
 	}
 

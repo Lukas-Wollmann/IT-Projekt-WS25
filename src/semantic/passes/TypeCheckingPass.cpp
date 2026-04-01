@@ -29,6 +29,12 @@ bool TypeCheckingPass::visit(BoolLit &n) {
 	return false;
 }
 
+bool TypeCheckingPass::visit(NullLit &n) {
+	VERIFY(!n.isInferred());
+	n.infer(TypeFactory::getNull(), ValueCategory::RValue);
+	return false;
+}
+
 bool TypeCheckingPass::visit(UnitLit &n) {
 	VERIFY(!n.isInferred());
 	n.infer(TypeFactory::getUnit(), ValueCategory::RValue);
@@ -167,6 +173,46 @@ bool TypeCheckingPass::visit(Assignment &n) {
 }
 
 bool TypeCheckingPass::visit(FuncCall &n) {
+	if (auto *varRef = dynamic_cast<VarRef *>(n.expr.get())) {
+		auto *structType = TypeFactory::getStruct(varRef->ident);
+
+		if (structType->isDeclared) {
+			// Treat `StructName(...)` as a struct constructor expression.
+			varRef->infer(structType, ValueCategory::RValue);
+
+			TypeList argTypes;
+			argTypes.reserve(n.args.size());
+
+			for (auto &expr : n.args)
+				argTypes.push_back(checkExpression(*expr));
+
+			if (argTypes.size() != structType->orderedFields.size()) {
+				const auto msg =
+						ErrorMessage<TooManyArguments>::str(structType->orderedFields.size(),
+															argTypes.size());
+				m_Context.submitError(msg, {});
+
+				n.infer(TypeFactory::getError(), ValueCategory::RValue);
+				return false;
+			}
+
+			size_t index = 0;
+			for (const auto &[fieldName, fieldType] : structType->orderedFields) {
+				const auto argType = argTypes[index++];
+
+				if (!argType->isTypeKind(TypeKind::Error) && !typesMatch(argType, fieldType)) {
+					const auto msg = std::format(
+							"Struct field '{}' expected type '{}', got '{}' at argument {}.",
+							fieldName, *fieldType, *argType, index);
+					m_Context.submitError(msg, {});
+				}
+			}
+
+			n.infer(structType, ValueCategory::RValue);
+			return false;
+		}
+	}
+
 	const auto type = checkExpression(*n.expr);
 
 	if (type->isTypeKind(TypeKind::Error)) {
@@ -177,6 +223,7 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 	if (!type->isTypeKind(TypeKind::Function)) {
 		const auto msg = ErrorMessage<CallOnNonFunctionType>::str(type);
 		m_Context.submitError(msg, {});
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
 
 		return false;
 	}
@@ -212,6 +259,37 @@ bool TypeCheckingPass::visit(VarRef &n) {
 	m_Context.submitError(msg, {});
 
 	n.infer(TypeFactory::getError(), ValueCategory::RValue);
+	return false;
+}
+
+bool TypeCheckingPass::visit(FieldAccess &n) {
+	const auto baseType = checkExpression(*n.base);
+
+	if (baseType->isTypeKind(TypeKind::Error)) {
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	if (!baseType->isTypeKind(TypeKind::Struct)) {
+		const auto msg = std::format("Cannot access field '{}' on non-struct type '{}'.", n.field,
+									 *baseType);
+		m_Context.submitError(msg, {});
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	auto *structType = static_cast<StructType *>(baseType);
+	auto it = structType->fields.find(n.field);
+
+	if (it == structType->fields.end()) {
+		const auto msg =
+				std::format("Struct '{}' has no field named '{}'.", structType->name, n.field);
+		m_Context.submitError(msg, {});
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	n.infer(it->second, ValueCategory::LValue);
 	return false;
 }
 
@@ -348,6 +426,12 @@ Type TypeCheckingPass::checkExpression(Expr &n) {
 bool TypeCheckingPass::typesMatch(Type left, Type right) {
 	if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
 		return false;
+
+	if (left->isTypeKind(TypeKind::Null) && right->isTypeKind(TypeKind::Pointer))
+		return true;
+
+	if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
+		return true;
 
 	return left == right;
 }

@@ -34,6 +34,9 @@ BoolLit::BoolLit(const bool value)
 	: Expr(NodeKind::BoolLit)
 	, value(value) {}
 
+NullLit::NullLit()
+	: Expr(NodeKind::NullLit) {}
+
 UnitLit::UnitLit()
 	: Expr(NodeKind::UnitLit) {}
 
@@ -62,6 +65,11 @@ Assignment::Assignment(const AssignmentKind assignmentKind, Box<Expr> left, Box<
 VarRef::VarRef(U8String ident)
 	: Expr(NodeKind::VarRef)
 	, ident(std::move(ident)) {}
+
+FieldAccess::FieldAccess(Box<Expr> base, U8String field)
+	: Expr(NodeKind::FieldAccess)
+	, base(std::move(base))
+	, field(std::move(field)) {}
 
 FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
 	: Expr(NodeKind::FuncCall)

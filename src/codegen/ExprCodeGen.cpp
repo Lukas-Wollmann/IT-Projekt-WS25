@@ -5,6 +5,51 @@
 #include "type/TypeFactory.h"
 
 namespace gen {
+namespace {
+llvm::Value *coerceNullToPointer(gen::CodeGenContext &ctx, llvm::Value *value, Type sourceType,
+								 Type targetType) {
+	if (!sourceType->isTypeKind(TypeKind::Null) || !targetType->isTypeKind(TypeKind::Pointer)) {
+		return value;
+	}
+
+	auto *targetLlvmType = ctx.typeConverter.convert(targetType);
+	if (value->getType() == targetLlvmType) {
+		return value;
+	}
+
+	return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
+}
+
+void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
+	auto *ptrTy = llvm::dyn_cast<llvm::PointerType>(ptr->getType());
+	VERIFY(ptrTy);
+
+	auto *func = ctx.irBuilder.GetInsertBlock()->getParent();
+	VERIFY(func);
+
+	auto *isNull = ctx.irBuilder.CreateICmpEQ(ptr, llvm::ConstantPointerNull::get(ptrTy));
+	auto *panicBB = llvm::BasicBlock::Create(ctx.llvmContext, "deref.null.panic", func);
+	auto *contBB = llvm::BasicBlock::Create(ctx.llvmContext, "deref.cont", func);
+
+	ctx.irBuilder.CreateCondBr(isNull, panicBB, contBB);
+
+	ctx.irBuilder.SetInsertPoint(panicBB);
+	auto *putsType =
+			llvm::FunctionType::get(ctx.irBuilder.getInt32Ty(), {ctx.irBuilder.getPtrTy()}, false);
+	auto puts = ctx.llvmModule.getOrInsertFunction("puts", putsType);
+
+	auto *abortType = llvm::FunctionType::get(ctx.irBuilder.getVoidTy(), false);
+	auto abort = ctx.llvmModule.getOrInsertFunction("abort", abortType);
+
+	auto *msg = ctx.irBuilder.CreateGlobalStringPtr("panic: null pointer dereference");
+	ctx.irBuilder.CreateCall(puts, {msg});
+	ctx.irBuilder.CreateCall(abort, {});
+	ctx.irBuilder.CreateUnreachable();
+
+	ctx.irBuilder.SetInsertPoint(contBB);
+}
+}
+
 ExprLowerer::ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager)
 	: m_Context(ctx)
 	, m_AllocManager(allocManager) {}
@@ -19,10 +64,7 @@ void ExprLowerer::addToExprCleanup(llvm::Value *value, Type type) {
 
 void ExprLowerer::emitExprCleanup() {
 	for (const auto &[value, type] : m_ExprCleanup) {
-		if (auto dtor = m_Context.getDestructor(type)) {
-			const auto dtorType = m_Context.getDestructorType();
-			m_Context.irBuilder.CreateCall(dtorType, dtor.value(), {value});
-		}
+		m_Context.dropValue(value, type);
 	}
 	m_ExprCleanup.clear();
 }
@@ -77,7 +119,38 @@ ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
 
 			// Return the pointer (address) to the pointee as the lvalue.
 			// isTemp=false because this represents an addressable location.
+			emitNullDerefTrap(m_Context, ptrValue);
 			return {.value = ptrValue, .type = pointeeType, .isTemp = false};
+		}
+
+		case ast::NodeKind::FieldAccess: {
+			const auto &fieldAccess = static_cast<const ast::FieldAccess &>(n);
+			const auto [baseAddr, baseType, _] = lowerLValue(*fieldAccess.base);
+			VERIFY(baseType->isTypeKind(TypeKind::Struct));
+
+			auto *structType = static_cast<StructType *>(baseType);
+			u32 fieldIndex = 0;
+			Type fieldType = nullptr;
+			bool found = false;
+
+			for (u32 i = 0; i < structType->orderedFields.size(); ++i) {
+				const auto &[fieldName, type] = structType->orderedFields[i];
+				if (fieldName == fieldAccess.field) {
+					fieldIndex = i;
+					fieldType = type;
+					found = true;
+					break;
+				}
+			}
+
+			VERIFY(found && fieldType);
+
+			auto *const llvmStructType =
+					static_cast<llvm::StructType *>(m_Context.typeConverter.convert(structType));
+			auto *const fieldPtr =
+					m_Context.irBuilder.CreateStructGEP(llvmStructType, baseAddr, fieldIndex);
+
+			return {.value = fieldPtr, .type = fieldType, .isTemp = false};
 		}
 
 		default: UNREACHABLE();
@@ -112,6 +185,14 @@ ExprResult ExprLowerer::visit(const ast::UnitLit &n) {
 	const auto &type = n.inferredType.value();
 	auto *const llvmType = m_Context.typeConverter.convert(type);
 	auto *const value = llvm::ConstantInt::get(llvmType, 0);
+
+	return {.value = value, .type = type, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::NullLit &n) {
+	const auto &type = n.inferredType.value();
+	auto *llvmType = static_cast<llvm::PointerType *>(m_Context.typeConverter.convert(type));
+	auto *value = llvm::ConstantPointerNull::get(llvmType);
 
 	return {.value = value, .type = type, .isTemp = true};
 }
@@ -170,6 +251,14 @@ ExprResult ExprLowerer::visit(const ast::VarRef &n) {
 	UNREACHABLE();
 }
 
+ExprResult ExprLowerer::visit(const ast::FieldAccess &n) {
+	const auto [fieldAddr, fieldType, _] = lowerLValue(n);
+	auto *const llvmFieldType = m_Context.typeConverter.convert(fieldType);
+	auto *const value = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldAddr);
+
+	return {.value = value, .type = fieldType, .isTemp = false};
+}
+
 ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 	const auto [value, type, _] = lowerExpr(*n.operand);
 
@@ -196,6 +285,7 @@ ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
 		case UnaryOpKind::Dereference: {
 			const auto ptrType = static_cast<PointerType *>(type);
 			VERIFY(ptrType);
+			emitNullDerefTrap(m_Context, value);
 
 			const auto actualPointeeType = ptrType->pointeeType;
 			auto *const llvmPointeeType = m_Context.typeConverter.convert(actualPointeeType);
@@ -345,6 +435,32 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
+	if (n.inferredType.value()->isTypeKind(TypeKind::Struct)) {
+		const auto resultType = n.inferredType.value();
+		auto *const llvmResultType =
+				static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
+		llvm::Value *aggregate = llvm::UndefValue::get(llvmResultType);
+
+		for (u32 i = 0; i < n.args.size(); ++i) {
+			const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
+			const auto *structType = static_cast<StructType *>(resultType);
+			const auto &fieldType = structType->orderedFields[i].second;
+
+			auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
+			if (resIsTemp) {
+				removeFromExprCleanup(resValue);
+			} else {
+				valueToInsert = m_Context.copyValue(resValue, resType);
+			}
+
+			aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});
+		}
+
+		addToExprCleanup(aggregate, resultType);
+
+		return {.value = aggregate, .type = resultType, .isTemp = true};
+	}
+
 	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
 	VERIFY(type->isTypeKind(TypeKind::Function));
 	const auto funcType = static_cast<FunctionType *>(type);
@@ -352,14 +468,16 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	Vec<llvm::Value *> args;
 	args.reserve(n.args.size());
 
-	for (const auto &arg : n.args) {
+	for (u32 i = 0; i < n.args.size(); ++i) {
+		const auto &arg = n.args[i];
 		const auto &[resValue, resType, resIsTemp] = lowerExpr(*arg);
+		auto *argValue = coerceNullToPointer(m_Context, resValue, resType, funcType->paramTypes[i]);
 
 		if (resIsTemp) {
 			removeFromExprCleanup(resValue);
-			args.push_back(resValue);
+			args.push_back(argValue);
 		} else {
-			args.push_back(m_Context.copyValue(resValue, resType));
+			args.push_back(m_Context.copyValue(argValue, funcType->paramTypes[i]));
 		}
 	}
 	auto *llvmFuncType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
@@ -374,6 +492,7 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	const auto &[leftLValue, leftType, isLeftTemp] = lowerLValue(*n.left);
 	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
+	auto *adjustedRight = coerceNullToPointer(m_Context, right, rightType, leftType);
 	const auto &llvmLeftType = m_Context.typeConverter.convert(n.left->inferredType.value());
 	const auto &left = m_Context.irBuilder.CreateLoad(llvmLeftType, leftLValue);
 
@@ -381,7 +500,7 @@ ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	if (isRightTemp) {
 		removeFromExprCleanup(right);
 	} else {
-		m_Context.copyValue(right, rightType);
+		m_Context.copyValue(adjustedRight, leftType);
 	}
 
 	// If left is temp the expression cleanup will take care of it
@@ -390,7 +509,7 @@ ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	}
 
 	if (n.assignmentKind == AssignmentKind::Simple) {
-		m_Context.irBuilder.CreateStore(right, leftLValue);
+		m_Context.irBuilder.CreateStore(adjustedRight, leftLValue);
 		return {.value = llvm::ConstantInt::getNullValue(m_Context.irBuilder.getInt8Ty()),
 				.type = leftType,
 				.isTemp = true};

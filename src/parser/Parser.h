@@ -47,6 +47,11 @@ struct Parser {
 	Box<ast::VarDef> parseVarDef();
 	Box<ast::Expr> parseExpr();
 	Box<ast::Expr> parseAssignmentExpr();
+	Box<ast::Expr> parseLogicalOrExpr();
+	Box<ast::Expr> parseLogicalAndExpr();
+	Box<ast::Expr> parseBitwiseOrExpr();
+	Box<ast::Expr> parseBitwiseXorExpr();
+	Box<ast::Expr> parseBitwiseAndExpr();
 	Box<ast::Expr> parseEqualityExpr();
 	Box<ast::Expr> parseRelationalExpr();
 	Box<ast::Expr> parseAdditiveExpr();
@@ -54,7 +59,9 @@ struct Parser {
 	Box<ast::Expr> parseUnaryExpr();
 	Box<ast::Expr> parsePostfixExpr();
 	Box<ast::Expr> parsePrimaryExpr();
+	Box<ast::Expr> parseFieldAccess(Box<ast::Expr> base);
 	Vec<Box<ast::Expr>> parseExprList();
+	Vec<Box<ast::Expr>> parseBraceExprList();
 
 	static AssignmentKind getAssignmentKindFromString(const U8String &str);
 };

@@ -45,6 +45,10 @@ void Printer::visit(const BoolLit &n) {
 	printLine(std::format("BoolLit({})", n.value));
 }
 
+void Printer::visit(const NullLit &) {
+	printLine(u8"NullLit");
+}
+
 void Printer::visit(const UnitLit &n) {
 	printLine(u8"UnitLit");
 }
@@ -56,6 +60,11 @@ void Printer::visit(const HeapAlloc &n) {
 
 void Printer::visit(const VarRef &n) {
 	printLine(std::format("VarRef(\"{}\")", n.ident));
+}
+
+void Printer::visit(const FieldAccess &n) {
+	printLine(std::format("FieldAccess(\"{}\")", n.field));
+	child(true).printNode(*n.base);
 }
 
 void Printer::visit(const UnaryExpr &n) {

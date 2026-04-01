@@ -6,7 +6,7 @@
 #include "core/Typedef.h"
 #include "core/U8String.h"
 
-enum struct TypeKind : u8 { Primitive, Unit, Error, Pointer, Function, Struct };
+enum struct TypeKind : u8 { Primitive, Unit, Error, Null, Pointer, Function, Struct };
 
 enum struct PrimitiveKind : u8 { I32, Char, Bool };
 
@@ -56,6 +56,14 @@ struct ErrorType : public TypeBase {
 	Box<TypeBase> clone() const override;
 };
 
+struct NullType : public TypeBase {
+	NullType();
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
 struct PointerType : public TypeBase {
 	const Type pointeeType;
 
@@ -82,6 +90,7 @@ using StructField = Pair<U8String, Type>;
 struct StructType : public TypeBase {
 	const U8String name;
 	Map<U8String, Type> fields;
+	Vec<StructField> orderedFields;
 	bool isDeclared;
 
 	StructType(U8String name);

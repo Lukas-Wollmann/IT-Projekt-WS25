@@ -273,6 +273,45 @@ TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation") {
 	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
 }
 
+TEST_CASE("Parser: parsePrimaryExpr() - Struct constructor with braces") {
+	// Arrange
+	U8String source = u8"Foo { 10 }";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::FuncCall);
+	auto call = dynamic_cast<ast::FuncCall *>(expr.get());
+	REQUIRE(call != nullptr);
+	CHECK(call->args.size() == 1);
+	CHECK(call->args[0]->kind == ast::NodeKind::IntLit);
+
+	auto callee = dynamic_cast<ast::VarRef *>(call->expr.get());
+	REQUIRE(callee != nullptr);
+	CHECK(callee->ident == u8"Foo");
+}
+
+TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation with struct braces") {
+	// Arrange
+	U8String source = u8"new Foo { 10 }";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
+	auto heap = dynamic_cast<ast::HeapAlloc *>(expr.get());
+	REQUIRE(heap != nullptr);
+	CHECK(heap->expr->kind == ast::NodeKind::FuncCall);
+}
+
 TEST_CASE("Parser: parseUnaryExpr() - Negative number") {
 	// Arrange
 	U8String source = u8"-42";

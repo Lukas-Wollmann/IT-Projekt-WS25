@@ -16,6 +16,7 @@ public:
 	static PrimitiveType *getBool();
 	static UnitType *getUnit();
 	static ErrorType *getError();
+	static NullType *getNull();
 	static PointerType *getPointer(Type pointeeType);
 	static FunctionType *getFunction(TypeList paramTypes, Type returnType);
 	static StructType *getStruct(U8String name);

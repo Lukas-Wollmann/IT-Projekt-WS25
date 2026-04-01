@@ -47,13 +47,16 @@ TEST_CASE("FunctionType logic") {
 }
 
 TEST_CASE("StructType logic") {
-	StructType s1(u8"Node", {});
-	StructType s2(u8"Node", {});
-	StructType s3(u8"List", {});
+	StructType s1(u8"Node");
+	StructType s2(u8"Node");
+	StructType s3(u8"List");
 
 	// Nominal equality (based on name)
 	CHECK(s1.equals(&s2));
 	CHECK(!s1.equals(&s3));
+	CHECK(s1.str() == u8"<unknown> Node");
+
+	s1.isDeclared = true;
 	CHECK(s1.str() == u8"Node");
 }
 

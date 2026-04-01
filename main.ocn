@@ -1,3 +1,12 @@
+struct Node {
+    a: *i32
+}
+
+// NILS EICKNER
 func main() -> i32 {
-    return 1;
+    a: *Node = new Node { new i32(10) };
+
+    (*a).a = new i32(19);
+
+    return 0;
 }

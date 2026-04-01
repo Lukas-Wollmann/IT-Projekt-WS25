@@ -11,12 +11,14 @@ enum struct NodeKind {
 	IntLit,
 	CharLit,
 	BoolLit,
+	NullLit,
 	UnitLit,
 	HeapAlloc,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
 	VarRef,
+	FieldAccess,
 	FuncCall,
 	BlockStmt,
 	IfStmt,
@@ -77,6 +79,10 @@ struct BoolLit : Expr {
 	explicit BoolLit(bool value);
 };
 
+struct NullLit : Expr {
+	NullLit();
+};
+
 struct UnitLit : Expr {
 	UnitLit();
 };
@@ -113,6 +119,13 @@ struct VarRef : Expr {
 	const U8String ident;
 
 	explicit VarRef(U8String ident);
+};
+
+struct FieldAccess : Expr {
+	const Box<Expr> base;
+	const U8String field;
+
+	FieldAccess(Box<Expr> base, U8String field);
 };
 
 struct FuncCall : Expr {

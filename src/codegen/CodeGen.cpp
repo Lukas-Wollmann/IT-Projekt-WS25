@@ -3,6 +3,10 @@
 #include <fstream>
 
 namespace gen {
+U8String getStructDtorName(const U8String &name) {
+	return u8"__dtor_" + name;
+}
+
 CodeGen::CodeGen(CodeGenContext &ctx)
 	: m_Context(ctx)
 	, m_AllocManager(ctx) {}
@@ -33,12 +37,99 @@ void CodeGen::visitNode(const ast::Node &n) {
 }
 
 void CodeGen::visit(const ast::Module &n) {
+	// Forward declare and define user struct types before lowering functions.
+	for (const auto &decl : n.structs) {
+		auto *existing =
+				llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
+		if (!existing) {
+			llvm::StructType::create(m_Context.llvmContext, decl->ident.asAscii());
+		}
+	}
+
+	for (const auto &decl : n.structs) {
+		auto *structType =
+				llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
+		VERIFY(structType);
+
+		Vec<llvm::Type *> fieldTypes;
+		fieldTypes.reserve(decl->fields.size());
+
+		for (const auto &[_, fieldType] : decl->fields) {
+			fieldTypes.push_back(m_Context.typeConverter.convert(fieldType));
+		}
+
+		if (structType->isOpaque()) {
+			structType->setBody(fieldTypes, false);
+		}
+	}
+
 	// Forward declare default function decls
 	for (const auto &[name, type] : s_DefaultDecls) {
 		auto funcType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
 
 		llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name.asAscii(),
 							   m_Context.llvmModule);
+
+		// Forward declare struct destructors
+		auto *structDtorType = m_Context.getDestructorType();
+		for (const auto &decl : n.structs) {
+			auto dtorName = getStructDtorName(decl->ident);
+			if (!m_Context.llvmModule.getFunction(dtorName.asAscii())) {
+				llvm::Function::Create(structDtorType, llvm::Function::ExternalLinkage,
+									   dtorName.asAscii(), m_Context.llvmModule);
+			}
+		}
+
+		// Emit struct destructors
+		for (const auto &decl : n.structs) {
+			auto dtorName = getStructDtorName(decl->ident);
+			auto *fn = m_Context.llvmModule.getFunction(dtorName.asAscii());
+			VERIFY(fn);
+
+			if (!fn->empty()) {
+				continue;
+			}
+
+			auto *entry = llvm::BasicBlock::Create(m_Context.llvmContext, "entry", fn);
+			m_Context.irBuilder.SetInsertPoint(entry);
+
+			auto *payload = fn->arg_begin();
+			payload->setName("payload");
+
+			auto *llvmStructType =
+					llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
+			VERIFY(llvmStructType);
+			auto *llvmStructPtrType = llvm::PointerType::getUnqual(llvmStructType);
+			auto *structPtr = m_Context.irBuilder.CreateBitCast(payload, llvmStructPtrType);
+
+			for (u32 i = 0; i < decl->fields.size(); ++i) {
+				const auto &[_, fieldType] = decl->fields[i];
+				auto *fieldPtr = m_Context.irBuilder.CreateStructGEP(llvmStructType, structPtr, i);
+
+				if (fieldType->isTypeKind(TypeKind::Pointer)) {
+					auto *llvmFieldType = m_Context.typeConverter.convert(fieldType);
+					auto *fieldValue = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldPtr);
+					auto *drop = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrDrop);
+					VERIFY(drop);
+					m_Context.irBuilder.CreateCall(drop, {fieldValue});
+					continue;
+				}
+
+				if (fieldType->isTypeKind(TypeKind::Struct)) {
+					auto *structFieldType = static_cast<StructType *>(fieldType);
+					auto nestedDtorName = getStructDtorName(structFieldType->name);
+					auto *nestedDtor = m_Context.llvmModule.getFunction(nestedDtorName.asAscii());
+					VERIFY(nestedDtor);
+
+					auto *fieldAsVoidPtr =
+							m_Context.irBuilder.CreateBitCast(fieldPtr,
+															  m_Context.irBuilder.getPtrTy());
+					m_Context.irBuilder.CreateCall(nestedDtor, {fieldAsVoidPtr});
+				}
+			}
+
+			m_Context.irBuilder.CreateRetVoid();
+		}
 	}
 
 	// Forward declare user defined functions decls
@@ -172,7 +263,16 @@ void CodeGen::visit(const ast::WhileStmt &n) {
 
 void CodeGen::visit(const ast::ReturnStmt &n) {
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
-	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
+	auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
+
+	if (type->isTypeKind(TypeKind::Null)) {
+		auto *func = m_Context.irBuilder.GetInsertBlock()->getParent();
+		VERIFY(func);
+		auto *retType = func->getReturnType();
+		if (retType->isPointerTy() && value->getType() != retType) {
+			value = m_Context.irBuilder.CreateBitCast(value, retType);
+		}
+	}
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);
@@ -188,7 +288,14 @@ void CodeGen::visit(const ast::VarDef &n) {
 	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
-	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
+	auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
+
+	if (type->isTypeKind(TypeKind::Null) && n.type->isTypeKind(TypeKind::Pointer)) {
+		auto *dstType = m_Context.typeConverter.convert(n.type);
+		if (value->getType() != dstType) {
+			value = m_Context.irBuilder.CreateBitCast(value, dstType);
+		}
+	}
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);

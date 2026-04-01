@@ -336,14 +336,91 @@ Box<Expr> Parser::parseExpr() {
 }
 
 Box<Expr> Parser::parseAssignmentExpr() {
-	auto left = parseEqualityExpr();
+	auto left = parseLogicalOrExpr();
 
 	if (m_Current->matches(TokenType::Operator)) {
-		const auto op = consume(TokenType::Operator).lexeme;
+		const auto &op = m_Current->lexeme;
+		if (op != u8"=" && op != u8"+=" && op != u8"-=" && op != u8"*=" && op != u8"/=" &&
+			op != u8"%=" && op != u8"&=" && op != u8"|=" && op != u8"^=" && op != u8"<<=" &&
+			op != u8">>=") {
+			return left;
+		}
+
+		consume(TokenType::Operator);
 		auto kind = getAssignmentKindFromString(op);
 		auto right = parseAssignmentExpr();
 
 		return std::make_unique<Assignment>(kind, std::move(left), std::move(right));
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseLogicalOrExpr() {
+	auto left = parseLogicalAndExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"||")) {
+		consume(TokenType::Operator, u8"||");
+		auto right = parseLogicalAndExpr();
+
+		left = std::make_unique<BinaryExpr>(BinaryOpKind::LogicalOr, std::move(left),
+											std::move(right));
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseLogicalAndExpr() {
+	auto left = parseBitwiseOrExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"&&")) {
+		consume(TokenType::Operator, u8"&&");
+		auto right = parseBitwiseOrExpr();
+
+		left = std::make_unique<BinaryExpr>(BinaryOpKind::LogicalAnd, std::move(left),
+											std::move(right));
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseOrExpr() {
+	auto left = parseBitwiseXorExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"|")) {
+		consume(TokenType::Operator, u8"|");
+		auto right = parseBitwiseXorExpr();
+
+		left = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseOr, std::move(left),
+											std::move(right));
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseXorExpr() {
+	auto left = parseBitwiseAndExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"^")) {
+		consume(TokenType::Operator, u8"^");
+		auto right = parseBitwiseAndExpr();
+
+		left = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseXor, std::move(left),
+											std::move(right));
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseAndExpr() {
+	auto left = parseEqualityExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"&")) {
+		consume(TokenType::Operator, u8"&");
+		auto right = parseEqualityExpr();
+
+		left = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseAnd, std::move(left),
+											std::move(right));
 	}
 
 	return left;
@@ -517,6 +594,39 @@ Vec<Box<ast::Expr>> Parser::parseExprList() {
 	return exprs;
 }
 
+Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
+	Vec<Box<ast::Expr>> exprs;
+	consume(TokenType::Separator, u8"{");
+
+	while (!m_Current->matches(TokenType::Separator, u8"}")) {
+		auto expr = parseExpr();
+		exprs.push_back(std::move(expr));
+
+		if (m_Current->matches(TokenType::Separator, u8",")) {
+			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8"}")) {
+				throw ParsingError(u8"Expected another argument.");
+			}
+
+			continue;
+		}
+
+		break;
+	}
+
+	consume(TokenType::Separator, u8"}");
+
+	return exprs;
+}
+
+Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
+	consume(TokenType::Separator, u8".");
+	auto field = consume(TokenType::Identifier).lexeme;
+
+	return std::make_unique<FieldAccess>(std::move(base), std::move(field));
+}
+
 Box<Expr> Parser::parsePostfixExpr() {
 	auto left = parsePrimaryExpr();
 
@@ -529,6 +639,11 @@ Box<Expr> Parser::parsePostfixExpr() {
 			continue;
 		}
 
+		if (m_Current->matches(TokenType::Separator, u8".")) {
+			left = parseFieldAccess(std::move(left));
+			continue;
+		}
+
 		break;
 	}
 
@@ -537,7 +652,14 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 Box<Expr> Parser::parsePrimaryExpr() {
 	if (m_Current->matches(TokenType::Identifier)) {
-		const auto &ident = consume(TokenType::Identifier).lexeme;
+		auto ident = consume(TokenType::Identifier).lexeme;
+
+		if (m_Current->matches(TokenType::Separator, u8"{")) {
+			auto args = parseBraceExprList();
+			auto callee = std::make_unique<VarRef>(std::move(ident));
+
+			return std::make_unique<FuncCall>(std::move(callee), std::move(args));
+		}
 
 		return std::make_unique<VarRef>(ident);
 	}
@@ -547,6 +669,11 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		VERIFY(lit == u8"true" || lit == u8"false");
 
 		return std::make_unique<BoolLit>(lit == u8"true");
+	}
+
+	if (m_Current->matches(TokenType::Keyword, u8"null")) {
+		consume(TokenType::Keyword, u8"null");
+		return std::make_unique<NullLit>();
 	}
 
 	if (m_Current->matches(TokenType::CharLiteral)) {
@@ -566,10 +693,24 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		consume(TokenType::Keyword, u8"new");
 
 		auto type = parseType();
+		Box<Expr> expr;
 
-		consume(TokenType::Separator, u8"(");
-		auto expr = parseExpr();
-		consume(TokenType::Separator, u8")");
+		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			consume(TokenType::Separator, u8"(");
+			expr = parseExpr();
+			consume(TokenType::Separator, u8")");
+		} else if (m_Current->matches(TokenType::Separator, u8"{")) {
+			if (!type->isTypeKind(TypeKind::Struct)) {
+				throw ParsingError(u8"Brace initialization is only supported for struct types.");
+			}
+
+			auto *structType = static_cast<StructType *>(type);
+			auto args = parseBraceExprList();
+			auto callee = std::make_unique<VarRef>(structType->name);
+			expr = std::make_unique<FuncCall>(std::move(callee), std::move(args));
+		} else {
+			throw ParsingError(u8"Expected '(' or '{' after type in heap allocation.");
+		}
 
 		return std::make_unique<HeapAlloc>(std::move(type), std::move(expr));
 	}

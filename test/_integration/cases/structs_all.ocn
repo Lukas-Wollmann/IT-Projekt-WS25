@@ -1,0 +1,52 @@
+struct Foo {
+    a: i32,
+    c: char
+}
+
+func set_char(f: *Foo, ch: char) {
+    (*f).c = ch;
+}
+
+func add_to_a(f: *Foo, delta: i32) {
+    (*f).a = (*f).a + delta;
+}
+
+func make_value(x: i32, ch: char) -> Foo {
+    return Foo { x, ch };
+}
+
+func main() -> i32 {
+    // Value construction (arg order must match declaration order)
+    v: Foo = Foo { 10, 'c' };
+
+    print_i32(v.a);
+    print_newline();
+    print_char(v.c);
+    print_newline();
+
+    // Heap allocation of a struct value
+    p: *Foo = new Foo { 20, 'x' };
+
+    print_i32((*p).a);
+    print_newline();
+    print_char((*p).c);
+    print_newline();
+
+    // Mutate through pointer + pass to functions
+    set_char(p, 'z');
+    add_to_a(p, 22);
+
+    print_i32((*p).a);
+    print_newline();
+    print_char((*p).c);
+    print_newline();
+
+    // Return and use struct value from function
+    r: Foo = make_value(7, 'q');
+    print_i32(r.a);
+    print_newline();
+    print_char(r.c);
+    print_newline();
+
+    return (*p).a + r.a;
+}
