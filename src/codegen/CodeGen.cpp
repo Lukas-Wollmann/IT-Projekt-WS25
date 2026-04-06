@@ -3,10 +3,6 @@
 #include <fstream>
 
 namespace gen {
-U8String getStructDtorName(const U8String &name) {
-	return u8"__dtor_" + name;
-}
-
 CodeGen::CodeGen(CodeGenContext &ctx)
 	: m_Context(ctx)
 	, m_AllocManager(ctx) {}
@@ -36,31 +32,29 @@ void CodeGen::visitNode(const ast::Node &n) {
 	dispatch(n);
 }
 
+namespace {
+	U8String getStructDtorName(const U8String &structName) {
+		return structName + u8"__dtor";
+	}
+}
+
 void CodeGen::visit(const ast::Module &n) {
-	// Forward declare and define user struct types before lowering functions.
-	for (const auto &decl : n.structs) {
-		auto *existing =
-				llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
-		if (!existing) {
-			llvm::StructType::create(m_Context.llvmContext, decl->ident.asAscii());
-		}
+	// First pass: create opaque struct types
+	for (const auto &structDecl : n.structs) {
+		llvm::StructType::create(m_Context.llvmContext, structDecl->ident.asAscii());
 	}
 
-	for (const auto &decl : n.structs) {
-		auto *structType =
-				llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
-		VERIFY(structType);
-
+	// Second pass: set struct field types
+	for (const auto &structDecl : n.structs) {
+		auto *structType = llvm::StructType::getTypeByName(m_Context.llvmContext, 
+														   structDecl->ident.asAscii());
+		
 		Vec<llvm::Type *> fieldTypes;
-		fieldTypes.reserve(decl->fields.size());
-
-		for (const auto &[_, fieldType] : decl->fields) {
+		for (const auto &[fieldName, fieldType] : structDecl->fields) {
 			fieldTypes.push_back(m_Context.typeConverter.convert(fieldType));
 		}
-
-		if (structType->isOpaque()) {
-			structType->setBody(fieldTypes, false);
-		}
+		
+		structType->setBody(fieldTypes);
 	}
 
 	// Forward declare default function decls
@@ -263,16 +257,7 @@ void CodeGen::visit(const ast::WhileStmt &n) {
 
 void CodeGen::visit(const ast::ReturnStmt &n) {
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
-	auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
-
-	if (type->isTypeKind(TypeKind::Null)) {
-		auto *func = m_Context.irBuilder.GetInsertBlock()->getParent();
-		VERIFY(func);
-		auto *retType = func->getReturnType();
-		if (retType->isPointerTy() && value->getType() != retType) {
-			value = m_Context.irBuilder.CreateBitCast(value, retType);
-		}
-	}
+	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);
@@ -288,14 +273,7 @@ void CodeGen::visit(const ast::VarDef &n) {
 	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
-	auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
-
-	if (type->isTypeKind(TypeKind::Null) && n.type->isTypeKind(TypeKind::Pointer)) {
-		auto *dstType = m_Context.typeConverter.convert(n.type);
-		if (value->getType() != dstType) {
-			value = m_Context.irBuilder.CreateBitCast(value, dstType);
-		}
-	}
+	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);

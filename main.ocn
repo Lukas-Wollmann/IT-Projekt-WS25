@@ -1,70 +1,9 @@
-struct Vec {
-    length: i32,
-    data: *Node
-}
+struct Point { x: i32, y: i32 }
 
-struct Node {
-    data: i32,
-    next: *Node
-}
-
-func vec_add(v: *Vec, i: i32) {
-    node: *Node = new Node { i, null };
-
-    if (*v.data == null) {
-        *v.data = node;
-        *v.length += 1;
-        return;
-    }
-
-    current: *Node = *v.data;
-
-    while(*current.next != null) {
-        current = *current.next;
-    }
-
-    *current.next = node;
-    *v.length += 1;
-}
-
-func vec_print(v: *Vec) {
-    i: i32 = 0;
-
-    print_char('{');
-    print_char(' ');
-
-    while (i < *v.length) {
-        print_i32(vec_index(v, i));
-        print_char(' ');
-
-        i += 1;
-    }
-
-    print_char('}');
-}
-
-func vec_new() -> *Vec {
-    return new Vec { 0, null };
-}
-
-func vec_index(v: *Vec, i: i32) -> i32 {
-    current: *Node = *v.data;
-
-    while (i > 0) {
-        i -= 1;
-        current = *current.next;
-    }
-
-    return *current.data;
+func add_points(a: Point, b: Point) -> Point {
+    return Point { a.x + b.x, a.y + b.y };
 }
 
 func main() -> i32 {
-    v: *Vec = vec_new();
-
-    vec_add(v, 2);
-    vec_add(v, 4);
-    vec_add(v, 8);
-    vec_print(v);
-    
     return 0;
 }

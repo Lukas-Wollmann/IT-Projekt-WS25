@@ -65,6 +65,20 @@ void ExplorationPass::visit(const Module &n) {
 		dispatch(*s);
 	}
 
+	// Validate that all struct field types are declared
+	for (auto &s : n.structs) {
+		auto structType = TypeFactory::getStruct(s->ident);
+		for (const auto &[fieldName, fieldType] : s->fields) {
+			if (fieldType->isTypeKind(TypeKind::Struct)) {
+				auto *fieldStructType = static_cast<StructType *>(fieldType);
+				if (!fieldStructType->isDeclared) {
+					const auto msg = ErrorMessage<UndefinedReference>::str(fieldStructType->name);
+					m_Context.submitError(msg, {});
+				}
+			}
+		}
+	}
+
 	m_ValidatedStructs.clear();
 	for (auto &s : n.structs) {
 		auto root = TypeFactory::getStruct(s->ident);
@@ -104,7 +118,26 @@ void ExplorationPass::visit(const StructDecl &n) {
 void ExplorationPass::visit(const FuncDecl &n) {
 	TypeList params;
 
-	std::ranges::copy(n.params | std::views::values, std::back_inserter(params));
+	// Validate that all parameter types are defined
+	for (const auto &[name, type] : n.params) {
+		if (type->isTypeKind(TypeKind::Struct)) {
+			auto *structType = static_cast<StructType *>(type);
+			if (!structType->isDeclared) {
+				const auto msg = ErrorMessage<UndefinedReference>::str(structType->name);
+				m_Context.submitError(msg, {});
+			}
+		}
+		params.push_back(type);
+	}
+
+	// Validate return type is defined
+	if (n.returnType->isTypeKind(TypeKind::Struct)) {
+		auto *structType = static_cast<StructType *>(n.returnType);
+		if (!structType->isDeclared) {
+			const auto msg = ErrorMessage<UndefinedReference>::str(structType->name);
+			m_Context.submitError(msg, {});
+		}
+	}
 
 	const auto funcType = TypeFactory::getFunction(std::move(params), n.returnType);
 	auto &global = m_Context.getGlobalNamespace();
