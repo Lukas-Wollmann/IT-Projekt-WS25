@@ -3,10 +3,8 @@
 #include <ranges>
 
 namespace gen {
-namespace {
 U8String getStructDtorName(const U8String &name) {
 	return u8"__dtor_" + name;
-}
 }
 
 CodeGenContext::CodeGenContext(const U8String &moduleName)

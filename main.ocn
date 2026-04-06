@@ -1,9 +1,14 @@
-struct Point { x: i32, y: i32 }
-
-func add_points(a: Point, b: Point) -> Point {
-    return Point { a.x + b.x, a.y + b.y };
+struct Node {
+    n: *Node,
+    v: i32
 }
 
 func main() -> i32 {
-    return 0;
+
+    
+    n1: *Node = new Node { null, 10 };
+    n2: *Node = new Node { n1, 10 };
+
+
+    return *(*n2.n).v;
 }

@@ -32,12 +32,6 @@ void CodeGen::visitNode(const ast::Node &n) {
 	dispatch(n);
 }
 
-namespace {
-	U8String getStructDtorName(const U8String &structName) {
-		return structName + u8"__dtor";
-	}
-}
-
 void CodeGen::visit(const ast::Module &n) {
 	// First pass: create opaque struct types
 	for (const auto &structDecl : n.structs) {

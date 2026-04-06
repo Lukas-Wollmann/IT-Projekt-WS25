@@ -460,7 +460,19 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
-	if (n.inferredType.value()->isTypeKind(TypeKind::Struct)) {
+	// Check if this is a struct constructor call (e.g., Point { ... })
+	// by seeing if the expression is a bare identifier that refers to a struct type
+	bool isStructConstructor = false;
+	if (const auto *varRef = dynamic_cast<const ast::VarRef *>(n.expr.get())) {
+		if (n.inferredType.value()->isTypeKind(TypeKind::Struct)) {
+			const auto *structType = static_cast<StructType *>(n.inferredType.value());
+			if (structType->name == varRef->ident) {
+				isStructConstructor = true;
+			}
+		}
+	}
+
+	if (isStructConstructor) {
 		const auto resultType = n.inferredType.value();
 		auto *const llvmResultType =
 				static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
@@ -472,10 +484,10 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 			const auto &fieldType = structType->orderedFields[i].second;
 
 			auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
-			if (resIsTemp) {
-				removeFromExprCleanup(resValue);
+			if (!resIsTemp) {
+				valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
 			} else {
-				valueToInsert = m_Context.copyValue(resValue, resType);
+				removeFromExprCleanup(resValue);
 			}
 
 			aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});

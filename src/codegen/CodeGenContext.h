@@ -6,6 +6,8 @@
 #include "TypeConverter.h"
 
 namespace gen {
+U8String getStructDtorName(const U8String &name);
+
 struct TrackedValue {
 	llvm::Value *value;
 	Type type;
