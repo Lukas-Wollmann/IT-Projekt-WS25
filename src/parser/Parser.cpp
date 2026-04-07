@@ -76,6 +76,7 @@ void Parser::advanceToNext(const TokenType type, const U8String &lexeme) {
 }
 
 Box<Module> Parser::parseModule() {
+	const SourceLoc moduleLoc = m_Current->loc;
 	Vec<Box<FuncDecl>> funcs;
 
 	while (!m_Current->matches(TokenType::EndOfFile)) {
@@ -87,11 +88,11 @@ Box<Module> Parser::parseModule() {
 		}
 	}
 
-	return std::make_unique<Module>(m_ModuleName, std::move(funcs));
+	return std::make_unique<Module>(m_ModuleName, std::move(funcs), SourceLoc{});
 }
 
 Box<FuncDecl> Parser::parseFuncDecl() {
-	consume(TokenType::Keyword, u8"func");
+	const auto funcTok = consume(TokenType::Keyword, u8"func");
 	auto name = consume(TokenType::Identifier).lexeme;
 	auto params = parseParamList();
 
@@ -105,7 +106,7 @@ Box<FuncDecl> Parser::parseFuncDecl() {
 	auto body = parseBlockStmt();
 
 	return std::make_unique<FuncDecl>(std::move(name), std::move(params), std::move(returnType),
-									  std::move(body));
+									  std::move(body), funcTok.loc);
 }
 
 Vec<Param> Parser::parseParamList() {
@@ -158,22 +159,22 @@ TypePtr Parser::parseType() {
 
 Box<Stmt> Parser::parseStmt() {
 	if (m_Current->matches(TokenType::Separator, u8";")) {
-		consume(TokenType::Separator, u8";");
+		const auto semiLoc = consume(TokenType::Separator, u8";").loc;
 
-		return std::make_unique<UnitLit>();
+		return std::make_unique<UnitLit>(semiLoc);
 	}
 
 	if (m_Current->matches(TokenType::Keyword, u8"return")) {
-		consume(TokenType::Keyword, u8"return");
+		const auto retTok = consume(TokenType::Keyword, u8"return");
 
-		Box<Expr> returnValue = std::make_unique<UnitLit>();
+		Box<Expr> returnValue = std::make_unique<UnitLit>(retTok.loc);
 
 		if (!m_Current->matches(TokenType::Separator, u8";"))
 			returnValue = parseExpr();
 
 		consume(TokenType::Separator, u8";");
 
-		return std::make_unique<ReturnStmt>(std::move(returnValue));
+		return std::make_unique<ReturnStmt>(std::move(returnValue), retTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"{"))
@@ -202,7 +203,7 @@ Box<Stmt> Parser::parseStmt() {
 
 Box<BlockStmt> Parser::parseBlockStmt() {
 	Vec<Box<Stmt>> stmts;
-	consume(TokenType::Separator, u8"{");
+	const auto openBraceTok = consume(TokenType::Separator, u8"{");
 
 	while (!m_Current->matches(TokenType::Separator, u8"}")) {
 		if (m_Current->matches(TokenType::EndOfFile)) {
@@ -217,11 +218,11 @@ Box<BlockStmt> Parser::parseBlockStmt() {
 
 	consume(TokenType::Separator, u8"}");
 
-	return std::make_unique<BlockStmt>(std::move(stmts));
+	return std::make_unique<BlockStmt>(std::move(stmts), openBraceTok.loc);
 }
 
 Box<WhileStmt> Parser::parseWhileStmt() {
-	consume(TokenType::Keyword, u8"while");
+	const auto whileTok = consume(TokenType::Keyword, u8"while");
 
 	consume(TokenType::Separator, u8"(");
 	auto cond = parseExpr();
@@ -229,11 +230,11 @@ Box<WhileStmt> Parser::parseWhileStmt() {
 
 	auto body = parseBlockStmt();
 
-	return std::make_unique<WhileStmt>(std::move(cond), std::move(body));
+	return std::make_unique<WhileStmt>(std::move(cond), std::move(body), whileTok.loc);
 }
 
 Box<IfStmt> Parser::parseIfStmt() {
-	consume(TokenType::Keyword, u8"if");
+	const auto ifTok = consume(TokenType::Keyword, u8"if");
 
 	consume(TokenType::Separator, u8"(");
 	auto cond = parseExpr();
@@ -242,9 +243,10 @@ Box<IfStmt> Parser::parseIfStmt() {
 	auto then = parseBlockStmt();
 
 	if (!m_Current->matches(TokenType::Keyword, u8"else")) {
-		auto else_ = std::make_unique<BlockStmt>(Vec<Box<Stmt>>{});
+		auto else_ = std::make_unique<BlockStmt>(Vec<Box<Stmt>>{}, SourceLoc{});
 
-		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_),
+										ifTok.loc);
 	}
 
 	consume(TokenType::Keyword, u8"else");
@@ -252,7 +254,8 @@ Box<IfStmt> Parser::parseIfStmt() {
 	if (!m_Current->matches(TokenType::Keyword, u8"if")) {
 		auto else_ = parseBlockStmt();
 
-		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_),
+										ifTok.loc);
 	}
 
 	// If we get an if-else-if construct, normalize it into nested if-else-if construct:
@@ -264,20 +267,22 @@ Box<IfStmt> Parser::parseIfStmt() {
 
 	Vec<Box<Stmt>> elseStmts;
 	elseStmts.push_back(std::move(elseIf));
-	auto else_ = std::make_unique<BlockStmt>(std::move(elseStmts));
+	auto else_ = std::make_unique<BlockStmt>(std::move(elseStmts), SourceLoc{});
 
-	return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+	return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_), ifTok.loc);
 }
 
 Box<VarDef> Parser::parseVarDef() {
-	auto ident = consume(TokenType::Identifier).lexeme;
+	const auto identTok = consume(TokenType::Identifier);
+	auto ident = identTok.lexeme;
 	consume(TokenType::Separator, u8":");
 	auto type = parseType();
 
 	consume(TokenType::Operator, u8"=");
 	auto value = parseExpr();
 
-	return std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value));
+	return std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value),
+									identTok.loc);
 }
 
 Box<Expr> Parser::parseExpr() {
@@ -288,11 +293,12 @@ Box<Expr> Parser::parseAssignmentExpr() {
 	auto left = parseEqualityExpr();
 
 	if (m_Current->matches(TokenType::Operator)) {
-		const auto op = consume(TokenType::Operator).lexeme;
+		const auto opTok = consume(TokenType::Operator);
+		const auto op = opTok.lexeme;
 		auto kind = getAssignmentKindFromString(op);
 		auto right = parseAssignmentExpr();
 
-		return std::make_unique<Assignment>(kind, std::move(left), std::move(right));
+		return std::make_unique<Assignment>(kind, std::move(left), std::move(right), opTok.loc);
 	}
 
 	return left;
@@ -328,10 +334,11 @@ Box<Expr> Parser::parseEqualityExpr() {
 		else
 			break;
 
-		consume(TokenType::Operator);
+		const auto opTok = consume(TokenType::Operator);
 		auto right = parseRelationalExpr();
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right),
+											opTok.loc);
 	}
 
 	return left;
@@ -355,10 +362,11 @@ Box<Expr> Parser::parseRelationalExpr() {
 		else
 			break;
 
-		consume(TokenType::Operator);
+		const auto opTok = consume(TokenType::Operator);
 		auto right = parseAdditiveExpr();
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right),
+											opTok.loc);
 	}
 
 	return left;
@@ -378,10 +386,11 @@ Box<Expr> Parser::parseAdditiveExpr() {
 		else
 			break;
 
-		consume(TokenType::Operator);
+		const auto opTok = consume(TokenType::Operator);
 		auto right = parseMultiplicativeExpr();
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right),
+											opTok.loc);
 	}
 
 	return left;
@@ -403,10 +412,11 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 		else
 			break;
 
-		consume(TokenType::Operator);
+		const auto opTok = consume(TokenType::Operator);
 		auto right = parseUnaryExpr();
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right),
+											opTok.loc);
 	}
 
 	return left;
@@ -417,7 +427,8 @@ Box<Expr> Parser::parseUnaryExpr() {
 		return parsePostfixExpr();
 
 	Opt<UnaryOpKind> kind = {};
-	const auto &op = consume(TokenType::Operator).lexeme;
+	const auto opTok = consume(TokenType::Operator);
+	const auto &op = opTok.lexeme;
 
 	if (op == u8"+")
 		kind = UnaryOpKind::Positive;
@@ -437,7 +448,7 @@ Box<Expr> Parser::parseUnaryExpr() {
 
 	auto expr = parseUnaryExpr();
 
-	return std::make_unique<UnaryExpr>(kind.value(), std::move(expr));
+	return std::make_unique<UnaryExpr>(kind.value(), std::move(expr), opTok.loc);
 }
 
 Vec<Box<ast::Expr>> Parser::parseExprList() {
@@ -466,9 +477,10 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 	while (m_Current->matches(TokenType::Separator)) {
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			const auto parenLoc = m_Current->loc;
 			auto args = parseExprList();
 
-			left = std::make_unique<FuncCall>(std::move(left), std::move(args));
+			left = std::make_unique<FuncCall>(std::move(left), std::move(args), parenLoc);
 
 			continue;
 		}
@@ -481,33 +493,37 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 Box<Expr> Parser::parsePrimaryExpr() {
 	if (m_Current->matches(TokenType::Identifier)) {
-		const auto &ident = consume(TokenType::Identifier).lexeme;
+		const auto identTok = consume(TokenType::Identifier);
+		const auto &ident = identTok.lexeme;
 
-		return std::make_unique<VarRef>(ident);
+		return std::make_unique<VarRef>(ident, identTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::BoolLiteral)) {
-		const auto &lit = consume(TokenType::BoolLiteral).lexeme;
+		const auto boolTok = consume(TokenType::BoolLiteral);
+		const auto &lit = boolTok.lexeme;
 		VERIFY(lit == u8"true" || lit == u8"false");
 
-		return std::make_unique<BoolLit>(lit == u8"true");
+		return std::make_unique<BoolLit>(lit == u8"true", boolTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::CharLiteral)) {
-		const auto &ident = consume(TokenType::CharLiteral).lexeme;
+		const auto charTok = consume(TokenType::CharLiteral);
+		const auto &ident = charTok.lexeme;
 		VERIFY(ident.length() == 1);
 
-		return std::make_unique<CharLit>(ident[0]);
+		return std::make_unique<CharLit>(ident[0], charTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::IntLiteral)) {
-		const auto &lit = consume(TokenType::IntLiteral).lexeme;
+		const auto intTok = consume(TokenType::IntLiteral);
+		const auto &lit = intTok.lexeme;
 
-		return std::make_unique<IntLit>(std::stoi(lit.asAscii()));
+		return std::make_unique<IntLit>(std::stoi(lit.asAscii()), intTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::Keyword, u8"new")) {
-		consume(TokenType::Keyword, u8"new");
+		const auto newTok = consume(TokenType::Keyword, u8"new");
 
 		auto type = parseType();
 
@@ -515,16 +531,16 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		auto expr = parseExpr();
 		consume(TokenType::Separator, u8")");
 
-		return std::make_unique<HeapAlloc>(std::move(type), std::move(expr));
+		return std::make_unique<HeapAlloc>(std::move(type), std::move(expr), newTok.loc);
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"(")) {
-		consume(TokenType::Separator, u8"(");
+		const auto parenTok = consume(TokenType::Separator, u8"(");
 
 		if (m_Current->matches(TokenType::Separator, u8")")) {
 			consume(TokenType::Separator, u8")");
 
-			return std::make_unique<UnitLit>();
+			return std::make_unique<UnitLit>(parenTok.loc);
 		}
 
 		auto expr = parseExpr();

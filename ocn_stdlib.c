@@ -137,7 +137,7 @@ void __sp_drop(void *ptr) {
 	cbptr->refCount--;
 	if (cbptr->refCount == 0) {
 		if (cbptr->dtor)
-			cbptr->dtor(*(void**)ptr);
+			cbptr->dtor(ptr);
 		free(cbptr);
 	}
 }

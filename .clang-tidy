@@ -21,12 +21,19 @@ Checks: >
   -fuchsia-*,
   -google-*,
   -zircon-*,
-  -misc-non-private-member-variables-in-classes,
-  -readability-braces-around-statements,
-  -cppcoreguidelines-pro-type-static-cast-downcast
+  -misc-non-private-member-variables-in-classes
+  -readability-identifier-naming
 
 WarningsAsErrors: ''
 
 HeaderFilterRegex: '.*'
 
 FormatStyle: none
+
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: '1'
+  - key: modernize-use-auto.RemoveStars
+    value: '0'

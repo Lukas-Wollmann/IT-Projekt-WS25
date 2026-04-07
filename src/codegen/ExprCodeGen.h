@@ -1,40 +1,22 @@
 #pragma once
-#include "AllocManager.h"
-#include "CodeGenContext.h"
 #include "ast/Visitor.h"
 
-namespace gen {
-struct ExprResult {
-	llvm::Value *value;
-	type::TypePtr type;
-	bool isTemp;
-};
+namespace llvm {
+class Value;
+}
 
-struct ExprLowerer : ast::ConstVisitor<ExprResult> {
+namespace gen {
+struct CodeGen;
+
+struct LValueCodeGen : public ast::ConstVisitor<llvm::Value *> {
 private:
-	CodeGenContext &m_Context;
-	AllocManager &m_AllocManager;
-	Vec<TrackedValue> m_ExprCleanup;
+	CodeGen &m_CodeGen;
 
 public:
-	ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager);
+	LValueCodeGen(CodeGen &gen);
 
-	ExprResult lowerExpr(const ast::Expr &n);
-
-	void addToExprCleanup(llvm::Value *value, const type::TypePtr &type);
-	void emitExprCleanup();
-	void removeFromExprCleanup(llvm::Value *value);
-
-	ExprResult lowerLValue(const ast::Expr &n);
-	ExprResult visit(const ast::IntLit &n) override;
-	ExprResult visit(const ast::BoolLit &n) override;
-	ExprResult visit(const ast::CharLit &n) override;
-	ExprResult visit(const ast::UnitLit &n) override;
-	ExprResult visit(const ast::HeapAlloc &n) override;
-	ExprResult visit(const ast::VarRef &n) override;
-	ExprResult visit(const ast::UnaryExpr &n) override;
-	ExprResult visit(const ast::BinaryExpr &n) override;
-	ExprResult visit(const ast::FuncCall &n) override;
-	ExprResult visit(const ast::Assignment &n) override;
+private:
+	llvm::Value *visit(const ast::VarRef &n) override;
+	llvm::Value *visit(const ast::UnaryExpr &n) override;
 };
 }

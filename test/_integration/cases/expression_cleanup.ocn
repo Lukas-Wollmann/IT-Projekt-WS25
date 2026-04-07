@@ -1,6 +1,0 @@
-func main() -> i32 {
-    
-    new *i32(new i32(10));
-
-    return 0;
-}
