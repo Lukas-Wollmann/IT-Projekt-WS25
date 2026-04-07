@@ -8,9 +8,12 @@
 #include "ast/AST.h"
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
+#include "codegen/CodeGenContext.h"
 #include "core/ErrorHandler.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
+#include "mir/Lowerer.h"
+#include "mir_old/MIRGraphviz.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
@@ -105,11 +108,18 @@ int main(const int argc, const char *argv[]) {
 	if (err.hasError())
 		return 3;
 
+	if (debug) {
+		try {
+			mir::Module mod = mir::Lowerer().lowerModule(*module);
+			std::string s = mir::MIRGraphviz::generateDOT(mod);
+			util::print("{}\n", s);
+		} catch (const std::logic_error &) {
+		}
+	}
+
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
-
 	CodeGen::generate(output, *module);
-
 	output.close();
 
 	pid_t pid = fork();
@@ -121,7 +131,7 @@ int main(const int argc, const char *argv[]) {
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {
-		int status = 0;
+		int status;
 		waitpid(pid, &status, 0);
 
 		if (!keepIntermediate) {

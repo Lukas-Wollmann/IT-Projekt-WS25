@@ -1,0 +1,116 @@
+#include "MIR.h"
+
+namespace mir {
+Instr::Instr(const InstrKind kind)
+	: kind(kind) {}
+
+IntLit::IntLit(const RegID dest, const i32 value)
+	: Instr(InstrKind::IntLit)
+	, dest(dest)
+	, value(value) {}
+
+BoolLit::BoolLit(const RegID dest, const bool value)
+	: Instr(InstrKind::BoolLit)
+	, dest(dest)
+	, value(value) {}
+
+CharLit::CharLit(const RegID dest, const char32_t value)
+	: Instr(InstrKind::CharLit)
+	, dest(dest)
+	, value(value) {}
+
+UnitLit::UnitLit(const RegID dest)
+	: Instr(InstrKind::UnitLit)
+	, dest(dest) {}
+
+LoadFunc::LoadFunc(const RegID dest, U8String funcName, type::TypePtr type)
+	: Instr(InstrKind::LoadFunc)
+	, dest(dest)
+	, funcName(std::move(funcName))
+	, type(std::move(type)) {}
+
+Alloc::Alloc(const RegID dest, type::TypePtr type)
+	: Instr(InstrKind::Alloc)
+	, dest(dest)
+	, type(std::move(type)) {}
+
+Load::Load(const RegID dest, const RegID addr, type::TypePtr type)
+	: Instr(InstrKind::Load)
+	, dest(dest)
+	, addr(addr)
+	, type(std::move(type)) {}
+
+Store::Store(const RegID dest, const RegID src)
+	: Instr(InstrKind::Assign)
+	, dest(dest)
+	, src(src) {}
+
+Call::Call(RegID dest, RegID callee, Vec<RegID> args)
+	: Instr(InstrKind::Call)
+	, dest(dest)
+	, callee(callee)
+	, args(std::move(args)) {}
+
+BinaryOp::BinaryOp(const RegID dest, const RegID left, const RegID right, const BinaryOpKind op)
+	: Instr(InstrKind::BinaryOp)
+	, dest(dest)
+	, left(left)
+	, right(right)
+	, op(op) {}
+
+UnaryOp::UnaryOp(const RegID dest, const RegID operand, const UnaryOpKind op)
+	: Instr(InstrKind::UnaryOp)
+	, dest(dest)
+	, operand(operand)
+	, op(op) {}
+
+Construct::Construct(const RegID reg, type::TypePtr type)
+	: Instr(InstrKind::SPCreate)
+	, reg(reg)
+	, type(std::move(type)) {}
+
+Copy::Copy(const RegID reg, type::TypePtr type)
+	: Instr(InstrKind::SPRetain)
+	, reg(reg)
+	, type(std::move(type)) {}
+
+Destruct::Destruct(const RegID reg, type::TypePtr type)
+	: Instr(InstrKind::SPRelease)
+	, reg(reg)
+	, type(std::move(type)) {}
+
+Term::Term(const TermKind kind)
+	: kind(kind) {}
+
+Jump::Jump(const BlockID target)
+	: Term(TermKind::Jump)
+	, target(target) {}
+
+Branch::Branch(const RegID cond, const BlockID then, const BlockID else_)
+	: Term(TermKind::Branch)
+	, cond(cond)
+	, then(then)
+	, else_(else_) {}
+
+Return::Return(const RegID val)
+	: Term(TermKind::Return)
+	, val(val) {}
+
+BasicBlock::BasicBlock(const BlockID id)
+	: id(id) {}
+
+Function::Function(U8String name)
+	: name(std::move(name)) {}
+
+RegID Function::nextRegID() {
+	return ++nextRegId;
+}
+
+Ptr<BasicBlock> Function::createBlock() {
+	blocks.push_back(std::make_shared<BasicBlock>(++nextBlockId));
+	return blocks.back();
+}
+
+Module::Module(U8String name)
+	: name(std::move(name)) {}
+}

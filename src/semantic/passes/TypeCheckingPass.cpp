@@ -43,7 +43,7 @@ bool TypeCheckingPass::visit(HeapAlloc &n) {
 
 	if (*actualType != *expectedType) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(expectedType, actualType);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 	}
 
 	n.infer(std::make_shared<PointerType>(expectedType), ValueCategory::RValue);
@@ -62,7 +62,7 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 	if (n.op == UnaryOpKind::Dereference) {
 		if (!type->isTypeKind(TypeKind::Pointer)) {
 			const auto msg = ErrorMessage<DereferenceNonPointerType>::str(type);
-			m_Context.submitError(msg, {});
+			m_Context.submitError(msg, n.loc);
 
 			n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 			return false;
@@ -84,7 +84,7 @@ bool TypeCheckingPass::visit(UnaryExpr &n) {
 	}
 
 	const auto msg = ErrorMessage<UnaryOperatorNotFound>::str(type, n.op);
-	m_Context.submitError(msg, {});
+	m_Context.submitError(msg, n.loc);
 
 	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 	return false;
@@ -109,7 +109,7 @@ bool TypeCheckingPass::visit(BinaryExpr &n) {
 	}
 
 	const auto msg = ErrorMessage<BinaryOperatorNotFound>::str(left, right, n.op);
-	m_Context.submitError(msg, {});
+	m_Context.submitError(msg, n.loc);
 
 	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 	return false;
@@ -127,7 +127,7 @@ bool TypeCheckingPass::visit(Assignment &n) {
 
 	if (n.left->valueCategory != ValueCategory::LValue) {
 		const auto msg = ErrorMessage<AssignToRValue>::str();
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 
 		return false;
 	}
@@ -141,7 +141,7 @@ bool TypeCheckingPass::visit(Assignment &n) {
 			return false;
 
 		const auto msg = ErrorMessage<TypeMissmatch>::str(left, right);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 
 		return false;
 	}
@@ -151,7 +151,7 @@ bool TypeCheckingPass::visit(Assignment &n) {
 
 	if (!opFunc.has_value()) {
 		const auto msg = ErrorMessage<BinaryOperatorNotFound>::str(left, right, compoundOp.value());
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 
 		return false;
 	}
@@ -165,7 +165,7 @@ bool TypeCheckingPass::visit(Assignment &n) {
 		return false;
 
 	const auto msg = ErrorMessage<TypeMissmatch>::str(left, resultType);
-	m_Context.submitError(msg, {});
+	m_Context.submitError(msg, n.loc);
 
 	return false;
 }
@@ -180,7 +180,7 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 
 	if (!type->isTypeKind(TypeKind::Function)) {
 		const auto msg = ErrorMessage<CallOnNonFunctionType>::str(type);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 
 		return false;
 	}
@@ -195,7 +195,7 @@ bool TypeCheckingPass::visit(FuncCall &n) {
 		argTypes.push_back(exprType);
 	}
 
-	checkIfArgsCanCallFunction(argTypes, funcType);
+	checkIfArgsCanCallFunction(argTypes, funcType, n.loc);
 
 	n.infer(funcType->returnType, ValueCategory::RValue);
 	return false;
@@ -213,7 +213,7 @@ bool TypeCheckingPass::visit(VarRef &n) {
 	}
 
 	const auto msg = ErrorMessage<UndefinedReference>::str(n.ident);
-	m_Context.submitError(msg, {});
+	m_Context.submitError(msg, n.loc);
 
 	n.infer(std::make_shared<ErrorType>(), ValueCategory::RValue);
 	return false;
@@ -231,7 +231,7 @@ bool TypeCheckingPass::visit(BlockStmt &n) {
 		if (foundReturn && !foundUnreachable) {
 			foundUnreachable = true;
 			const auto msg = ErrorMessage<UnreachableStatement>::str();
-			m_Context.submitError(msg, {}, ErrorLevel::WARNING);
+			m_Context.submitError(msg, stmt->loc, ErrorLevel::WARNING);
 		}
 
 		foundReturn |= didReturn;
@@ -247,7 +247,7 @@ bool TypeCheckingPass::visit(IfStmt &n) {
 
 	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.cond->loc);
 	}
 
 	const bool thenReturns = dispatch(*n.then);
@@ -262,7 +262,7 @@ bool TypeCheckingPass::visit(WhileStmt &n) {
 
 	if (!(type->isTypeKind(TypeKind::Error) || typesMatch(type, boolType))) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(boolType, type);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.cond->loc);
 	}
 
 	dispatch(*n.body);
@@ -281,7 +281,7 @@ bool TypeCheckingPass::visit(ReturnStmt &n) {
 
 	// The return type is not matching the function declaration
 	const auto msg = ErrorMessage<TypeMissmatch>::str(currentFuncRetType, type);
-	m_Context.submitError(msg, {});
+	m_Context.submitError(msg, n.loc);
 
 	return true;
 }
@@ -294,13 +294,13 @@ bool TypeCheckingPass::visit(VarDef &n) {
 	// type of the variable declaration - this is an actual error
 	if (!type->isTypeKind(TypeKind::Error) && !typesMatch(type, varType)) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(varType, type);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.value->loc);
 	}
 
 	// Does this symbol already exist in the current scope (shadowing outer scope possible)
 	if (m_SymbolTable.isSymbolDefinedInCurrentScope(n.ident)) {
 		const auto msg = ErrorMessage<SymbolRedefinition>::str(n.ident);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 
 		return false;
 	}
@@ -324,7 +324,7 @@ bool TypeCheckingPass::visit(FuncDecl &n) {
 
 	if (!doesReturn && !n.returnType->isTypeKind(TypeKind::Unit)) {
 		const auto msg = ErrorMessage<NonReturningPaths>::str(n.ident);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, n.loc);
 	}
 
 	m_SymbolTable.exitScope();
@@ -356,13 +356,13 @@ bool TypeCheckingPass::typesMatch(const TypePtr &left, const TypePtr &right) {
 	return *left == *right;
 }
 
-void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args,
-												  const FunctionTypePtr &func) const {
+void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args, const FunctionTypePtr &func,
+												  const SourceLoc &loc) const {
 	const auto &params = func->paramTypes;
 
 	if (args.size() != params.size()) {
 		const auto msg = ErrorMessage<TooManyArguments>::str(params.size(), args.size());
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, loc);
 
 		return;
 	}
@@ -375,7 +375,7 @@ void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args,
 			continue;
 
 		const auto msg = ErrorMessage<TypeMissmatch>::str(paramType, argType);
-		m_Context.submitError(msg, {});
+		m_Context.submitError(msg, loc);
 
 		return;
 	}
