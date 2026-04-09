@@ -49,8 +49,8 @@ llvm::Type *TypeConverter::convertFunction(const FunctionType &t) {
 	}
 
 	llvm::Type *ret = convert(t.returnType);
-
-	return llvm::FunctionType::get(ret, params, false);
+	auto *functionType = llvm::FunctionType::get(ret, params, false);
+	return llvm::PointerType::getUnqual(functionType);
 }
 
 llvm::Type *TypeConverter::convertUnit(const UnitType &) {

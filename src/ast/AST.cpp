@@ -71,10 +71,11 @@ FieldAccess::FieldAccess(Box<Expr> base, U8String field)
 	, base(std::move(base))
 	, field(std::move(field)) {}
 
-FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
+FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor)
 	: Expr(NodeKind::FuncCall)
 	, expr(std::move(expr))
-	, args(std::move(args)) {}
+	, args(std::move(args))
+	, isStructConstructor(isStructConstructor) {}
 
 BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
 	: Stmt(NodeKind::BlockStmt)

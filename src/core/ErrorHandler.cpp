@@ -95,7 +95,7 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	}
 
 	// Header: "error: message"
-	std::cerr << colorCode << BOLD << levelStr << RESET << BOLD << ": " << error.message << "\n";
+	std::cerr << colorCode << BOLD << levelStr << RESET << ": " << error.message << RESET << "\n";
 
 	// Source location: "--> file.cpp:2:11" (1-based)
 	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
@@ -145,24 +145,25 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 void ErrorHandler::printErrors() const {
 	for (const auto &error : errors) {
 		printError(error);
-		std::cout << "\n";
+		std::cerr << "\n";
 	}
 
 	size_t errCount = errorCount();
 	size_t warnCount = warningCount();
 
 	if (errCount > 0 || warnCount > 0) {
-		std::cout << BOLD;
+		std::cerr << RESET;
 		if (errCount > 0) {
-			std::cout << RED << BOLD << errCount << " error" << (errCount > 1 ? "s" : "")
+			std::cerr << RED << BOLD << errCount << " error" << (errCount > 1 ? "s" : "")
 					  << " emitted.\n"
 					  << RESET;
 		}
 		if (warnCount > 0) {
-			std::cout << YELLOW << warnCount << " warning" << (warnCount > 1 ? "s" : "")
+			std::cerr << YELLOW << BOLD << warnCount << " warning" << (warnCount > 1 ? "s" : "")
 					  << " emitted.\n"
 					  << RESET;
 		}
+		std::cerr << RESET << std::flush;
 	}
 }
 

@@ -40,20 +40,27 @@ void CodeGen::visit(const ast::Module &n) {
 
 	// Second pass: set struct field types
 	for (const auto &structDecl : n.structs) {
-		auto *structType = llvm::StructType::getTypeByName(m_Context.llvmContext, 
-														   structDecl->ident.asAscii());
-		
+		auto *structType =
+				llvm::StructType::getTypeByName(m_Context.llvmContext, structDecl->ident.asAscii());
+
 		Vec<llvm::Type *> fieldTypes;
 		for (const auto &[fieldName, fieldType] : structDecl->fields) {
 			fieldTypes.push_back(m_Context.typeConverter.convert(fieldType));
 		}
-		
+
 		structType->setBody(fieldTypes);
 	}
 
 	// Forward declare default function decls
 	for (const auto &[name, type] : s_DefaultDecls) {
-		auto funcType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
+		Vec<llvm::Type *> paramTypes;
+		paramTypes.reserve(type->paramTypes.size());
+		for (auto *paramType : type->paramTypes) {
+			paramTypes.push_back(m_Context.typeConverter.convert(paramType));
+		}
+
+		auto *returnType = m_Context.typeConverter.convert(type->returnType);
+		auto *funcType = llvm::FunctionType::get(returnType, paramTypes, false);
 
 		llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name.asAscii(),
 							   m_Context.llvmModule);
@@ -208,7 +215,8 @@ void CodeGen::visit(const ast::IfStmt &n) {
 
 	visitNode(*n.then);
 
-	if (!then->getTerminator()) {
+	auto *thenExit = m_Context.irBuilder.GetInsertBlock();
+	if (!thenExit->getTerminator()) {
 		m_Context.irBuilder.CreateBr(merge);
 	}
 
@@ -216,7 +224,8 @@ void CodeGen::visit(const ast::IfStmt &n) {
 
 	visitNode(*n.else_);
 
-	if (!else_->getTerminator()) {
+	auto *elseExit = m_Context.irBuilder.GetInsertBlock();
+	if (!elseExit->getTerminator()) {
 		m_Context.irBuilder.CreateBr(merge);
 	}
 
@@ -264,10 +273,9 @@ void CodeGen::visit(const ast::ReturnStmt &n) {
 }
 
 void CodeGen::visit(const ast::VarDef &n) {
-	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
-
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
 	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
+	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);

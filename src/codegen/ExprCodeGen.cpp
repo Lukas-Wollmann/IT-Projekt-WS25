@@ -339,14 +339,19 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 
-			if ((leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Null)) ||
-				(leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) ||
-				(leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Pointer))) {
-				if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) {
+			if ((leftType->isTypeKind(TypeKind::Pointer) &&
+				 rightType->isTypeKind(TypeKind::Null)) ||
+				(leftType->isTypeKind(TypeKind::Null) &&
+				 rightType->isTypeKind(TypeKind::Pointer)) ||
+				(leftType->isTypeKind(TypeKind::Pointer) &&
+				 rightType->isTypeKind(TypeKind::Pointer))) {
+				if (leftType->isTypeKind(TypeKind::Null) &&
+					rightType->isTypeKind(TypeKind::Pointer)) {
 					left = coerceNullToPointer(m_Context, left, leftType, rightType);
 				}
 
-				if (rightType->isTypeKind(TypeKind::Null) && leftType->isTypeKind(TypeKind::Pointer)) {
+				if (rightType->isTypeKind(TypeKind::Null) &&
+					leftType->isTypeKind(TypeKind::Pointer)) {
 					right = coerceNullToPointer(m_Context, right, rightType, leftType);
 				}
 
@@ -362,14 +367,19 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 
-			if ((leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Null)) ||
-				(leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) ||
-				(leftType->isTypeKind(TypeKind::Pointer) && rightType->isTypeKind(TypeKind::Pointer))) {
-				if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Pointer)) {
+			if ((leftType->isTypeKind(TypeKind::Pointer) &&
+				 rightType->isTypeKind(TypeKind::Null)) ||
+				(leftType->isTypeKind(TypeKind::Null) &&
+				 rightType->isTypeKind(TypeKind::Pointer)) ||
+				(leftType->isTypeKind(TypeKind::Pointer) &&
+				 rightType->isTypeKind(TypeKind::Pointer))) {
+				if (leftType->isTypeKind(TypeKind::Null) &&
+					rightType->isTypeKind(TypeKind::Pointer)) {
 					left = coerceNullToPointer(m_Context, left, leftType, rightType);
 				}
 
-				if (rightType->isTypeKind(TypeKind::Null) && leftType->isTypeKind(TypeKind::Pointer)) {
+				if (rightType->isTypeKind(TypeKind::Null) &&
+					leftType->isTypeKind(TypeKind::Pointer)) {
 					right = coerceNullToPointer(m_Context, right, rightType, leftType);
 				}
 
@@ -460,19 +470,7 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
-	// Check if this is a struct constructor call (e.g., Point { ... })
-	// by seeing if the expression is a bare identifier that refers to a struct type
-	bool isStructConstructor = false;
-	if (const auto *varRef = dynamic_cast<const ast::VarRef *>(n.expr.get())) {
-		if (n.inferredType.value()->isTypeKind(TypeKind::Struct)) {
-			const auto *structType = static_cast<StructType *>(n.inferredType.value());
-			if (structType->name == varRef->ident) {
-				isStructConstructor = true;
-			}
-		}
-	}
-
-	if (isStructConstructor) {
+	if (n.isStructConstructor) {
 		const auto resultType = n.inferredType.value();
 		auto *const llvmResultType =
 				static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
@@ -517,7 +515,13 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 			args.push_back(m_Context.copyValue(argValue, funcType->paramTypes[i]));
 		}
 	}
-	auto *llvmFuncType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
+	Vec<llvm::Type *> llvmParamTypes;
+	llvmParamTypes.reserve(funcType->paramTypes.size());
+	for (auto paramType : funcType->paramTypes) {
+		llvmParamTypes.push_back(m_Context.typeConverter.convert(paramType));
+	}
+	auto *llvmReturnType = m_Context.typeConverter.convert(funcType->returnType);
+	auto *llvmFuncType = llvm::FunctionType::get(llvmReturnType, llvmParamTypes, false);
 
 	const auto &call = m_Context.irBuilder.CreateCall(llvmFuncType, callee, args);
 

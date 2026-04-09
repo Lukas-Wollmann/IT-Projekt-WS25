@@ -104,9 +104,6 @@ int main(const int argc, const char *argv[]) {
 	if (err.hasError())
 		return 3;
 
-	if (debug)
-		util::print("{}\n", *module);
-
 	std::string llFilename = outputFilename + ".ll";
 	std::ofstream output(llFilename);
 
@@ -119,7 +116,7 @@ int main(const int argc, const char *argv[]) {
 	if (pid == 0) {
 		std::vector<const char *> clangArgs = {"clang",		   llFilename.c_str(),
 											   "-o",		   outputFilename.c_str(),
-											   "ocn_stdlib.o", nullptr};
+											   "ocn_stdlib.c", nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {

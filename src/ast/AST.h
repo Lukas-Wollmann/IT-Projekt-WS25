@@ -37,7 +37,11 @@ enum struct ValueCategory {
 
 struct Node {
 	const NodeKind kind;
-	const SourceLoc loc;
+	SourceLoc loc;
+
+	void setLoc(const SourceLoc &newLoc) {
+		loc = newLoc;
+	}
 
 	virtual ~Node() = default;
 
@@ -131,8 +135,9 @@ struct FieldAccess : Expr {
 struct FuncCall : Expr {
 	const Box<Expr> expr;
 	const Vec<Box<Expr>> args;
+	const bool isStructConstructor;
 
-	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
+	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor = false);
 };
 
 struct BlockStmt : Stmt {

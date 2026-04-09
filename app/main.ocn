@@ -1,3 +1,5 @@
+// live coding here
+
 func main() -> i32 {
     return 0;
 }

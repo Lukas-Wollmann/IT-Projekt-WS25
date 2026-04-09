@@ -1,5 +1,7 @@
 #include "CodeGenContext.h"
 
+#include <llvm/TargetParser/Host.h>
+
 #include <ranges>
 
 namespace gen {
@@ -11,6 +13,7 @@ CodeGenContext::CodeGenContext(const U8String &moduleName)
 	: irBuilder(llvmContext)
 	, llvmModule(moduleName.asAscii(), llvmContext)
 	, typeConverter(llvmContext) {
+	llvmModule.setTargetTriple(llvm::sys::getDefaultTargetTriple());
 	registerRuntimeFunctions();
 }
 
@@ -31,7 +34,7 @@ void CodeGenContext::registerRuntimeFunctions() {
 
 llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
 	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive) ||
-		type->isTypeKind(TypeKind::Null)) {
+		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Function)) {
 		return value;
 	}
 
@@ -65,7 +68,8 @@ llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
 
 void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive) ||
-		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Error)) {
+		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Error) ||
+		type->isTypeKind(TypeKind::Function)) {
 		return;
 	}
 
@@ -99,7 +103,8 @@ void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 
 Opt<llvm::Value *> CodeGenContext::getDestructor(Type type) {
 	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive) ||
-		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Error)) {
+		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Error) ||
+		type->isTypeKind(TypeKind::Function)) {
 		return {};
 	}
 

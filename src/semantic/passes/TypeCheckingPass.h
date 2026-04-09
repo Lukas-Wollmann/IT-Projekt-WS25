@@ -44,7 +44,8 @@ private:
 
 	Type checkExpression(ast::Expr &n);
 	[[nodiscard]] static bool typesMatch(Type left, Type right);
-	void checkIfArgsCanCallFunction(const TypeList &args, const FunctionType *func) const;
+	void checkIfArgsCanCallFunction(const TypeList &args, const FunctionType *func,
+									const SourceLoc &callLoc) const;
 	[[nodiscard]] static Opt<BinaryOpKind> getBinaryOpFromAssignment(AssignmentKind kind);
 };
 }
