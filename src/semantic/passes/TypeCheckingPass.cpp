@@ -396,120 +396,121 @@ bool TypeCheckingPass::visit(VarDef &n) {
 bool TypeCheckingPass::visit(FuncDecl &n) {
 	m_SymbolTable.enterScope();
 
-	const auto function = m_Context.getGlobalNamespace().getFunction(varRef->ident);
-	for (auto &[name, type] : n.params)
-		if (structType->isDeclared && !n.isStructConstructor && !function.has_value()) {
-			// Set the current expected return type
-			m_CurrentFunctionReturnType = n.returnType;
+	for (auto &[name, type] : n.params) {
+		m_SymbolTable.addSymbol(name, type);
+	}
 
-			// Type check the function body (in a nested scope, allows param shadowing)
-			const bool doesReturn = dispatch(*n.body);
+	// Set the current expected return type.
+	m_CurrentFunctionReturnType = n.returnType;
 
-			if (!doesReturn && !n.returnType->isTypeKind(TypeKind::Unit)) {
-				const auto msg = ErrorMessage<NonReturningPaths>::str(n.ident);
-				m_Context.submitError(msg, n.loc);
-			}
+	// Type check the function body (in a nested scope, allows param shadowing).
+	const bool doesReturn = dispatch(*n.body);
 
-			m_SymbolTable.exitScope();
+	if (!doesReturn && !n.returnType->isTypeKind(TypeKind::Unit)) {
+		const auto msg = ErrorMessage<NonReturningPaths>::str(n.ident);
+		m_Context.submitError(msg, n.loc);
+	}
 
-			// We already explored this function during the exploration pass, don't
-			// add it to the symbol table a second time, that would break it.
-			return false;
-		}
+	m_CurrentFunctionReturnType = std::nullopt;
+	m_SymbolTable.exitScope();
 
-	bool TypeCheckingPass::visit(Module & n) {
-		for (auto &d : n.funcs)
-			dispatch(*d);
+	// We already explored this function during the exploration pass, don't
+	// add it to the symbol table a second time, that would break it.
+	return false;
+}
 
-		const auto mainType = m_Context.getGlobalNamespace().getFunction(u8"main");
+bool TypeCheckingPass::visit(Module &n) {
+	for (auto &d : n.funcs)
+		dispatch(*d);
 
-		if (!mainType.has_value()) {
-			m_Context.submitError(u8"Missing entry point, expected 'func main() -> i32'.", n.loc);
-			return false;
-		}
+	const auto mainType = m_Context.getGlobalNamespace().getFunction(u8"main");
 
-		const auto *fn = mainType.value();
-		const bool isValidMain = fn->paramTypes.empty() && fn->returnType == TypeFactory::getI32();
-
-		if (isValidMain) {
-			return false;
-		}
-
-		SourceLoc mainLoc = n.loc;
-		for (const auto &decl : n.funcs) {
-			if (decl->ident == u8"main") {
-				mainLoc = decl->loc;
-				break;
-			}
-		}
-
-		m_Context.submitError(u8"Invalid entry point, expected 'func main() -> i32'.", mainLoc);
-
+	if (!mainType.has_value()) {
+		m_Context.submitError(u8"Missing entry point, expected 'func main() -> i32'.", n.loc);
 		return false;
 	}
 
-	Type TypeCheckingPass::checkExpression(Expr & n) {
-		VERIFY(!n.inferredType.has_value());
-		dispatch(n);
-		VERIFY(n.inferredType.has_value());
+	const auto *fn = mainType.value();
+	const bool isValidMain = fn->paramTypes.empty() && fn->returnType == TypeFactory::getI32();
 
-		return n.inferredType.value();
+	if (isValidMain) {
+		return false;
 	}
 
-	bool TypeCheckingPass::typesMatch(Type left, Type right) {
-		if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
-			return false;
-
-		if (left->isTypeKind(TypeKind::Null) && right->isTypeKind(TypeKind::Pointer))
-			return true;
-
-		if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
-			return true;
-
-		return left == right;
-	}
-
-	void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args,
-													  const FunctionType *func,
-													  const SourceLoc &callLoc) const {
-		const auto &params = func->paramTypes;
-
-		if (args.size() != params.size()) {
-			const auto msg = ErrorMessage<TooManyArguments>::str(params.size(), args.size());
-			m_Context.submitError(msg, callLoc);
-
-			return;
-		}
-
-		for (size_t i = 0; i < args.size(); ++i) {
-			auto &argType = args[i];
-			auto paramType = params[i];
-
-			if (typesMatch(argType, paramType))
-				continue;
-
-			const auto msg = ErrorMessage<TypeMissmatch>::str(paramType, argType);
-			m_Context.submitError(msg, callLoc);
-
-			return;
+	SourceLoc mainLoc = n.loc;
+	for (const auto &decl : n.funcs) {
+		if (decl->ident == u8"main") {
+			mainLoc = decl->loc;
+			break;
 		}
 	}
 
-	Opt<BinaryOpKind> TypeCheckingPass::getBinaryOpFromAssignment(const AssignmentKind kind) {
-		using enum AssignmentKind;
-		switch (kind) {
-			case Simple:		 return std::nullopt;
-			case Addition:		 return BinaryOpKind::Addition;
-			case Subtraction:	 return BinaryOpKind::Subtraction;
-			case Multiplication: return BinaryOpKind::Multiplication;
-			case Division:		 return BinaryOpKind::Division;
-			case Modulo:		 return BinaryOpKind::Modulo;
-			case BitwiseAnd:	 return BinaryOpKind::BitwiseAnd;
-			case BitwiseOr:		 return BinaryOpKind::BitwiseOr;
-			case BitwiseXor:	 return BinaryOpKind::BitwiseXor;
-			case LeftShift:		 return BinaryOpKind::LeftShift;
-			case RightShift:	 return BinaryOpKind::RightShift;
-			default:			 UNREACHABLE();
-		}
+	m_Context.submitError(u8"Invalid entry point, expected 'func main() -> i32'.", mainLoc);
+
+	return false;
+}
+
+Type TypeCheckingPass::checkExpression(Expr &n) {
+	VERIFY(!n.inferredType.has_value());
+	dispatch(n);
+	VERIFY(n.inferredType.has_value());
+
+	return n.inferredType.value();
+}
+
+bool TypeCheckingPass::typesMatch(Type left, Type right) {
+	if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
+		return false;
+
+	if (left->isTypeKind(TypeKind::Null) && right->isTypeKind(TypeKind::Pointer))
+		return true;
+
+	if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
+		return true;
+
+	return left == right;
+}
+
+void TypeCheckingPass::checkIfArgsCanCallFunction(const TypeList &args, const FunctionType *func,
+												  const SourceLoc &callLoc) const {
+	const auto &params = func->paramTypes;
+
+	if (args.size() != params.size()) {
+		const auto msg = ErrorMessage<TooManyArguments>::str(params.size(), args.size());
+		m_Context.submitError(msg, callLoc);
+
+		return;
 	}
+
+	for (size_t i = 0; i < args.size(); ++i) {
+		auto &argType = args[i];
+		auto paramType = params[i];
+
+		if (typesMatch(argType, paramType))
+			continue;
+
+		const auto msg = ErrorMessage<TypeMissmatch>::str(paramType, argType);
+		m_Context.submitError(msg, callLoc);
+
+		return;
+	}
+}
+
+Opt<BinaryOpKind> TypeCheckingPass::getBinaryOpFromAssignment(const AssignmentKind kind) {
+	using enum AssignmentKind;
+	switch (kind) {
+		case Simple:		 return std::nullopt;
+		case Addition:		 return BinaryOpKind::Addition;
+		case Subtraction:	 return BinaryOpKind::Subtraction;
+		case Multiplication: return BinaryOpKind::Multiplication;
+		case Division:		 return BinaryOpKind::Division;
+		case Modulo:		 return BinaryOpKind::Modulo;
+		case BitwiseAnd:	 return BinaryOpKind::BitwiseAnd;
+		case BitwiseOr:		 return BinaryOpKind::BitwiseOr;
+		case BitwiseXor:	 return BinaryOpKind::BitwiseXor;
+		case LeftShift:		 return BinaryOpKind::LeftShift;
+		case RightShift:	 return BinaryOpKind::RightShift;
+		default:			 UNREACHABLE();
+	}
+}
 }
