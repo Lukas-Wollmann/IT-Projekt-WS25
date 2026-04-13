@@ -1,5 +1,6 @@
 #pragma once
-#include "type/Visitor.h"
+
+#include "type/Type.h"
 
 namespace llvm {
 class Type;
@@ -7,24 +8,20 @@ class LLVMContext;
 }
 
 namespace gen {
-struct TypeConverter : public type::ConstVisitor<llvm::Type *> {
+struct TypeConverter {
 public:
 	explicit TypeConverter(llvm::LLVMContext &ctx);
 
-	llvm::Type *convert(type::TypePtr type) {
-		return dispatch(*type);
-	}
+	llvm::Type *convert(Type type);
 
 private:
 	llvm::LLVMContext &m_Context;
 
-public:
-	llvm::Type *visit(const type::Typename &t) override;
-	llvm::Type *visit(const type::PointerType &t) override;
-	llvm::Type *visit(const type::ArrayType &t) override;
-	llvm::Type *visit(const type::FunctionType &t) override;
-	llvm::Type *visit(const type::UnitType &t) override;
-	llvm::Type *visit(const type::ErrorType &t) override;
+	llvm::Type *convertPrimitive(const PrimitiveType &t);
+	llvm::Type *convertPointer(const PointerType &t);
+	llvm::Type *convertFunction(const FunctionType &t);
+	llvm::Type *convertUnit(const UnitType &t);
+	llvm::Type *convertStruct(const StructType &t);
 };
 
 }

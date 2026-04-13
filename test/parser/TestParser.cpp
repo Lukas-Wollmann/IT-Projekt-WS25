@@ -109,22 +109,7 @@ TEST_CASE("Parser: consume() throws if called with incorrect token type and lexe
 	CHECK_THROWS_AS(parser.consume(TokenType::Separator, u8"if"), ParsingError);
 }
 
-TEST_CASE("Parser: advanceToNext() finds next occurance of token") {
-	// Arrange
-	U8String source = u8"";
-	ErrorHandler err(u8"", source);
-	const Vec<Token> tokens = {Token(TokenType::StringLiteral), Token(TokenType::BoolLiteral),
-							   Token(TokenType::Keyword, u8"func")};
-	Parser parser(tokens, err, u8"test-module");
-
-	// Act
-	parser.advanceToNext(TokenType::Keyword, u8"func");
-
-	// Assert
-	CHECK(parser.m_Current->matches(TokenType::Keyword, u8"func"));
-}
-
-TEST_CASE("Parser: parseType() - Simple typename") {
+TEST_CASE("Parser: parseType() - Simple primitive") {
 	// Arrange
 	U8String source = u8"i32";
 	ErrorHandler err(u8"", source);
@@ -135,7 +120,7 @@ TEST_CASE("Parser: parseType() - Simple typename") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Typename);
+	CHECK(type->kind == TypeKind::Primitive);
 }
 
 TEST_CASE("Parser: parseType() - Unit type") {
@@ -149,7 +134,7 @@ TEST_CASE("Parser: parseType() - Unit type") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Unit);
+	CHECK(type->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parseType() - Pointer type") {
@@ -163,7 +148,7 @@ TEST_CASE("Parser: parseType() - Pointer type") {
 	auto type = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == type::TypeKind::Pointer);
+	CHECK(type->kind == TypeKind::Pointer);
 }
 
 TEST_CASE("Parser: parsePrimaryExpr() - Integer literal") {
@@ -286,6 +271,45 @@ TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation") {
 
 	// Assert
 	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
+}
+
+TEST_CASE("Parser: parsePrimaryExpr() - Struct constructor with braces") {
+	// Arrange
+	U8String source = u8"Foo { 10 }";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::FuncCall);
+	auto call = dynamic_cast<ast::FuncCall *>(expr.get());
+	REQUIRE(call != nullptr);
+	CHECK(call->args.size() == 1);
+	CHECK(call->args[0]->kind == ast::NodeKind::IntLit);
+
+	auto callee = dynamic_cast<ast::VarRef *>(call->expr.get());
+	REQUIRE(callee != nullptr);
+	CHECK(callee->ident == u8"Foo");
+}
+
+TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation with struct braces") {
+	// Arrange
+	U8String source = u8"new Foo { 10 }";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
+	auto heap = dynamic_cast<ast::HeapAlloc *>(expr.get());
+	REQUIRE(heap != nullptr);
+	CHECK(heap->expr->kind == ast::NodeKind::FuncCall);
 }
 
 TEST_CASE("Parser: parseUnaryExpr() - Negative number") {
@@ -815,7 +839,7 @@ TEST_CASE("Parser: parseFuncDecl() - Simple function") {
 	CHECK(func->kind == ast::NodeKind::FuncDecl);
 	CHECK(func->ident == u8"main");
 	CHECK(func->params.size() == 0);
-	CHECK(func->returnType->kind == type::TypeKind::Unit);
+	CHECK(func->returnType->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parseFuncDecl() - Function with params and return type") {
@@ -832,7 +856,7 @@ TEST_CASE("Parser: parseFuncDecl() - Function with params and return type") {
 	CHECK(func->kind == ast::NodeKind::FuncDecl);
 	CHECK(func->ident == u8"add");
 	CHECK(func->params.size() == 2);
-	CHECK(func->returnType->kind == type::TypeKind::Typename);
+	CHECK(func->returnType->kind == TypeKind::Primitive);
 }
 
 TEST_CASE("Parser: parseModule() - Empty module") {
@@ -847,7 +871,7 @@ TEST_CASE("Parser: parseModule() - Empty module") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 0);
+	CHECK(module->funcs.size() == 0);
 }
 
 TEST_CASE("Parser: parseModule() - Module with single function") {
@@ -862,8 +886,8 @@ TEST_CASE("Parser: parseModule() - Module with single function") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 1);
-	CHECK(module->decls[0]->ident == u8"main");
+	CHECK(module->funcs.size() == 1);
+	CHECK(module->funcs[0]->ident == u8"main");
 }
 
 TEST_CASE("Parser: parseModule() - Module with multiple functions") {
@@ -878,9 +902,9 @@ TEST_CASE("Parser: parseModule() - Module with multiple functions") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
-	CHECK(module->decls.size() == 2);
-	CHECK(module->decls[0]->ident == u8"foo");
-	CHECK(module->decls[1]->ident == u8"bar");
+	CHECK(module->funcs.size() == 2);
+	CHECK(module->funcs[0]->ident == u8"foo");
+	CHECK(module->funcs[1]->ident == u8"bar");
 }
 
 TEST_CASE("Parser: Complex expression - Operator precedence") {

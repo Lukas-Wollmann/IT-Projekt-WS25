@@ -1,6 +1,5 @@
 #pragma once
 #include "core/Operators.h"
-#include "type/Printer.h"
 
 namespace sem {
 enum struct ErrorMessageKind {
@@ -12,6 +11,8 @@ enum struct ErrorMessageKind {
 	TooManyArguments,
 	UnreachableStatement,
 	SymbolRedefinition,
+	StructFieldRedefinition,
+	StructInfiniteSize,
 	NonReturningPaths,
 	UndefinedReference,
 	AssignToRValue
@@ -22,7 +23,7 @@ struct ErrorMessage;
 
 template <>
 struct ErrorMessage<ErrorMessageKind::TypeMissmatch> {
-	[[nodiscard]] static U8String str(const type::TypePtr &expected, const type::TypePtr &actual) {
+	[[nodiscard]] static U8String str(Type expected, Type actual) {
 		return std::format("Expected value of type '{}', got type '{}' instead.", *expected,
 						   *actual);
 	}
@@ -30,22 +31,21 @@ struct ErrorMessage<ErrorMessageKind::TypeMissmatch> {
 
 template <>
 struct ErrorMessage<ErrorMessageKind::DereferenceNonPointerType> {
-	[[nodiscard]] static U8String str(const type::TypePtr &type) {
+	[[nodiscard]] static U8String str(Type type) {
 		return std::format("Cannot dereference the non-pointer type '{}'.", *type);
 	}
 };
 
 template <>
 struct ErrorMessage<ErrorMessageKind::UnaryOperatorNotFound> {
-	[[nodiscard]] static U8String str(const type::TypePtr &type, const UnaryOpKind op) {
+	[[nodiscard]] static U8String str(Type type, const UnaryOpKind op) {
 		return std::format("Cannot use unary operator '{}' on a value of type '{}'.", op, *type);
 	}
 };
 
 template <>
 struct ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound> {
-	[[nodiscard]] static U8String str(const type::TypePtr &left, const type::TypePtr &right,
-									  const BinaryOpKind op) {
+	[[nodiscard]] static U8String str(Type left, Type right, const BinaryOpKind op) {
 		return std::format("Cannot use binary operator '{}' on values of type '{}' and '{}'.", op,
 						   *left, *right);
 	}
@@ -53,7 +53,7 @@ struct ErrorMessage<ErrorMessageKind::BinaryOperatorNotFound> {
 
 template <>
 struct ErrorMessage<ErrorMessageKind::CallOnNonFunctionType> {
-	[[nodiscard]] static U8String str(const type::TypePtr &type) {
+	[[nodiscard]] static U8String str(Type type) {
 		return std::format("Cannot call the non-function type '{}'.", *type);
 	}
 };
@@ -76,6 +76,22 @@ template <>
 struct ErrorMessage<ErrorMessageKind::SymbolRedefinition> {
 	[[nodiscard]] static U8String str(const U8String &ident) {
 		return std::format("Illegal redefinition of symbol: '{}'.", ident);
+	}
+};
+
+template <>
+struct ErrorMessage<ErrorMessageKind::StructFieldRedefinition> {
+	[[nodiscard]] static U8String str(const U8String &ident) {
+		return std::format("Illegal redefinition of struct field: '{}'.", ident);
+	}
+};
+
+template <>
+struct ErrorMessage<ErrorMessageKind::StructInfiniteSize> {
+	[[nodiscard]] static U8String str(Type type, const U8String &fieldName) {
+		return std::format(
+				"Struct '{}' has infinite size due to a circular dependency in field '{}'.", type,
+				fieldName);
 	}
 };
 

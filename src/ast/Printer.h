@@ -29,12 +29,14 @@ private:
 	void visit(const IntLit &n) override;
 	void visit(const CharLit &n) override;
 	void visit(const BoolLit &n) override;
+	void visit(const NullLit &n) override;
 	void visit(const UnitLit &n) override;
 	void visit(const HeapAlloc &n) override;
 	void visit(const UnaryExpr &n) override;
 	void visit(const BinaryExpr &n) override;
 	void visit(const Assignment &n) override;
 	void visit(const VarRef &n) override;
+	void visit(const FieldAccess &n) override;
 	void visit(const FuncCall &n) override;
 	void visit(const BlockStmt &n) override;
 	void visit(const IfStmt &n) override;
@@ -42,6 +44,7 @@ private:
 	void visit(const ReturnStmt &n) override;
 	void visit(const VarDef &n) override;
 	void visit(const FuncDecl &n) override;
+	void visit(const StructDecl &n) override;
 	void visit(const Module &n) override;
 };
 }

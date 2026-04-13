@@ -1,6 +1,19 @@
 func main() -> i32 {
+
+    // Pointers bound to a local variable are bound to the scope of the local variable.
+    // If the local variable runs out of scope, the pointers will be destroyed in reverse order.
+
     a: *i32 = new i32(10);
-    b: *i32 = new i32(20);
+    // Note:  ^^^^^^^^^^^ this is just an ordenary expression when its parsed. The semantic
+    // analyser has to figure out, that the expression will now not just die at the ';', but it's
+    // lifetime has to be extended to a scoped variable. We call this moving the pointer.
+    
+    {
+        a: *i32 = new i32(10);
+        b: *i32 = new i32(20);
+    } 
+    // b and then a destroyed here 
 
     return 0;
+    // a destroyed here
 }

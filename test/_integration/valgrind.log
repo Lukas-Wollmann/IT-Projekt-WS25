@@ -1,0 +1,253 @@
+
+========================================
+Test: ./cases/assignments.ocn
+Time: Thu Apr  9 07:57:25 UTC 2026
+========================================
+==25942== Memcheck, a memory error detector
+==25942== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==25942== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==25942== Command: ./cases/assignments.out
+==25942== 
+2105==25942== 
+==25942== HEAP SUMMARY:
+==25942==     in use at exit: 0 bytes in 0 blocks
+==25942==   total heap usage: 5 allocs, 5 frees, 4,180 bytes allocated
+==25942== 
+==25942== All heap blocks were freed -- no leaks are possible
+==25942== 
+==25942== For lists of detected and suppressed errors, rerun with: -s
+==25942== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/big_boy.ocn
+Time: Thu Apr  9 07:57:26 UTC 2026
+========================================
+==25951== Memcheck, a memory error detector
+==25951== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==25951== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==25951== Command: ./cases/big_boy.out
+==25951== 
+0
+0
+0
+0
+1
+1000
+1
+10
+100
+0
+7
+2
+2000
+2
+20
+20
+14
+3
+3000
+3000
+21
+4
+4000
+4
+40
+40
+28
+5
+5000
+0
+35
+6
+6000
+6000
+42
+7
+7000
+2
+20
+20
+49
+8
+8000
+3
+30
+300
+2
+20
+20
+56
+9
+9000
+9000
+63
+10
+10000
+0
+70
+11
+11000
+1
+10
+100
+0
+77
+12
+12000
+12000
+84
+13
+13000
+3
+30
+300
+2
+20
+20
+91
+14
+14000
+4
+40
+40
+98
+15
+15000
+15000
+105
+16
+16000
+1
+10
+100
+0
+112
+17
+17000
+2
+20
+20
+119
+18
+18000
+18000
+126
+19
+19000
+4
+40
+40
+133
+65450
+==25951== 
+==25951== HEAP SUMMARY:
+==25951==     in use at exit: 0 bytes in 0 blocks
+==25951==   total heap usage: 125 allocs, 125 frees, 6,688 bytes allocated
+==25951== 
+==25951== All heap blocks were freed -- no leaks are possible
+==25951== 
+==25951== For lists of detected and suppressed errors, rerun with: -s
+==25951== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/expression_cleanup.ocn
+Time: Thu Apr  9 07:57:26 UTC 2026
+========================================
+==25975== Memcheck, a memory error detector
+==25975== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==25975== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==25975== Command: ./cases/expression_cleanup.out
+==25975== 
+==25975== 
+==25975== HEAP SUMMARY:
+==25975==     in use at exit: 0 bytes in 0 blocks
+==25975==   total heap usage: 2 allocs, 2 frees, 44 bytes allocated
+==25975== 
+==25975== All heap blocks were freed -- no leaks are possible
+==25975== 
+==25975== For lists of detected and suppressed errors, rerun with: -s
+==25975== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/function_call_args.ocn
+Time: Thu Apr  9 07:57:27 UTC 2026
+========================================
+==25984== Memcheck, a memory error detector
+==25984== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==25984== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==25984== Command: ./cases/function_call_args.out
+==25984== 
+1212==25984== 
+==25984== HEAP SUMMARY:
+==25984==     in use at exit: 0 bytes in 0 blocks
+==25984==   total heap usage: 2 allocs, 2 frees, 4,116 bytes allocated
+==25984== 
+==25984== All heap blocks were freed -- no leaks are possible
+==25984== 
+==25984== For lists of detected and suppressed errors, rerun with: -s
+==25984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/function_return.ocn
+Time: Thu Apr  9 07:57:27 UTC 2026
+========================================
+==26000== Memcheck, a memory error detector
+==26000== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==26000== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==26000== Command: ./cases/function_return.out
+==26000== 
+==26000== 
+==26000== HEAP SUMMARY:
+==26000==     in use at exit: 0 bytes in 0 blocks
+==26000==   total heap usage: 4 allocs, 4 frees, 80 bytes allocated
+==26000== 
+==26000== All heap blocks were freed -- no leaks are possible
+==26000== 
+==26000== For lists of detected and suppressed errors, rerun with: -s
+==26000== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/scope_cleanup.ocn
+Time: Thu Apr  9 07:57:28 UTC 2026
+========================================
+==26009== Memcheck, a memory error detector
+==26009== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==26009== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==26009== Command: ./cases/scope_cleanup.out
+==26009== 
+==26009== 
+==26009== HEAP SUMMARY:
+==26009==     in use at exit: 0 bytes in 0 blocks
+==26009==   total heap usage: 3 allocs, 3 frees, 60 bytes allocated
+==26009== 
+==26009== All heap blocks were freed -- no leaks are possible
+==26009== 
+==26009== For lists of detected and suppressed errors, rerun with: -s
+==26009== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/structs_all.ocn
+Time: Thu Apr  9 07:57:29 UTC 2026
+========================================
+==26022== Memcheck, a memory error detector
+==26022== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==26022== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==26022== Command: ./cases/structs_all.out
+==26022== 
+10
+c
+20
+x
+42
+z
+7
+q
+==26022== 
+==26022== HEAP SUMMARY:
+==26022==     in use at exit: 0 bytes in 0 blocks
+==26022==   total heap usage: 2 allocs, 2 frees, 4,120 bytes allocated
+==26022== 
+==26022== All heap blocks were freed -- no leaks are possible
+==26022== 
+==26022== For lists of detected and suppressed errors, rerun with: -s
+==26022== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

@@ -6,8 +6,8 @@
 namespace sem {
 struct OperatorTable {
 private:
-	Vec<Pair<UnaryOpKind, type::FunctionType>> m_UnaryOps;
-	Vec<Pair<BinaryOpKind, type::FunctionType>> m_BinaryOps;
+	Vec<Pair<UnaryOpKind, const FunctionType *>> m_UnaryOps;
+	Vec<Pair<BinaryOpKind, const FunctionType *>> m_BinaryOps;
 
 public:
 	OperatorTable();
@@ -17,14 +17,14 @@ public:
 	OperatorTable &operator=(const OperatorTable &) = delete;
 	OperatorTable &operator=(OperatorTable &&) = delete;
 
-	[[nodiscard]] Opt<type::FunctionType> getUnaryOperator(UnaryOpKind op,
-														   const type::TypePtr &t) const;
-	[[nodiscard]] Opt<type::FunctionType>
-	getBinaryOperator(BinaryOpKind op, const type::TypePtr &t1, const type::TypePtr &t2) const;
+	[[nodiscard]] Opt<const FunctionType *> getUnaryOperator(UnaryOpKind op, Type t) const;
+	[[nodiscard]] Opt<const FunctionType *> getBinaryOperator(BinaryOpKind op, Type t1,
+															  Type t2) const;
 
 private:
 	void addBinaryOperator(const U8String &left, const U8String &right, BinaryOpKind op,
 						   const U8String &ret);
 	void addUnaryOperator(const U8String &operand, UnaryOpKind op, const U8String &ret);
+	Type getTypeFromName(const U8String &name);
 };
 }

@@ -1,0 +1,21 @@
+func main() -> i32 {
+    a: **i32 = new *i32(new i32(1));
+    *a = new i32(2);
+
+    print_i32(**a);
+
+    **a = 10;
+    
+    print_i32(**a);
+    
+    b: *i32 = new i32(10);
+    *(proxy_i32_ptr(b)) = 5;
+    print_i32(*b);
+
+    return 0;
+}
+
+// We can also assign to a pointer returned by a function.
+func proxy_i32_ptr(a: *i32) -> *i32 {
+    return a;
+}

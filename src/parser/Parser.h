@@ -3,7 +3,7 @@
 #include "core/ErrorHandler.h"
 #include "core/Operators.h"
 #include "lexer/Token.h"
-#include "type/Type.h"
+#include "type/TypeFactory.h"
 
 namespace prs {
 struct ParsingError : std::exception {
@@ -34,12 +34,12 @@ struct Parser {
 	const lex::Token &consume(lex::TokenType type, U8String lexeme);
 	const lex::Token &consume(lex::TokenType type);
 	void reportError(ParsingError &e) const;
-	void advanceToNext(lex::TokenType type, const U8String &lexeme);
 
 	Box<ast::Module> parseModule();
 	Box<ast::FuncDecl> parseFuncDecl();
+	Box<ast::StructDecl> parseStructDecl();
 	Vec<ast::Param> parseParamList();
-	type::TypePtr parseType();
+	Type parseType();
 	Box<ast::Stmt> parseStmt();
 	Box<ast::BlockStmt> parseBlockStmt();
 	Box<ast::WhileStmt> parseWhileStmt();
@@ -47,6 +47,11 @@ struct Parser {
 	Box<ast::VarDef> parseVarDef();
 	Box<ast::Expr> parseExpr();
 	Box<ast::Expr> parseAssignmentExpr();
+	Box<ast::Expr> parseLogicalOrExpr();
+	Box<ast::Expr> parseLogicalAndExpr();
+	Box<ast::Expr> parseBitwiseOrExpr();
+	Box<ast::Expr> parseBitwiseXorExpr();
+	Box<ast::Expr> parseBitwiseAndExpr();
 	Box<ast::Expr> parseEqualityExpr();
 	Box<ast::Expr> parseRelationalExpr();
 	Box<ast::Expr> parseAdditiveExpr();
@@ -54,7 +59,9 @@ struct Parser {
 	Box<ast::Expr> parseUnaryExpr();
 	Box<ast::Expr> parsePostfixExpr();
 	Box<ast::Expr> parsePrimaryExpr();
+	Box<ast::Expr> parseFieldAccess(Box<ast::Expr> base);
 	Vec<Box<ast::Expr>> parseExprList();
+	Vec<Box<ast::Expr>> parseBraceExprList();
 
 	static AssignmentKind getAssignmentKindFromString(const U8String &str);
 };

@@ -14,4 +14,7 @@
     "C_Cpp.formatting": "clangFormat",
     "C_Cpp.clang_format_style": "file",
     "C_Cpp.clang_format_fallbackStyle": "LLVM",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.codeAnalysis.enabled": true,
+    "C_Cpp.codeAnalysis.runAutomatically": true
 }

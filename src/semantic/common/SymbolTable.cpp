@@ -2,8 +2,6 @@
 
 #include <ranges>
 
-#include "type/Printer.h"
-
 namespace sem {
 SymbolTable::SymbolTable() {
 	enterScope();
@@ -21,11 +19,11 @@ void SymbolTable::exitScope() {
 	m_Scopes.pop_back();
 }
 
-void SymbolTable::addSymbol(U8String name, type::TypePtr type) {
-	m_Scopes.back().emplace(std::move(name), std::move(type));
+void SymbolTable::addSymbol(U8String name, Type type) {
+	m_Scopes.back().emplace(std::move(name), type);
 }
 
-Opt<type::TypePtr> SymbolTable::getSymbol(const U8String &name) const {
+Opt<Type> SymbolTable::getSymbol(const U8String &name) const {
 	for (const auto &m_Scope : std::ranges::reverse_view(m_Scopes)) {
 		if (const auto it = m_Scope.find(name); it != m_Scope.end())
 			return it->second;

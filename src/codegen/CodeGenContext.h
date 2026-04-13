@@ -6,9 +6,11 @@
 #include "TypeConverter.h"
 
 namespace gen {
+U8String getStructDtorName(const U8String &name);
+
 struct TrackedValue {
 	llvm::Value *value;
-	type::TypePtr type;
+	Type type;
 };
 
 struct CodeGenContext {
@@ -26,12 +28,12 @@ public:
 
 	void registerRuntimeFunctions();
 
-	llvm::Value *copyValue(llvm::Value *value, const type::TypePtr &type);
-	void dropValue(llvm::Value *value, const type::TypePtr &type);
+	llvm::Value *copyValue(llvm::Value *value, Type type);
+	void dropValue(llvm::Value *value, Type type);
 
-	[[nodiscard]] Opt<llvm::Value *> getDestructor(const type::TypePtr &type);
+	[[nodiscard]] Opt<llvm::Value *> getDestructor(Type type);
 	[[nodiscard]] llvm::Value *getNullDestructor();
 	[[nodiscard]] llvm::FunctionType *getDestructorType();
-	[[nodiscard]] llvm::Value *sizeOf(const type::TypePtr &type);
+	[[nodiscard]] llvm::Value *sizeOf(Type type);
 };
 }

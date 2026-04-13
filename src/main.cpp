@@ -20,7 +20,6 @@ using namespace prs;
 using namespace ast;
 using namespace sem;
 using namespace gen;
-using namespace type;
 
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
@@ -117,7 +116,7 @@ int main(const int argc, const char *argv[]) {
 	if (pid == 0) {
 		std::vector<const char *> clangArgs = {"clang",		   llFilename.c_str(),
 											   "-o",		   outputFilename.c_str(),
-											   "ocn_stdlib.o", nullptr};
+											   "ocn_stdlib.c", nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {

@@ -1,7 +1,5 @@
 #include "Printer.h"
 
-#include "type/Printer.h"
-
 namespace ast {
 Printer::Printer(const Iterator out)
 	: m_Out(out)
@@ -47,17 +45,26 @@ void Printer::visit(const BoolLit &n) {
 	printLine(std::format("BoolLit({})", n.value));
 }
 
+void Printer::visit(const NullLit &) {
+	printLine(u8"NullLit");
+}
+
 void Printer::visit(const UnitLit &n) {
 	printLine(u8"UnitLit");
 }
 
 void Printer::visit(const HeapAlloc &n) {
-	printLine(std::format("HeapAlloc: {}", *n.type));
+	printLine(std::format("HeapAlloc: {}", n.type->str()));
 	child(true).printNode(*n.expr);
 }
 
 void Printer::visit(const VarRef &n) {
 	printLine(std::format("VarRef(\"{}\")", n.ident));
+}
+
+void Printer::visit(const FieldAccess &n) {
+	printLine(std::format("FieldAccess(\"{}\")", n.field));
+	child(true).printNode(*n.base);
 }
 
 void Printer::visit(const UnaryExpr &n) {
@@ -134,23 +141,44 @@ void Printer::visit(const FuncDecl &n) {
 	for (size_t i = 0; i < n.params.size(); ++i) {
 		const auto &[name, type] = n.params[i];
 		const auto isLast = i + 1 == n.params.size();
-		params.child(isLast).printLine(std::format("{}: {}", name, *type));
+		params.child(isLast).printLine(std::format("{}: {}", name, type->str()));
 	}
 
 	auto ret = child();
-	ret.printLine(std::format("ReturnType: {}", *n.returnType));
+	ret.printLine(std::format("ReturnType: {}", n.returnType->str()));
 
 	auto body = child(true);
 	body.printLine(u8"Body");
 	body.child(true).printNode(*n.body);
 }
 
+void Printer::visit(const StructDecl &n) {
+	printLine(std::format("StructDecl(\"{}\")", n.ident));
+
+	for (size_t i = 0; i < n.fields.size(); ++i) {
+		const auto &[name, type] = n.fields[i];
+		const auto isLast = i + 1 == n.fields.size();
+		child(isLast).printLine(std::format("{}: {}", name, type->str()));
+	}
+}
+
 void Printer::visit(const Module &n) {
 	printLine(u8"Module(\"" + n.name + u8"\")");
 
-	for (size_t i = 0; i < n.decls.size(); ++i) {
-		const auto isLast = i + 1 == n.decls.size();
-		child(isLast).printNode(*n.decls[i]);
+	auto funcs = child();
+	funcs.printLine(u8"Funcs");
+
+	for (size_t i = 0; i < n.funcs.size(); ++i) {
+		const auto isLast = i + 1 == n.funcs.size();
+		funcs.child(isLast).printNode(*n.funcs[i]);
+	}
+
+	auto structs = child(true);
+	structs.printLine(u8"Structs");
+
+	for (size_t i = 0; i < n.structs.size(); ++i) {
+		const auto isLast = i + 1 == n.structs.size();
+		structs.child(isLast).printNode(*n.structs[i]);
 	}
 }
 }

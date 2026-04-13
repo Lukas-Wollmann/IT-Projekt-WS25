@@ -33,16 +33,102 @@ void CodeGen::visitNode(const ast::Node &n) {
 }
 
 void CodeGen::visit(const ast::Module &n) {
+	// First pass: create opaque struct types
+	for (const auto &structDecl : n.structs) {
+		llvm::StructType::create(m_Context.llvmContext, structDecl->ident.asAscii());
+	}
+
+	// Second pass: set struct field types
+	for (const auto &structDecl : n.structs) {
+		auto *structType =
+				llvm::StructType::getTypeByName(m_Context.llvmContext, structDecl->ident.asAscii());
+
+		Vec<llvm::Type *> fieldTypes;
+		for (const auto &[fieldName, fieldType] : structDecl->fields) {
+			fieldTypes.push_back(m_Context.typeConverter.convert(fieldType));
+		}
+
+		structType->setBody(fieldTypes);
+	}
+
 	// Forward declare default function decls
 	for (const auto &[name, type] : s_DefaultDecls) {
-		auto funcType = static_cast<llvm::FunctionType *>(m_Context.typeConverter.convert(type));
+		Vec<llvm::Type *> paramTypes;
+		paramTypes.reserve(type->paramTypes.size());
+		for (auto *paramType : type->paramTypes) {
+			paramTypes.push_back(m_Context.typeConverter.convert(paramType));
+		}
+
+		auto *returnType = m_Context.typeConverter.convert(type->returnType);
+		auto *funcType = llvm::FunctionType::get(returnType, paramTypes, false);
 
 		llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, name.asAscii(),
 							   m_Context.llvmModule);
+
+		// Forward declare struct destructors
+		auto *structDtorType = m_Context.getDestructorType();
+		for (const auto &decl : n.structs) {
+			auto dtorName = getStructDtorName(decl->ident);
+			if (!m_Context.llvmModule.getFunction(dtorName.asAscii())) {
+				llvm::Function::Create(structDtorType, llvm::Function::ExternalLinkage,
+									   dtorName.asAscii(), m_Context.llvmModule);
+			}
+		}
+
+		// Emit struct destructors
+		for (const auto &decl : n.structs) {
+			auto dtorName = getStructDtorName(decl->ident);
+			auto *fn = m_Context.llvmModule.getFunction(dtorName.asAscii());
+			VERIFY(fn);
+
+			if (!fn->empty()) {
+				continue;
+			}
+
+			auto *entry = llvm::BasicBlock::Create(m_Context.llvmContext, "entry", fn);
+			m_Context.irBuilder.SetInsertPoint(entry);
+
+			auto *payload = fn->arg_begin();
+			payload->setName("payload");
+
+			auto *llvmStructType =
+					llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
+			VERIFY(llvmStructType);
+			auto *llvmStructPtrType = llvm::PointerType::getUnqual(llvmStructType);
+			auto *structPtr = m_Context.irBuilder.CreateBitCast(payload, llvmStructPtrType);
+
+			for (u32 i = 0; i < decl->fields.size(); ++i) {
+				const auto &[_, fieldType] = decl->fields[i];
+				auto *fieldPtr = m_Context.irBuilder.CreateStructGEP(llvmStructType, structPtr, i);
+
+				if (fieldType->isTypeKind(TypeKind::Pointer)) {
+					auto *llvmFieldType = m_Context.typeConverter.convert(fieldType);
+					auto *fieldValue = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldPtr);
+					auto *drop = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrDrop);
+					VERIFY(drop);
+					m_Context.irBuilder.CreateCall(drop, {fieldValue});
+					continue;
+				}
+
+				if (fieldType->isTypeKind(TypeKind::Struct)) {
+					auto *structFieldType = static_cast<StructType *>(fieldType);
+					auto nestedDtorName = getStructDtorName(structFieldType->name);
+					auto *nestedDtor = m_Context.llvmModule.getFunction(nestedDtorName.asAscii());
+					VERIFY(nestedDtor);
+
+					auto *fieldAsVoidPtr =
+							m_Context.irBuilder.CreateBitCast(fieldPtr,
+															  m_Context.irBuilder.getPtrTy());
+					m_Context.irBuilder.CreateCall(nestedDtor, {fieldAsVoidPtr});
+				}
+			}
+
+			m_Context.irBuilder.CreateRetVoid();
+		}
 	}
 
 	// Forward declare user defined functions decls
-	for (auto &decl : n.decls) {
+	for (auto &decl : n.funcs) {
 		auto returnType = m_Context.typeConverter.convert(decl->returnType);
 
 		Vec<llvm::Type *> argTypes;
@@ -56,7 +142,7 @@ void CodeGen::visit(const ast::Module &n) {
 							   m_Context.llvmModule);
 	}
 
-	for (auto &d : n.decls) {
+	for (auto &d : n.funcs) {
 		visitNode(*d);
 	}
 }
@@ -129,7 +215,8 @@ void CodeGen::visit(const ast::IfStmt &n) {
 
 	visitNode(*n.then);
 
-	if (!then->getTerminator()) {
+	auto *thenExit = m_Context.irBuilder.GetInsertBlock();
+	if (!thenExit->getTerminator()) {
 		m_Context.irBuilder.CreateBr(merge);
 	}
 
@@ -137,7 +224,8 @@ void CodeGen::visit(const ast::IfStmt &n) {
 
 	visitNode(*n.else_);
 
-	if (!else_->getTerminator()) {
+	auto *elseExit = m_Context.irBuilder.GetInsertBlock();
+	if (!elseExit->getTerminator()) {
 		m_Context.irBuilder.CreateBr(merge);
 	}
 
@@ -185,10 +273,9 @@ void CodeGen::visit(const ast::ReturnStmt &n) {
 }
 
 void CodeGen::visit(const ast::VarDef &n) {
-	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
-
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
 	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
+	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);

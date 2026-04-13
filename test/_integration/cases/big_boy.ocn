@@ -1,3 +1,5 @@
+// This is an AI generated thing, it has deeply nested control flow and creates nested ptrs.
+
 func recurse(depth: i32) -> i32 {
     a: *i32 = new i32(depth);
     print_i32(*a);

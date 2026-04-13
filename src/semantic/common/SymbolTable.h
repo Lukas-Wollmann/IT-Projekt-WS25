@@ -3,7 +3,7 @@
 #include "type/Type.h"
 
 namespace sem {
-using Scope = Map<U8String, type::TypePtr>;
+using Scope = Map<U8String, Type>;
 
 struct SymbolTable {
 private:
@@ -20,8 +20,8 @@ public:
 	Scope &enterScope();
 	void exitScope();
 
-	void addSymbol(U8String name, type::TypePtr type);
-	[[nodiscard]] Opt<type::TypePtr> getSymbol(const U8String &name) const;
+	void addSymbol(U8String name, Type type);
+	[[nodiscard]] Opt<Type> getSymbol(const U8String &name) const;
 	[[nodiscard]] bool isSymbolDefinedInCurrentScope(const U8String &name) const;
 };
 }

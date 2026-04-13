@@ -11,12 +11,14 @@ enum struct NodeKind {
 	IntLit,
 	CharLit,
 	BoolLit,
+	NullLit,
 	UnitLit,
 	HeapAlloc,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
 	VarRef,
+	FieldAccess,
 	FuncCall,
 	BlockStmt,
 	IfStmt,
@@ -24,7 +26,8 @@ enum struct NodeKind {
 	ReturnStmt,
 	VarDef,
 	FuncDecl,
-	Module
+	Module,
+	StructDecl
 };
 
 enum struct ValueCategory {
@@ -34,7 +37,11 @@ enum struct ValueCategory {
 
 struct Node {
 	const NodeKind kind;
-	const SourceLoc loc;
+	SourceLoc loc;
+
+	void setLoc(const SourceLoc &newLoc) {
+		loc = newLoc;
+	}
 
 	virtual ~Node() = default;
 
@@ -48,10 +55,10 @@ protected:
 };
 
 struct Expr : Stmt {
-	Opt<type::TypePtr> inferredType;
+	Opt<Type> inferredType;
 	Opt<ValueCategory> valueCategory;
 
-	void infer(type::TypePtr type, ValueCategory category);
+	void infer(Type type, ValueCategory category);
 	[[nodiscard]] bool isInferred() const;
 
 protected:
@@ -76,15 +83,19 @@ struct BoolLit : Expr {
 	explicit BoolLit(bool value);
 };
 
+struct NullLit : Expr {
+	NullLit();
+};
+
 struct UnitLit : Expr {
 	UnitLit();
 };
 
 struct HeapAlloc : Expr {
-	const type::TypePtr type;
+	const Type type;
 	const Box<Expr> expr;
 
-	HeapAlloc(type::TypePtr type, Box<Expr> expr);
+	HeapAlloc(Type type, Box<Expr> expr);
 };
 
 struct UnaryExpr : Expr {
@@ -114,11 +125,19 @@ struct VarRef : Expr {
 	explicit VarRef(U8String ident);
 };
 
+struct FieldAccess : Expr {
+	const Box<Expr> base;
+	const U8String field;
+
+	FieldAccess(Box<Expr> base, U8String field);
+};
+
 struct FuncCall : Expr {
 	const Box<Expr> expr;
 	const Vec<Box<Expr>> args;
+	const bool isStructConstructor;
 
-	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
+	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor = false);
 };
 
 struct BlockStmt : Stmt {
@@ -150,27 +169,36 @@ struct ReturnStmt : Stmt {
 
 struct VarDef : Stmt {
 	const U8String ident;
-	const type::TypePtr type;
+	const Type type;
 	const Box<Expr> value;
 
-	VarDef(U8String ident, type::TypePtr type, Box<Expr> value);
+	VarDef(U8String ident, Type type, Box<Expr> value);
 };
 
-using Param = Pair<U8String, type::TypePtr>;
+using Param = Pair<U8String, Type>;
+using StructField = Pair<U8String, Type>;
 
 struct FuncDecl : Node {
 	const U8String ident;
 	const Vec<Param> params;
-	const type::TypePtr returnType;
+	const Type returnType;
 	const Box<BlockStmt> body;
 
-	FuncDecl(U8String ident, Vec<Param> params, type::TypePtr returnType, Box<BlockStmt> body);
+	FuncDecl(U8String ident, Vec<Param> params, Type returnType, Box<BlockStmt> body);
+};
+
+struct StructDecl : Node {
+	const U8String ident;
+	const Vec<StructField> fields;
+
+	StructDecl(U8String ident, Vec<StructField> fields);
 };
 
 struct Module : Node {
 	const U8String name;
-	const Vec<Box<FuncDecl>> decls;
+	const Vec<Box<FuncDecl>> funcs;
+	const Vec<Box<StructDecl>> structs;
 
-	Module(U8String name, Vec<Box<FuncDecl>> decls);
+	Module(U8String name, Vec<Box<FuncDecl>> decls, Vec<Box<StructDecl>> structs);
 };
 }

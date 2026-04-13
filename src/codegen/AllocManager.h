@@ -14,7 +14,7 @@ public:
 
 public:
 	Opt<TrackedValue> getAlloca(const U8String &ident) const;
-	llvm::AllocaInst *createAlloca(type::TypePtr type, const U8String &ident);
+	llvm::AllocaInst *createAlloca(Type type, const U8String &ident);
 	void clearAllocas();
 	void openScope();
 	void closeScope();

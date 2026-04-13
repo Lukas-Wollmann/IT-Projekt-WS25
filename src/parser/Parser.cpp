@@ -5,10 +5,19 @@
 #include "lexer/Token.h"
 
 using namespace ast;
-using namespace type;
 using namespace lex;
 
 namespace prs {
+namespace {
+SourceLoc makeSpanLoc(const SourceLoc &start, const SourceLoc &end) {
+	SourceLoc loc = start;
+	const size_t endLen = end.length == 0 ? 1 : end.length;
+	const size_t endIndex = end.index + endLen;
+	loc.length = endIndex > start.index ? (endIndex - start.index) : 1;
+	return loc;
+}
+}
+
 ParsingError::ParsingError(U8String msg)
 	: msg(std::move(msg)) {}
 
@@ -66,36 +75,43 @@ void Parser::reportError(ParsingError &e) const {
 	m_ErrorHandler.addError(std::move(e.msg), m_Current->loc);
 }
 
-void Parser::advanceToNext(const TokenType type, const U8String &lexeme) {
-	while (!m_Current->matches(TokenType::EndOfFile)) {
-		if (m_Current->matches(type, lexeme))
-			return;
-
-		advance();
-	}
-}
-
 Box<Module> Parser::parseModule() {
+	const auto moduleLoc = m_Current->loc;
 	Vec<Box<FuncDecl>> funcs;
+	Vec<Box<StructDecl>> structs;
 
 	while (!m_Current->matches(TokenType::EndOfFile)) {
 		try {
-			funcs.push_back(parseFuncDecl());
+			if (m_Current->matches(TokenType::Keyword, u8"struct")) {
+				structs.push_back(parseStructDecl());
+			} else if (m_Current->matches(TokenType::Keyword, u8"func")) {
+				funcs.push_back(parseFuncDecl());
+			} else {
+				constexpr auto msg = "Expected 'func' or 'struct' declaration, found {} instead.";
+				throw ParsingError(std::format(msg, *m_Current));
+			}
 		} catch (ParsingError &e) {
 			reportError(e);
-			advanceToNext(TokenType::Keyword, u8"func");
+
+			while (!m_Current->matches(TokenType::EndOfFile) &&
+				   !m_Current->matches(TokenType::Keyword, u8"func") &&
+				   !m_Current->matches(TokenType::Keyword, u8"struct")) {
+				advance();
+			}
 		}
 	}
 
-	return std::make_unique<Module>(m_ModuleName, std::move(funcs));
+	auto module = std::make_unique<Module>(m_ModuleName, std::move(funcs), std::move(structs));
+	module->setLoc(makeSpanLoc(moduleLoc, m_Current->loc));
+	return module;
 }
 
 Box<FuncDecl> Parser::parseFuncDecl() {
-	consume(TokenType::Keyword, u8"func");
+	const auto &funcToken = consume(TokenType::Keyword, u8"func");
 	auto name = consume(TokenType::Identifier).lexeme;
 	auto params = parseParamList();
 
-	TypePtr returnType = std::make_shared<UnitType>();
+	Type returnType = TypeFactory::getUnit();
 
 	if (m_Current->matches(TokenType::Operator, u8"->")) {
 		consume(TokenType::Operator, u8"->");
@@ -104,8 +120,45 @@ Box<FuncDecl> Parser::parseFuncDecl() {
 
 	auto body = parseBlockStmt();
 
-	return std::make_unique<FuncDecl>(std::move(name), std::move(params), std::move(returnType),
-									  std::move(body));
+	auto func = std::make_unique<FuncDecl>(std::move(name), std::move(params), returnType,
+										   std::move(body));
+	func->setLoc(makeSpanLoc(funcToken.loc, func->body->loc));
+	return func;
+}
+
+Box<StructDecl> Parser::parseStructDecl() {
+	const auto &structToken = consume(TokenType::Keyword, u8"struct");
+	auto name = consume(TokenType::Identifier).lexeme;
+
+	consume(TokenType::Separator, u8"{");
+
+	Vec<StructField> fields;
+
+	while (m_Current->matches(TokenType::Identifier)) {
+		auto fieldName = consume(TokenType::Identifier).lexeme;
+		consume(TokenType::Separator, u8":");
+		auto fieldType = parseType();
+
+		fields.emplace_back(std::move(fieldName), fieldType);
+
+		if (m_Current->matches(TokenType::Separator, u8",")) {
+			advance();
+
+			if (m_Current->matches(TokenType::Separator, u8"}")) {
+				throw ParsingError(u8"Expected another struct field.");
+			}
+
+			continue;
+		}
+
+		break;
+	}
+
+	consume(TokenType::Separator, u8"}");
+
+	auto decl = std::make_unique<StructDecl>(std::move(name), std::move(fields));
+	decl->setLoc(structToken.loc);
+	return decl;
 }
 
 Vec<Param> Parser::parseParamList() {
@@ -121,6 +174,11 @@ Vec<Param> Parser::parseParamList() {
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				throw ParsingError(u8"Expected another parameter.");
+			}
+
 			continue;
 		}
 
@@ -132,25 +190,35 @@ Vec<Param> Parser::parseParamList() {
 	return params;
 }
 
-TypePtr Parser::parseType() {
+Type Parser::parseType() {
 	if (m_Current->matches(TokenType::Identifier)) {
 		auto typename_ = consume(TokenType::Identifier).lexeme;
 
-		return std::make_shared<Typename>(typename_);
+		if (typename_ == u8"i32") {
+			return TypeFactory::getI32();
+		}
+		if (typename_ == u8"char") {
+			return TypeFactory::getChar();
+		}
+		if (typename_ == u8"bool") {
+			return TypeFactory::getBool();
+		}
+
+		return TypeFactory::getStruct(typename_);
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"(")) {
 		consume(TokenType::Separator, u8"(");
 		consume(TokenType::Separator, u8")");
 
-		return std::make_shared<UnitType>();
+		return TypeFactory::getUnit();
 	}
 
 	if (m_Current->matches(TokenType::Operator, u8"*")) {
 		consume(TokenType::Operator, u8"*");
 		auto type = parseType();
 
-		return std::make_unique<PointerType>(std::move(type));
+		return TypeFactory::getPointer(type);
 	}
 
 	throw ParsingError(u8"Expected a type.");
@@ -158,22 +226,26 @@ TypePtr Parser::parseType() {
 
 Box<Stmt> Parser::parseStmt() {
 	if (m_Current->matches(TokenType::Separator, u8";")) {
-		consume(TokenType::Separator, u8";");
-
-		return std::make_unique<UnitLit>();
+		const auto &semi = consume(TokenType::Separator, u8";");
+		auto unit = std::make_unique<UnitLit>();
+		unit->setLoc(semi.loc);
+		return unit;
 	}
 
 	if (m_Current->matches(TokenType::Keyword, u8"return")) {
-		consume(TokenType::Keyword, u8"return");
+		const auto &returnTok = consume(TokenType::Keyword, u8"return");
 
 		Box<Expr> returnValue = std::make_unique<UnitLit>();
+		returnValue->setLoc(returnTok.loc);
 
 		if (!m_Current->matches(TokenType::Separator, u8";"))
 			returnValue = parseExpr();
 
-		consume(TokenType::Separator, u8";");
+		const auto &semi = consume(TokenType::Separator, u8";");
 
-		return std::make_unique<ReturnStmt>(std::move(returnValue));
+		auto stmt = std::make_unique<ReturnStmt>(std::move(returnValue));
+		stmt->setLoc(makeSpanLoc(returnTok.loc, semi.loc));
+		return stmt;
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"{"))
@@ -189,20 +261,22 @@ Box<Stmt> Parser::parseStmt() {
 
 	if (isCurrentIdent && peek().matches(TokenType::Separator, u8":")) {
 		auto varDef = parseVarDef();
-		consume(TokenType::Separator, u8";");
+		const auto &semi = consume(TokenType::Separator, u8";");
+		varDef->setLoc(makeSpanLoc(varDef->loc, semi.loc));
 
 		return std::move(varDef);
 	}
 
 	auto expr = parseExpr();
-	consume(TokenType::Separator, u8";");
+	const auto &semi = consume(TokenType::Separator, u8";");
+	expr->setLoc(makeSpanLoc(expr->loc, semi.loc));
 
 	return expr;
 }
 
 Box<BlockStmt> Parser::parseBlockStmt() {
 	Vec<Box<Stmt>> stmts;
-	consume(TokenType::Separator, u8"{");
+	const auto &lbrace = consume(TokenType::Separator, u8"{");
 
 	while (!m_Current->matches(TokenType::Separator, u8"}")) {
 		if (m_Current->matches(TokenType::EndOfFile)) {
@@ -215,13 +289,15 @@ Box<BlockStmt> Parser::parseBlockStmt() {
 		stmts.push_back(std::move(stmt));
 	}
 
-	consume(TokenType::Separator, u8"}");
+	const auto &rbrace = consume(TokenType::Separator, u8"}");
 
-	return std::make_unique<BlockStmt>(std::move(stmts));
+	auto block = std::make_unique<BlockStmt>(std::move(stmts));
+	block->setLoc(makeSpanLoc(lbrace.loc, rbrace.loc));
+	return block;
 }
 
 Box<WhileStmt> Parser::parseWhileStmt() {
-	consume(TokenType::Keyword, u8"while");
+	const auto &whileTok = consume(TokenType::Keyword, u8"while");
 
 	consume(TokenType::Separator, u8"(");
 	auto cond = parseExpr();
@@ -229,11 +305,13 @@ Box<WhileStmt> Parser::parseWhileStmt() {
 
 	auto body = parseBlockStmt();
 
-	return std::make_unique<WhileStmt>(std::move(cond), std::move(body));
+	auto stmt = std::make_unique<WhileStmt>(std::move(cond), std::move(body));
+	stmt->setLoc(whileTok.loc);
+	return stmt;
 }
 
 Box<IfStmt> Parser::parseIfStmt() {
-	consume(TokenType::Keyword, u8"if");
+	const auto &ifTok = consume(TokenType::Keyword, u8"if");
 
 	consume(TokenType::Separator, u8"(");
 	auto cond = parseExpr();
@@ -243,16 +321,19 @@ Box<IfStmt> Parser::parseIfStmt() {
 
 	if (!m_Current->matches(TokenType::Keyword, u8"else")) {
 		auto else_ = std::make_unique<BlockStmt>(Vec<Box<Stmt>>{});
-
-		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		else_->setLoc(ifTok.loc);
+		auto stmt = std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		stmt->setLoc(ifTok.loc);
+		return stmt;
 	}
 
 	consume(TokenType::Keyword, u8"else");
 
 	if (!m_Current->matches(TokenType::Keyword, u8"if")) {
 		auto else_ = parseBlockStmt();
-
-		return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		auto stmt = std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+		stmt->setLoc(ifTok.loc);
+		return stmt;
 	}
 
 	// If we get an if-else-if construct, normalize it into nested if-else-if construct:
@@ -265,19 +346,24 @@ Box<IfStmt> Parser::parseIfStmt() {
 	Vec<Box<Stmt>> elseStmts;
 	elseStmts.push_back(std::move(elseIf));
 	auto else_ = std::make_unique<BlockStmt>(std::move(elseStmts));
-
-	return std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+	else_->setLoc(ifTok.loc);
+	auto stmt = std::make_unique<IfStmt>(std::move(cond), std::move(then), std::move(else_));
+	stmt->setLoc(ifTok.loc);
+	return stmt;
 }
 
 Box<VarDef> Parser::parseVarDef() {
-	auto ident = consume(TokenType::Identifier).lexeme;
+	const auto &identToken = consume(TokenType::Identifier);
+	auto ident = identToken.lexeme;
 	consume(TokenType::Separator, u8":");
 	auto type = parseType();
 
 	consume(TokenType::Operator, u8"=");
 	auto value = parseExpr();
 
-	return std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value));
+	auto varDef = std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value));
+	varDef->setLoc(identToken.loc);
+	return varDef;
 }
 
 Box<Expr> Parser::parseExpr() {
@@ -285,14 +371,109 @@ Box<Expr> Parser::parseExpr() {
 }
 
 Box<Expr> Parser::parseAssignmentExpr() {
-	auto left = parseEqualityExpr();
+	auto left = parseLogicalOrExpr();
 
 	if (m_Current->matches(TokenType::Operator)) {
-		const auto op = consume(TokenType::Operator).lexeme;
+		const auto &op = m_Current->lexeme;
+		if (op != u8"=" && op != u8"+=" && op != u8"-=" && op != u8"*=" && op != u8"/=" &&
+			op != u8"%=" && op != u8"&=" && op != u8"|=" && op != u8"^=" && op != u8"<<=" &&
+			op != u8">>=") {
+			return left;
+		}
+
+		const auto &opToken = consume(TokenType::Operator);
 		auto kind = getAssignmentKindFromString(op);
 		auto right = parseAssignmentExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
 
-		return std::make_unique<Assignment>(kind, std::move(left), std::move(right));
+		auto assignment = std::make_unique<Assignment>(kind, std::move(left), std::move(right));
+		assignment->setLoc(loc);
+		return assignment;
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseLogicalOrExpr() {
+	auto left = parseLogicalAndExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"||")) {
+		consume(TokenType::Operator, u8"||");
+		auto right = parseLogicalAndExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
+
+		auto binary = std::make_unique<BinaryExpr>(BinaryOpKind::LogicalOr, std::move(left),
+												   std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseLogicalAndExpr() {
+	auto left = parseBitwiseOrExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"&&")) {
+		consume(TokenType::Operator, u8"&&");
+		auto right = parseBitwiseOrExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
+
+		auto binary = std::make_unique<BinaryExpr>(BinaryOpKind::LogicalAnd, std::move(left),
+												   std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseOrExpr() {
+	auto left = parseBitwiseXorExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"|")) {
+		consume(TokenType::Operator, u8"|");
+		auto right = parseBitwiseXorExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
+
+		auto binary = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseOr, std::move(left),
+												   std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseXorExpr() {
+	auto left = parseBitwiseAndExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"^")) {
+		consume(TokenType::Operator, u8"^");
+		auto right = parseBitwiseAndExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
+
+		auto binary = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseXor, std::move(left),
+												   std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
+	}
+
+	return left;
+}
+
+Box<Expr> Parser::parseBitwiseAndExpr() {
+	auto left = parseEqualityExpr();
+
+	while (m_Current->matches(TokenType::Operator, u8"&")) {
+		consume(TokenType::Operator, u8"&");
+		auto right = parseEqualityExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
+
+		auto binary = std::make_unique<BinaryExpr>(BinaryOpKind::BitwiseAnd, std::move(left),
+												   std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
 	}
 
 	return left;
@@ -330,8 +511,11 @@ Box<Expr> Parser::parseEqualityExpr() {
 
 		consume(TokenType::Operator);
 		auto right = parseRelationalExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
 	}
 
 	return left;
@@ -357,8 +541,11 @@ Box<Expr> Parser::parseRelationalExpr() {
 
 		consume(TokenType::Operator);
 		auto right = parseAdditiveExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
 	}
 
 	return left;
@@ -380,15 +567,18 @@ Box<Expr> Parser::parseAdditiveExpr() {
 
 		consume(TokenType::Operator);
 		auto right = parseMultiplicativeExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
 	}
 
 	return left;
 }
 
 Box<Expr> Parser::parseMultiplicativeExpr() {
-	auto left = parseUnaryExpr();
+	auto left = parsePostfixExpr();
 
 	while (m_Current->matches(TokenType::Operator)) {
 		Opt<BinaryOpKind> kind = {};
@@ -404,9 +594,12 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 			break;
 
 		consume(TokenType::Operator);
-		auto right = parseUnaryExpr();
+		auto right = parsePostfixExpr();
+		const auto loc = makeSpanLoc(left->loc, right->loc);
 
-		left = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
+		binary->setLoc(loc);
+		left = std::move(binary);
 	}
 
 	return left;
@@ -414,10 +607,11 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parsePostfixExpr();
+		return parsePrimaryExpr();
 
 	Opt<UnaryOpKind> kind = {};
-	const auto &op = consume(TokenType::Operator).lexeme;
+	const auto &opToken = consume(TokenType::Operator);
+	const auto &op = opToken.lexeme;
 
 	if (op == u8"+")
 		kind = UnaryOpKind::Positive;
@@ -436,8 +630,11 @@ Box<Expr> Parser::parseUnaryExpr() {
 	}
 
 	auto expr = parseUnaryExpr();
+	const auto loc = makeSpanLoc(opToken.loc, expr->loc);
 
-	return std::make_unique<UnaryExpr>(kind.value(), std::move(expr));
+	auto unary = std::make_unique<UnaryExpr>(kind.value(), std::move(expr));
+	unary->setLoc(loc);
+	return unary;
 }
 
 Vec<Box<ast::Expr>> Parser::parseExprList() {
@@ -450,6 +647,11 @@ Vec<Box<ast::Expr>> Parser::parseExprList() {
 
 		if (m_Current->matches(TokenType::Separator, u8",")) {
 			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				throw ParsingError(u8"Expected another argument.");
+			}
+
 			continue;
 		}
 
@@ -461,15 +663,61 @@ Vec<Box<ast::Expr>> Parser::parseExprList() {
 	return exprs;
 }
 
+Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
+	Vec<Box<ast::Expr>> exprs;
+	consume(TokenType::Separator, u8"{");
+
+	while (!m_Current->matches(TokenType::Separator, u8"}")) {
+		auto expr = parseExpr();
+		exprs.push_back(std::move(expr));
+
+		if (m_Current->matches(TokenType::Separator, u8",")) {
+			consume(TokenType::Separator, u8",");
+
+			if (m_Current->matches(TokenType::Separator, u8"}")) {
+				throw ParsingError(u8"Expected another argument.");
+			}
+
+			continue;
+		}
+
+		break;
+	}
+
+	consume(TokenType::Separator, u8"}");
+
+	return exprs;
+}
+
+Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
+	consume(TokenType::Separator, u8".");
+	const auto &fieldToken = consume(TokenType::Identifier);
+	auto field = fieldToken.lexeme;
+	const auto loc = makeSpanLoc(base->loc, fieldToken.loc);
+
+	auto access = std::make_unique<FieldAccess>(std::move(base), std::move(field));
+	access->setLoc(loc);
+	return access;
+}
+
 Box<Expr> Parser::parsePostfixExpr() {
-	auto left = parsePrimaryExpr();
+	auto left = parseUnaryExpr();
 
 	while (m_Current->matches(TokenType::Separator)) {
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			const auto leftLoc = left->loc;
 			auto args = parseExprList();
+			const auto endLoc = args.empty() ? leftLoc : args.back()->loc;
 
-			left = std::make_unique<FuncCall>(std::move(left), std::move(args));
+			auto call = std::make_unique<FuncCall>(std::move(left), std::move(args));
+			call->setLoc(makeSpanLoc(leftLoc, endLoc));
+			left = std::move(call);
 
+			continue;
+		}
+
+		if (m_Current->matches(TokenType::Separator, u8".")) {
+			left = parseFieldAccess(std::move(left));
 			continue;
 		}
 
@@ -481,50 +729,100 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 Box<Expr> Parser::parsePrimaryExpr() {
 	if (m_Current->matches(TokenType::Identifier)) {
-		const auto &ident = consume(TokenType::Identifier).lexeme;
+		const auto &identTok = consume(TokenType::Identifier);
+		auto ident = identTok.lexeme;
 
-		return std::make_unique<VarRef>(ident);
+		if (m_Current->matches(TokenType::Separator, u8"{")) {
+			auto args = parseBraceExprList();
+			auto callee = std::make_unique<VarRef>(std::move(ident));
+			callee->setLoc(identTok.loc);
+
+			auto call = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
+			call->setLoc(identTok.loc);
+			return call;
+		}
+
+		auto varRef = std::make_unique<VarRef>(ident);
+		varRef->setLoc(identTok.loc);
+		return varRef;
 	}
 
 	if (m_Current->matches(TokenType::BoolLiteral)) {
-		const auto &lit = consume(TokenType::BoolLiteral).lexeme;
+		const auto &tok = consume(TokenType::BoolLiteral);
+		const auto &lit = tok.lexeme;
 		VERIFY(lit == u8"true" || lit == u8"false");
 
-		return std::make_unique<BoolLit>(lit == u8"true");
+		auto boolLit = std::make_unique<BoolLit>(lit == u8"true");
+		boolLit->setLoc(tok.loc);
+		return boolLit;
+	}
+
+	if (m_Current->matches(TokenType::Keyword, u8"null")) {
+		const auto &tok = consume(TokenType::Keyword, u8"null");
+		auto nullLit = std::make_unique<NullLit>();
+		nullLit->setLoc(tok.loc);
+		return nullLit;
 	}
 
 	if (m_Current->matches(TokenType::CharLiteral)) {
-		const auto &ident = consume(TokenType::CharLiteral).lexeme;
+		const auto &tok = consume(TokenType::CharLiteral);
+		const auto &ident = tok.lexeme;
 		VERIFY(ident.length() == 1);
 
-		return std::make_unique<CharLit>(ident[0]);
+		auto charLit = std::make_unique<CharLit>(ident[0]);
+		charLit->setLoc(tok.loc);
+		return charLit;
 	}
 
 	if (m_Current->matches(TokenType::IntLiteral)) {
-		const auto &lit = consume(TokenType::IntLiteral).lexeme;
+		const auto &tok = consume(TokenType::IntLiteral);
+		const auto &lit = tok.lexeme;
 
-		return std::make_unique<IntLit>(std::stoi(lit.asAscii()));
+		auto intLit = std::make_unique<IntLit>(std::stoi(lit.asAscii()));
+		intLit->setLoc(tok.loc);
+		return intLit;
 	}
 
 	if (m_Current->matches(TokenType::Keyword, u8"new")) {
-		consume(TokenType::Keyword, u8"new");
+		const auto &newTok = consume(TokenType::Keyword, u8"new");
 
 		auto type = parseType();
+		Box<Expr> expr;
 
-		consume(TokenType::Separator, u8"(");
-		auto expr = parseExpr();
-		consume(TokenType::Separator, u8")");
+		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			consume(TokenType::Separator, u8"(");
+			expr = parseExpr();
+			consume(TokenType::Separator, u8")");
+		} else if (m_Current->matches(TokenType::Separator, u8"{")) {
+			if (!type->isTypeKind(TypeKind::Struct)) {
+				throw ParsingError(u8"Brace initialization is only supported for struct types.");
+			}
 
-		return std::make_unique<HeapAlloc>(std::move(type), std::move(expr));
+			auto *structType = static_cast<StructType *>(type);
+			auto args = parseBraceExprList();
+			auto callee = std::make_unique<VarRef>(structType->name);
+			callee->setLoc(newTok.loc);
+			expr = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
+			const auto endLoc = args.empty() ? newTok.loc : args.back()->loc;
+			expr->setLoc(makeSpanLoc(newTok.loc, endLoc));
+		} else {
+			throw ParsingError(u8"Expected '(' or '{' after type in heap allocation.");
+		}
+
+		auto alloc = std::make_unique<HeapAlloc>(std::move(type), std::move(expr));
+		alloc->setLoc(makeSpanLoc(newTok.loc, alloc->expr->loc));
+		return alloc;
 	}
 
 	if (m_Current->matches(TokenType::Separator, u8"(")) {
-		consume(TokenType::Separator, u8"(");
+		const auto &lparen = consume(TokenType::Separator, u8"(");
 
 		if (m_Current->matches(TokenType::Separator, u8")")) {
 			consume(TokenType::Separator, u8")");
 
-			return std::make_unique<UnitLit>();
+			auto unit = std::make_unique<UnitLit>();
+			unit->setLoc(lparen.loc);
+			return unit;
 		}
 
 		auto expr = parseExpr();
