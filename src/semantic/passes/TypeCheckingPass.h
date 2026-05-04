@@ -29,6 +29,7 @@ private:
 	bool visit(ast::NullLit &n) override;
 	bool visit(ast::UnitLit &n) override;
 	bool visit(ast::HeapAlloc &n) override;
+	bool visit(ast::ArrayHeapAlloc &n) override;
 	bool visit(ast::StructInit &n) override;
 	bool visit(ast::UnaryExpr &n) override;
 	bool visit(ast::BinaryExpr &n) override;
@@ -36,6 +37,8 @@ private:
 	bool visit(ast::FuncCall &n) override;
 	bool visit(ast::VarRef &n) override;
 	bool visit(ast::FieldAccess &n) override;
+	bool visit(ast::IndexExpr &n) override;
+	bool visit(ast::LenExpr &n) override;
 	bool visit(ast::BlockStmt &n) override;
 	bool visit(ast::IfStmt &n) override;
 	bool visit(ast::WhileStmt &n) override;

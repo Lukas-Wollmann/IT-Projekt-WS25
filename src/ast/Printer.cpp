@@ -62,6 +62,11 @@ void Printer::visit(const HeapAlloc &n) {
 	child(true).printNode(*n.expr);
 }
 
+void Printer::visit(const ArrayHeapAlloc &n) {
+	printLine(std::format("ArrayHeapAlloc: [?]{}", n.elementType->str()));
+	child(true).printNode(*n.size);
+}
+
 void Printer::visit(const StructInit &n) {
 	printLine(std::format("StructInit: {}", n.type->str()));
 
@@ -77,6 +82,17 @@ void Printer::visit(const VarRef &n) {
 
 void Printer::visit(const FieldAccess &n) {
 	printLine(std::format("FieldAccess(\"{}\")", n.field));
+	child(true).printNode(*n.base);
+}
+
+void Printer::visit(const IndexExpr &n) {
+	printLine(u8"IndexExpr");
+	printLabeledChild(u8"Base", *n.base);
+	printLabeledChild(u8"Index", *n.index, true);
+}
+
+void Printer::visit(const LenExpr &n) {
+	printLine(u8"LenExpr");
 	child(true).printNode(*n.base);
 }
 

@@ -47,6 +47,11 @@ void __panic_null_deref() {
 	abort();
 }
 
+void __panic_out_of_bounds() {
+	fputs("panic: array out of bounds\n", stderr);
+	abort();
+}
+
 OCN_I32 read_i32() {
 	OCN_I32 num;
 
@@ -124,7 +129,7 @@ typedef struct {
 } ControlBlock;
 
 void *__sp_create(size_t size, void (*dtor)(void *)) {
-	void *ptr = malloc(size + sizeof(ControlBlock));
+	void *ptr = calloc(1, size + sizeof(ControlBlock));
 	ControlBlock *cbptr = (ControlBlock *) ptr;
 	cbptr->refCount = 1;
 	cbptr->dtor = dtor;

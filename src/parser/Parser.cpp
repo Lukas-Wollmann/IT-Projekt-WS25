@@ -191,6 +191,30 @@ Vec<Param> Parser::parseParamList() {
 }
 
 Type Parser::parseType() {
+	// Check for array types: [N]T or []T
+	if (m_Current->matches(TokenType::Separator, u8"[")) {
+		consume(TokenType::Separator, u8"[");
+		Opt<i32> size;
+
+		if (!m_Current->matches(TokenType::Separator, u8"]")) {
+			if (!m_Current->matches(TokenType::IntLiteral)) {
+				throw ParsingError(u8"Expected array size or empty brackets.");
+			}
+			const auto &sizeTok = consume(TokenType::IntLiteral);
+			const i32 arraySize = std::stoi(sizeTok.lexeme.asAscii());
+			size = Opt<i32>(arraySize);
+		}
+
+		consume(TokenType::Separator, u8"]");
+		auto elementType = parseType();
+
+		if (size.has_value()) {
+			return TypeFactory::getArray(elementType, size.value());
+		} else {
+			return TypeFactory::getArray(elementType);
+		}
+	}
+
 	if (m_Current->matches(TokenType::Identifier)) {
 		auto typename_ = consume(TokenType::Identifier).lexeme;
 
@@ -641,7 +665,7 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parsePrimaryExpr();
+		return parseIndexExpr();
 
 	Opt<UnaryOpKind> kind = {};
 	const auto &opToken = consume(TokenType::Operator);
@@ -669,6 +693,23 @@ Box<Expr> Parser::parseUnaryExpr() {
 	auto unary = std::make_unique<UnaryExpr>(kind.value(), std::move(expr));
 	unary->setLoc(loc);
 	return unary;
+}
+
+Box<Expr> Parser::parseIndexExpr() {
+	auto left = parsePrimaryExpr();
+
+	while (m_Current->matches(TokenType::Separator, u8"[")) {
+		const auto leftLoc = left->loc;
+		consume(TokenType::Separator, u8"[");
+		auto index = parseExpr();
+		const auto &rbrack = consume(TokenType::Separator, u8"]");
+
+		auto indexExpr = std::make_unique<IndexExpr>(std::move(left), std::move(index));
+		indexExpr->setLoc(makeSpanLoc(leftLoc, rbrack.loc));
+		left = std::move(indexExpr);
+	}
+
+	return left;
 }
 
 Vec<Box<ast::Expr>> Parser::parseExprList() {
@@ -811,7 +852,24 @@ Box<Expr> Parser::parsePrimaryExpr() {
 	if (m_Current->matches(TokenType::Keyword, u8"new")) {
 		const auto &newTok = consume(TokenType::Keyword, u8"new");
 
+		if (m_Current->matches(TokenType::Separator, u8"[")) {
+			consume(TokenType::Separator, u8"[");
+			if (m_Current->matches(TokenType::Separator, u8"]")) {
+				throw ParsingError(u8"Unsized array allocation is not allowed.");
+			}
+
+			auto sizeExpr = parseExpr();
+			consume(TokenType::Separator, u8"]");
+			auto elementType = parseType();
+
+			auto alloc = std::make_unique<ArrayHeapAlloc>(elementType, std::move(sizeExpr));
+			alloc->setLoc(makeSpanLoc(newTok.loc, alloc->size->loc));
+			return alloc;
+		}
+
 		auto type = parseType();
+
+		// Non-array types can use initialization
 		Box<Expr> expr;
 
 		if (m_Current->matches(TokenType::Separator, u8"(")) {

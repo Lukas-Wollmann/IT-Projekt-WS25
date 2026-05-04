@@ -48,6 +48,11 @@ HeapAlloc::HeapAlloc(Type type, Box<Expr> expr)
 	, type(type)
 	, expr(std::move(expr)) {}
 
+ArrayHeapAlloc::ArrayHeapAlloc(Type elementType, Box<Expr> size)
+	: Expr(NodeKind::ArrayHeapAlloc)
+	, elementType(elementType)
+	, size(std::move(size)) {}
+
 StructInit::StructInit(Type type, Vec<Box<Expr>> args)
 	: Expr(NodeKind::StructInit)
 	, type(type)
@@ -78,6 +83,15 @@ FieldAccess::FieldAccess(Box<Expr> base, U8String field)
 	: Expr(NodeKind::FieldAccess)
 	, base(std::move(base))
 	, field(std::move(field)) {}
+
+IndexExpr::IndexExpr(Box<Expr> base, Box<Expr> index)
+	: Expr(NodeKind::IndexExpr)
+	, base(std::move(base))
+	, index(std::move(index)) {}
+
+LenExpr::LenExpr(Box<Expr> base)
+	: Expr(NodeKind::LenExpr)
+	, base(std::move(base)) {}
 
 FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
 	: Expr(NodeKind::FuncCall)

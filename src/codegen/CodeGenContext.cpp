@@ -4,6 +4,8 @@
 
 #include <ranges>
 
+#include "type/TypeFactory.h"
+
 namespace gen {
 U8String getStructDtorName(const U8String &name) {
 	return u8"__dtor_" + name;
@@ -54,6 +56,23 @@ llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
 		return result;
 	}
 
+	if (type->isTypeKind(TypeKind::Array)) {
+		// Fat pointer: extract both data and size, copy the smart pointer, rebuild
+		auto *arrayType = static_cast<ArrayType *>(type);
+		auto *dataPtr = irBuilder.CreateExtractValue(value, 0U);
+		auto *sizeVal = irBuilder.CreateExtractValue(value, 1U);
+
+		auto *elemPtrType = TypeFactory::getPointer(arrayType->elementType);
+		auto *copiedDataPtr = copyValue(dataPtr, elemPtrType);
+
+		auto *llvmArrayType = typeConverter.convert(type);
+		llvm::Value *result = llvm::UndefValue::get(llvmArrayType);
+		result = irBuilder.CreateInsertValue(result, copiedDataPtr, 0U);
+		result = irBuilder.CreateInsertValue(result, sizeVal, 1U);
+
+		return result;
+	}
+
 	if (type->isTypeKind(TypeKind::Pointer)) {
 		// For pointers, we need to increment the reference count
 		auto *const func = llvmModule.getFunction(sharedPtrCopy);
@@ -77,6 +96,15 @@ void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 		auto *drop = llvmModule.getFunction(sharedPtrDrop);
 		VERIFY(drop);
 		irBuilder.CreateCall(drop, {value});
+		return;
+	}
+
+	if (type->isTypeKind(TypeKind::Array)) {
+		// Fat pointer: extract the embedded smart pointer (field 0) and drop it
+		auto *arrayType = static_cast<ArrayType *>(type);
+		auto *dataPtr = irBuilder.CreateExtractValue(value, 0U);
+		auto *elemPtrType = TypeFactory::getPointer(arrayType->elementType);
+		dropValue(dataPtr, elemPtrType);
 		return;
 	}
 

@@ -62,6 +62,26 @@ bool TypeCheckingPass::visit(HeapAlloc &n) {
 	return false;
 }
 
+bool TypeCheckingPass::visit(ArrayHeapAlloc &n) {
+	VERIFY(!n.isInferred());
+	Type arrayType;
+
+	if (n.size->kind == ast::NodeKind::IntLit) {
+		auto *intLit = static_cast<ast::IntLit *>(n.size.get());
+		arrayType = TypeFactory::getArray(n.elementType, intLit->value);
+	} else {
+		const auto sizeType = checkExpression(*n.size);
+		if (!typesMatch(sizeType, TypeFactory::getI32())) {
+			const auto msg = ErrorMessage<TypeMissmatch>::str(TypeFactory::getI32(), sizeType);
+			m_Context.submitError(msg, n.size->loc);
+		}
+		arrayType = TypeFactory::getArray(n.elementType);
+	}
+
+	n.infer(arrayType, ValueCategory::RValue);
+	return false;
+}
+
 bool TypeCheckingPass::visit(StructInit &n) {
 	VERIFY(!n.isInferred());
 	if (!n.type->isTypeKind(TypeKind::Struct)) {
@@ -300,6 +320,58 @@ bool TypeCheckingPass::visit(FieldAccess &n) {
 	return false;
 }
 
+bool TypeCheckingPass::visit(IndexExpr &n) {
+	VERIFY(!n.isInferred());
+	const auto baseType = checkExpression(*n.base);
+	const auto indexType = checkExpression(*n.index);
+
+	if (baseType->isTypeKind(TypeKind::Error) || indexType->isTypeKind(TypeKind::Error)) {
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	// Base must be an array type
+	if (!baseType->isTypeKind(TypeKind::Array)) {
+		const auto msg = std::format("Cannot index non-array type '{}'.", *baseType);
+		m_Context.submitError(msg, n.loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	// Index must be i32
+	if (!typesMatch(indexType, TypeFactory::getI32())) {
+		const auto msg = std::format("Array index must be i32, got '{}'.", *indexType);
+		m_Context.submitError(msg, n.index->loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	auto *arrayType = static_cast<ArrayType *>(baseType);
+	n.infer(arrayType->elementType, ValueCategory::LValue);
+	return false;
+}
+
+bool TypeCheckingPass::visit(LenExpr &n) {
+	VERIFY(!n.isInferred());
+	const auto baseType = checkExpression(*n.base);
+
+	if (baseType->isTypeKind(TypeKind::Error)) {
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	// Base must be an array type
+	if (!baseType->isTypeKind(TypeKind::Array)) {
+		const auto msg = std::format("Cannot get length of non-array type '{}'.", *baseType);
+		m_Context.submitError(msg, n.loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	n.infer(TypeFactory::getI32(), ValueCategory::RValue);
+	return false;
+}
+
 bool TypeCheckingPass::visit(BlockStmt &n) {
 	m_SymbolTable.enterScope();
 
@@ -379,7 +451,7 @@ bool TypeCheckingPass::visit(VarDef &n) {
 
 	// The expression is not of type <error-type> but does not match the
 	// type of the variable declaration - this is an actual error
-	if (!valueType->isTypeKind(TypeKind::Error) && !typesMatch(valueType, varType)) {
+	if (!valueType->isTypeKind(TypeKind::Error) && !typesMatch(varType, valueType)) {
 		const auto msg = ErrorMessage<TypeMissmatch>::str(varType, valueType);
 		m_Context.submitError(msg, n.loc);
 	}
@@ -471,6 +543,17 @@ bool TypeCheckingPass::typesMatch(Type left, Type right) {
 
 	if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
 		return true;
+
+	// Array type compatibility: fixed-size [N]T can be assigned to dynamic []T
+	if (left->isTypeKind(TypeKind::Array) && right->isTypeKind(TypeKind::Array)) {
+		auto *leftArray = static_cast<ArrayType *>(left);
+		auto *rightArray = static_cast<ArrayType *>(right);
+		// Left is dynamic, right is fixed, and same element type
+		if (leftArray->isDynamic() && rightArray->isFixed() &&
+			typesMatch(leftArray->elementType, rightArray->elementType)) {
+			return true;
+		}
+	}
 
 	return left == right;
 }

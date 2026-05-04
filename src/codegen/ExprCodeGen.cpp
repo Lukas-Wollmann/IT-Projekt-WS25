@@ -145,7 +145,61 @@ ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
 
 			return {.value = fieldPtr, .type = fieldType, .isTemp = false};
 		}
+		case ast::NodeKind::IndexExpr: {
+			const auto &indexExpr = static_cast<const ast::IndexExpr &>(n);
+			const auto [arrayVal, arrayType, _] = lowerExpr(*indexExpr.base);
+			const auto [indexVal, indexType, __] = lowerExpr(*indexExpr.index);
 
+			VERIFY(arrayType->isTypeKind(TypeKind::Array));
+			auto *arrType = static_cast<ArrayType *>(arrayType);
+
+			// Fat pointer: { T* data, i64 size }
+			// Extract data pointer (field 0)
+			auto *dataPtrPtr = m_Context.irBuilder.CreateExtractValue(arrayVal, 0U);
+
+			// Extract size (field 1)
+			auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+			// Convert index to i64
+			auto *indexI64 =
+					m_Context.irBuilder.CreateSExt(indexVal,
+												   llvm::Type::getInt64Ty(
+														   m_Context.irBuilder.getContext()));
+
+			// Bounds check
+			auto *isNegative = m_Context.irBuilder.CreateICmpSLT(
+					indexI64,
+					llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()),
+										   0));
+			auto *isOutOfBounds = m_Context.irBuilder.CreateICmpSGE(indexI64, sizeVal);
+			auto *shouldTrap = m_Context.irBuilder.CreateOr(isNegative, isOutOfBounds);
+
+			// Emit bounds check trap
+			auto *trapFunc = m_Context.irBuilder.GetInsertBlock()->getParent();
+			VERIFY(trapFunc);
+
+			auto *trapBB =
+					llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.trap", trapFunc);
+			auto *contBB =
+					llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.cont", trapFunc);
+
+			m_Context.irBuilder.CreateCondBr(shouldTrap, trapBB, contBB);
+
+			m_Context.irBuilder.SetInsertPoint(trapBB);
+			auto *panicType = llvm::FunctionType::get(m_Context.irBuilder.getVoidTy(), false);
+			auto panic =
+					m_Context.llvmModule.getOrInsertFunction("__panic_out_of_bounds", panicType);
+			m_Context.irBuilder.CreateCall(panic, {});
+			m_Context.irBuilder.CreateUnreachable();
+
+			m_Context.irBuilder.SetInsertPoint(contBB);
+
+			// Compute GEP
+			auto *elemType = m_Context.typeConverter.convert(arrType->elementType);
+			auto *elemPtr = m_Context.irBuilder.CreateInBoundsGEP(elemType, dataPtrPtr, {indexI64});
+
+			return {.value = elemPtr, .type = arrType->elementType, .isTemp = false};
+		}
 		default: UNREACHABLE();
 	}
 }
@@ -191,6 +245,9 @@ ExprResult ExprLowerer::visit(const ast::NullLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
+	const auto &ptrType = n.inferredType.value();
+
+	// Original non-array heap allocation logic
 	llvm::Value *value = nullptr;
 	Type type = nullptr;
 	bool isTemp = true;
@@ -215,8 +272,6 @@ ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
 		type = t;
 		isTemp = tmp;
 	}
-
-	const auto &ptrType = n.inferredType.value();
 
 	// If the value is a temporary, we can just move it into the heap allocation.
 	// If it's not a temporary, we need to copy it first so that the heap allocation
@@ -246,6 +301,54 @@ ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
 	addToExprCleanup(sharedPtr, ptrType);
 
 	return {.value = sharedPtr, .type = ptrType, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::ArrayHeapAlloc &n) {
+	const auto &arrayType = n.inferredType.value();
+	auto *elemType = n.elementType;
+
+	// Determine array size
+	auto *sizeValue = [&]() -> llvm::Value * {
+		if (n.size->kind == ast::NodeKind::IntLit) {
+			auto *intLit = static_cast<ast::IntLit *>(n.size.get());
+			return llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()),
+										  intLit->value);
+		}
+
+		const auto [value, type, isTemp] = lowerExpr(*n.size);
+		VERIFY(type->isTypeKind(TypeKind::Primitive));
+		if (isTemp) {
+			removeFromExprCleanup(value);
+		}
+
+		return m_Context.irBuilder.CreateSExtOrTrunc(value,
+													 llvm::Type::getInt64Ty(
+															 m_Context.irBuilder.getContext()));
+	}();
+
+	// Allocate array_size * element_size bytes
+	auto *allocationSize = m_Context.sizeOf(elemType);
+	auto *totalSize = m_Context.irBuilder.CreateMul(allocationSize, sizeValue);
+
+	// Create shared pointer for the array
+	auto *const func = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrCreate);
+	VERIFY(func);
+	const auto nullDtor = m_Context.getNullDestructor();
+	auto *const dtor = m_Context.getDestructor(elemType).value_or(nullDtor);
+	auto *const dataPtr = m_Context.irBuilder.CreateCall(func, {totalSize, dtor});
+
+	// Create fat pointer struct { T* data, i64 size }
+	auto *fatPtrType = m_Context.typeConverter.convert(arrayType);
+	llvm::Value *fatPtr = llvm::UndefValue::get(fatPtrType);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, dataPtr, 0U);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, sizeValue, 1U);
+
+	// Track the embedded smart pointer for cleanup (with pointer type so system knows how to drop
+	// it)
+	addToExprCleanup(dataPtr, TypeFactory::getPointer(elemType));
+
+	// Fat pointer itself is not a temporary that needs cleanup; only the embedded pointer does
+	return {.value = fatPtr, .type = arrayType, .isTemp = true};
 }
 
 ExprResult ExprLowerer::visit(const ast::StructInit &n) {
@@ -300,6 +403,76 @@ ExprResult ExprLowerer::visit(const ast::FieldAccess &n) {
 	auto *const value = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldAddr);
 
 	return {.value = value, .type = fieldType, .isTemp = false};
+}
+
+ExprResult ExprLowerer::visit(const ast::IndexExpr &n) {
+	const auto [arrayVal, arrayType, _] = lowerExpr(*n.base);
+	const auto [indexVal, indexType, __] = lowerExpr(*n.index);
+
+	VERIFY(arrayType->isTypeKind(TypeKind::Array));
+	auto *arrType = static_cast<ArrayType *>(arrayType);
+
+	// Fat pointer structure: { T* data, i64 size }
+	// Extract data pointer (field 0)
+	auto *dataPtrPtr = m_Context.irBuilder.CreateExtractValue(arrayVal, 0U);
+
+	// Extract size (field 1)
+	auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+	// Convert index to i64 for comparison
+	auto *indexI64 =
+			m_Context.irBuilder.CreateSExt(indexVal, llvm::Type::getInt64Ty(
+															 m_Context.irBuilder.getContext()));
+
+	// Bounds check: if (index < 0 || index >= size) trap
+	auto *isNegative = m_Context.irBuilder.CreateICmpSLT(
+			indexI64,
+			llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()), 0));
+	auto *isOutOfBounds = m_Context.irBuilder.CreateICmpSGE(indexI64, sizeVal);
+	auto *shouldTrap = m_Context.irBuilder.CreateOr(isNegative, isOutOfBounds);
+
+	// Emit trap if bounds check fails
+	auto *func = m_Context.irBuilder.GetInsertBlock()->getParent();
+	VERIFY(func);
+
+	auto *trapBB = llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.trap", func);
+	auto *contBB = llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.cont", func);
+
+	m_Context.irBuilder.CreateCondBr(shouldTrap, trapBB, contBB);
+
+	m_Context.irBuilder.SetInsertPoint(trapBB);
+	auto *panicType = llvm::FunctionType::get(m_Context.irBuilder.getVoidTy(), false);
+	auto panic = m_Context.llvmModule.getOrInsertFunction("__panic_out_of_bounds", panicType);
+	m_Context.irBuilder.CreateCall(panic, {});
+	m_Context.irBuilder.CreateUnreachable();
+
+	m_Context.irBuilder.SetInsertPoint(contBB);
+
+	// Compute GEP: data[index]
+	auto *elemType = m_Context.typeConverter.convert(arrType->elementType);
+	auto *elemPtr = m_Context.irBuilder.CreateInBoundsGEP(elemType, dataPtrPtr, {indexI64});
+
+	// Load element
+	auto *value = m_Context.irBuilder.CreateLoad(elemType, elemPtr);
+
+	return {.value = value, .type = arrType->elementType, .isTemp = false};
+}
+
+ExprResult ExprLowerer::visit(const ast::LenExpr &n) {
+	const auto [arrayVal, arrayType, _] = lowerExpr(*n.base);
+
+	VERIFY(arrayType->isTypeKind(TypeKind::Array));
+
+	// Fat pointer structure: { T* data, i64 size }
+	// Extract size (field 1)
+	auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+	// Convert i64 to i32 for return
+	auto *sizeI32 =
+			m_Context.irBuilder.CreateTrunc(sizeVal, llvm::Type::getInt32Ty(
+															 m_Context.irBuilder.getContext()));
+
+	return {.value = sizeI32, .type = TypeFactory::getI32(), .isTemp = true};
 }
 
 ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {

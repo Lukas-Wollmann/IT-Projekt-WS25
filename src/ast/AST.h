@@ -15,12 +15,15 @@ enum struct NodeKind {
 	UnitLit,
 	DefaultInit,
 	HeapAlloc,
+	ArrayHeapAlloc,
 	StructInit,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
 	VarRef,
 	FieldAccess,
+	IndexExpr,
+	LenExpr,
 	FuncCall,
 	BlockStmt,
 	IfStmt,
@@ -104,6 +107,13 @@ struct HeapAlloc : Expr {
 	HeapAlloc(Type type, Box<Expr> expr);
 };
 
+struct ArrayHeapAlloc : Expr {
+	const Type elementType;
+	const Box<Expr> size; // None (DefaultInit) for dynamic []T, IntLit(N) for fixed [N]T
+
+	ArrayHeapAlloc(Type elementType, Box<Expr> size);
+};
+
 struct StructInit : Expr {
 	const Type type;
 	const Vec<Box<Expr>> args;
@@ -143,6 +153,19 @@ struct FieldAccess : Expr {
 	const U8String field;
 
 	FieldAccess(Box<Expr> base, U8String field);
+};
+
+struct IndexExpr : Expr {
+	const Box<Expr> base;
+	const Box<Expr> index;
+
+	IndexExpr(Box<Expr> base, Box<Expr> index);
+};
+
+struct LenExpr : Expr {
+	const Box<Expr> base;
+
+	explicit LenExpr(Box<Expr> base);
 };
 
 struct FuncCall : Expr {

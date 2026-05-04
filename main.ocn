@@ -1,13 +1,23 @@
-struct Foo {
-    a: i32,
-    b: **i32
+struct Point {
+    x: i32,
+    y: i32
+}
+
+// TODO: Negative array sizes should give a better error message
+// TODO: If we have an array to pointers the pointers are not getting freed
+
+func create_array(size: i32) -> []*Point {
+    return new [size]*Point;
 }
 
 func main() -> i32 {
-    a: Foo = Foo { 1, new *i32(new i32(100)) };
-    b: *Foo = new Foo(a);
-    
-    print_i32( *b.**b );
 
-    return 1;
+    size: i32 = 5;
+    a: []*Point = create_array(size);
+
+    a[0] = new Point { 6, 7 };
+    a[1] = new Point { 6, 7 };
+    a[2] = new Point { 6, 7 };
+    
+    return 0;
 }

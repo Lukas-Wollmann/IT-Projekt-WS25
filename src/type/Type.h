@@ -6,7 +6,7 @@
 #include "core/Typedef.h"
 #include "core/U8String.h"
 
-enum struct TypeKind : u8 { Primitive, Unit, Error, Null, Pointer, Function, Struct };
+enum struct TypeKind : u8 { Primitive, Unit, Error, Null, Pointer, Function, Struct, Array };
 
 enum struct PrimitiveKind : u8 { I32, Char, Bool };
 
@@ -98,6 +98,25 @@ struct StructType : public TypeBase {
 	U8String str() const override;
 	bool equals(const TypeBase *other) const override;
 	Box<TypeBase> clone() const override;
+};
+
+struct ArrayType : public TypeBase {
+	const Type elementType;
+	const Opt<i32> size; // None = dynamic ([]T), Some(N) = fixed ([N]T)
+
+	ArrayType(Type elementType, Opt<i32> size);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+
+	bool isDynamic() const {
+		return !size.has_value();
+	}
+
+	bool isFixed() const {
+		return size.has_value();
+	}
 };
 
 template <typename T>

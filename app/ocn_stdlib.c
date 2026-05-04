@@ -124,7 +124,7 @@ typedef struct {
 } ControlBlock;
 
 void *__sp_create(size_t size, void (*dtor)(void *)) {
-	void *ptr = malloc(size + sizeof(ControlBlock));
+	void *ptr = calloc(1, size + sizeof(ControlBlock));
 	ControlBlock *cbptr = (ControlBlock *) ptr;
 	cbptr->refCount = 1;
 	cbptr->dtor = dtor;
