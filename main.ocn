@@ -1,14 +1,13 @@
 struct Foo {
     a: i32,
-    b: *i32
+    b: **i32
 }
 
 func main() -> i32 {
-    a: Foo = Foo { 1, null };
+    a: Foo = Foo { 1, new *i32(new i32(100)) };
     b: *Foo = new Foo(a);
     
-    print_i32(*b.*b);
+    print_i32( *b.**b );
 
-    
     return 1;
 }

@@ -585,7 +585,7 @@ Box<Expr> Parser::parseAdditiveExpr() {
 }
 
 Box<Expr> Parser::parseMultiplicativeExpr() {
-	auto left = parseUnaryExpr();
+	auto left = parsePostfixExpr();
 
 	while (m_Current->matches(TokenType::Operator)) {
 		Opt<BinaryOpKind> kind = {};
@@ -601,7 +601,7 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 			break;
 
 		consume(TokenType::Operator);
-		auto right = parseUnaryExpr();
+		auto right = parsePostfixExpr();
 		const auto loc = makeSpanLoc(left->loc, right->loc);
 
 		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
@@ -612,9 +612,36 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 	return left;
 }
 
+Box<Expr> Parser::parsePostfixExpr() {
+	auto left = parseUnaryExpr();
+
+	while (m_Current->matches(TokenType::Separator)) {
+		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			const auto leftLoc = left->loc;
+			auto args = parseExprList();
+			const auto endLoc = args.empty() ? leftLoc : args.back()->loc;
+
+			auto call = std::make_unique<FuncCall>(std::move(left), std::move(args));
+			call->setLoc(makeSpanLoc(leftLoc, endLoc));
+			left = std::move(call);
+
+			continue;
+		}
+
+		if (m_Current->matches(TokenType::Separator, u8".")) {
+			left = parseFieldAccess(std::move(left));
+			continue;
+		}
+
+		break;
+	}
+
+	return left;
+}
+
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parsePostfixExpr();
+		return parsePrimaryExpr();
 
 	Opt<UnaryOpKind> kind = {};
 	const auto &opToken = consume(TokenType::Operator);
@@ -699,13 +726,11 @@ Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
 Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	consume(TokenType::Separator, u8".");
 
-	// Allow optional '*' prefix before the field identifier: . *ident
-	bool hadStar = false;
-	SourceLoc starLoc;
-	if (m_Current->matches(TokenType::Operator, u8"*")) {
+	// Allow multiple '*' prefixes before the field identifier: . *ident, . **ident, etc.
+	Vec<SourceLoc> starLocs;
+	while (m_Current->matches(TokenType::Operator, u8"*")) {
 		const auto &starTok = consume(TokenType::Operator, u8"*");
-		hadStar = true;
-		starLoc = starTok.loc;
+		starLocs.push_back(starTok.loc);
 	}
 
 	const auto &fieldToken = consume(TokenType::Identifier);
@@ -715,51 +740,17 @@ Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	auto access = std::make_unique<FieldAccess>(std::move(base), std::move(field));
 	access->setLoc(loc);
 
-	if (hadStar) {
-		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(access));
-		unary->setLoc(makeSpanLoc(starLoc, access->loc));
-		return unary;
+	// Wrap with dereferences in reverse order (innermost first)
+	Box<Expr> result = std::move(access);
+	for (int i = starLocs.size() - 1; i >= 0; --i) {
+		const auto dereffedLoc = i == 0 ? makeSpanLoc(starLocs[0], result->loc)
+										: makeSpanLoc(starLocs[i], result->loc);
+		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(result));
+		unary->setLoc(dereffedLoc);
+		result = std::move(unary);
 	}
 
-	return access;
-}
-
-Box<Expr> Parser::parsePostfixExpr() {
-	// Support leading `*ident` as base (binds only to the identifier, not the whole postfix chain).
-	Box<Expr> left;
-	if (m_Current->matches(TokenType::Operator, u8"*") && peek().matches(TokenType::Identifier)) {
-		const auto &starTok = consume(TokenType::Operator, u8"*");
-		// parsePrimaryExpr will consume the identifier and produce a VarRef (or StructInit)
-		left = parsePrimaryExpr();
-		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(left));
-		unary->setLoc(makeSpanLoc(starTok.loc, unary->operand->loc));
-		left = std::move(unary);
-	} else {
-		left = parsePrimaryExpr();
-	}
-
-	while (m_Current->matches(TokenType::Separator)) {
-		if (m_Current->matches(TokenType::Separator, u8"(")) {
-			const auto leftLoc = left->loc;
-			auto args = parseExprList();
-			const auto endLoc = args.empty() ? leftLoc : args.back()->loc;
-
-			auto call = std::make_unique<FuncCall>(std::move(left), std::move(args));
-			call->setLoc(makeSpanLoc(leftLoc, endLoc));
-			left = std::move(call);
-
-			continue;
-		}
-
-		if (m_Current->matches(TokenType::Separator, u8".")) {
-			left = parseFieldAccess(std::move(left));
-			continue;
-		}
-
-		break;
-	}
-
-	return left;
+	return result;
 }
 
 Box<Expr> Parser::parsePrimaryExpr() {
