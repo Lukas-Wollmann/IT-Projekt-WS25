@@ -43,7 +43,14 @@ bool TypeCheckingPass::visit(UnitLit &n) {
 
 bool TypeCheckingPass::visit(HeapAlloc &n) {
 	VERIFY(!n.isInferred());
-	const auto actualType = checkExpression(*n.expr);
+	Type actualType;
+	// If the allocation uses default initialization (no expr provided),
+	// consider the actual type equal to the expected type directly.
+	if (n.expr->kind == ast::NodeKind::DefaultInit) {
+		actualType = n.type;
+	} else {
+		actualType = checkExpression(*n.expr);
+	}
 	const auto expectedType = n.type;
 
 	if (!typesMatch(actualType, expectedType)) {
@@ -52,6 +59,46 @@ bool TypeCheckingPass::visit(HeapAlloc &n) {
 	}
 
 	n.infer(TypeFactory::getPointer(expectedType), ValueCategory::RValue);
+	return false;
+}
+
+bool TypeCheckingPass::visit(StructInit &n) {
+	VERIFY(!n.isInferred());
+	if (!n.type->isTypeKind(TypeKind::Struct)) {
+		m_Context.submitError(u8"Aggregate construction requires a struct type.", n.loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	auto *structType = static_cast<StructType *>(n.type);
+
+	if (!structType->isDeclared) {
+		m_Context.submitError(std::format("Struct '{}' is not declared.", structType->name), n.loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	if (n.args.size() != structType->orderedFields.size()) {
+		const auto msg = ErrorMessage<TooManyArguments>::str(structType->orderedFields.size(),
+															 n.args.size());
+		m_Context.submitError(msg, n.loc);
+		n.infer(TypeFactory::getError(), ValueCategory::RValue);
+		return false;
+	}
+
+	for (u32 i = 0; i < n.args.size(); ++i) {
+		auto argType = checkExpression(*n.args[i]);
+		auto fieldType = structType->orderedFields[i].second;
+
+		if (!argType->isTypeKind(TypeKind::Error) && !typesMatch(argType, fieldType)) {
+			const auto msg =
+					std::format("Struct field '{}' expected type '{}', got '{}' at argument {}.",
+								structType->orderedFields[i].first, *fieldType, *argType, i + 1);
+			m_Context.submitError(msg, n.args[i]->loc);
+		}
+	}
+
+	n.infer(structType, ValueCategory::RValue);
 	return false;
 }
 
@@ -173,55 +220,6 @@ bool TypeCheckingPass::visit(Assignment &n) {
 }
 
 bool TypeCheckingPass::visit(FuncCall &n) {
-	if (auto *varRef = dynamic_cast<VarRef *>(n.expr.get())) {
-		auto *structType = TypeFactory::getStruct(varRef->ident);
-		const auto function = m_Context.getGlobalNamespace().getFunction(varRef->ident);
-
-		if (n.isStructConstructor && structType->isDeclared) {
-			// Treat `StructName{...}` as a struct constructor expression.
-			varRef->infer(structType, ValueCategory::RValue);
-
-			TypeList argTypes;
-			argTypes.reserve(n.args.size());
-
-			for (auto &expr : n.args)
-				argTypes.push_back(checkExpression(*expr));
-
-			if (argTypes.size() != structType->orderedFields.size()) {
-				const auto msg =
-						ErrorMessage<TooManyArguments>::str(structType->orderedFields.size(),
-															argTypes.size());
-				m_Context.submitError(msg, n.loc);
-
-				n.infer(TypeFactory::getError(), ValueCategory::RValue);
-				return false;
-			}
-
-			size_t index = 0;
-			for (const auto &[fieldName, fieldType] : structType->orderedFields) {
-				const auto argType = argTypes[index++];
-
-				if (!argType->isTypeKind(TypeKind::Error) && !typesMatch(argType, fieldType)) {
-					const auto msg = std::format(
-							"Struct field '{}' expected type '{}', got '{}' at argument {}.",
-							fieldName, *fieldType, *argType, index);
-					m_Context.submitError(msg, n.args[index - 1]->loc);
-				}
-			}
-
-			n.infer(structType, ValueCategory::RValue);
-			return false;
-		}
-
-		if (structType->isDeclared && !function.has_value()) {
-			const auto msg = std::format("Struct '{}' must be constructed using '{{}}', not '()'.",
-										 structType->name);
-			m_Context.submitError(msg, n.loc);
-			n.infer(TypeFactory::getError(), ValueCategory::RValue);
-			return false;
-		}
-	}
-
 	const auto type = checkExpression(*n.expr);
 
 	if (type->isTypeKind(TypeKind::Error)) {
@@ -370,13 +368,19 @@ bool TypeCheckingPass::visit(ReturnStmt &n) {
 }
 
 bool TypeCheckingPass::visit(VarDef &n) {
-	const auto type = checkExpression(*n.value);
+	Type valueType;
 	auto varType = n.type;
+
+	if (n.value->kind == ast::NodeKind::DefaultInit) {
+		valueType = varType;
+	} else {
+		valueType = checkExpression(*n.value);
+	}
 
 	// The expression is not of type <error-type> but does not match the
 	// type of the variable declaration - this is an actual error
-	if (!type->isTypeKind(TypeKind::Error) && !typesMatch(type, varType)) {
-		const auto msg = ErrorMessage<TypeMissmatch>::str(varType, type);
+	if (!valueType->isTypeKind(TypeKind::Error) && !typesMatch(valueType, varType)) {
+		const auto msg = ErrorMessage<TypeMissmatch>::str(varType, valueType);
 		m_Context.submitError(msg, n.loc);
 	}
 

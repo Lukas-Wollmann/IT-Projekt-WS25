@@ -53,9 +53,22 @@ void Printer::visit(const UnitLit &n) {
 	printLine(u8"UnitLit");
 }
 
+void Printer::visit(const DefaultInit &) {
+	printLine(u8"DefaultInit");
+}
+
 void Printer::visit(const HeapAlloc &n) {
 	printLine(std::format("HeapAlloc: {}", n.type->str()));
 	child(true).printNode(*n.expr);
+}
+
+void Printer::visit(const StructInit &n) {
+	printLine(std::format("StructInit: {}", n.type->str()));
+
+	for (size_t i = 0; i < n.args.size(); ++i) {
+		const auto isLast = i + 1 == n.args.size();
+		child(isLast).printNode(*n.args[i]);
+	}
 }
 
 void Printer::visit(const VarRef &n) {

@@ -357,9 +357,16 @@ Box<VarDef> Parser::parseVarDef() {
 	auto ident = identToken.lexeme;
 	consume(TokenType::Separator, u8":");
 	auto type = parseType();
-
-	consume(TokenType::Operator, u8"=");
-	auto value = parseExpr();
+	Box<Expr> value;
+	// Allow variable definition without an initializer: `a: Foo;`
+	if (m_Current->matches(TokenType::Operator, u8"=")) {
+		consume(TokenType::Operator, u8"=");
+		value = parseExpr();
+	} else {
+		// Default initialization
+		value = std::make_unique<DefaultInit>();
+		value->setLoc(identToken.loc);
+	}
 
 	auto varDef = std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value));
 	varDef->setLoc(identToken.loc);
@@ -578,7 +585,7 @@ Box<Expr> Parser::parseAdditiveExpr() {
 }
 
 Box<Expr> Parser::parseMultiplicativeExpr() {
-	auto left = parsePostfixExpr();
+	auto left = parseUnaryExpr();
 
 	while (m_Current->matches(TokenType::Operator)) {
 		Opt<BinaryOpKind> kind = {};
@@ -594,7 +601,7 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 			break;
 
 		consume(TokenType::Operator);
-		auto right = parsePostfixExpr();
+		auto right = parseUnaryExpr();
 		const auto loc = makeSpanLoc(left->loc, right->loc);
 
 		auto binary = std::make_unique<BinaryExpr>(kind.value(), std::move(left), std::move(right));
@@ -607,7 +614,7 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parsePrimaryExpr();
+		return parsePostfixExpr();
 
 	Opt<UnaryOpKind> kind = {};
 	const auto &opToken = consume(TokenType::Operator);
@@ -691,17 +698,45 @@ Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
 
 Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	consume(TokenType::Separator, u8".");
+
+	// Allow optional '*' prefix before the field identifier: . *ident
+	bool hadStar = false;
+	SourceLoc starLoc;
+	if (m_Current->matches(TokenType::Operator, u8"*")) {
+		const auto &starTok = consume(TokenType::Operator, u8"*");
+		hadStar = true;
+		starLoc = starTok.loc;
+	}
+
 	const auto &fieldToken = consume(TokenType::Identifier);
 	auto field = fieldToken.lexeme;
 	const auto loc = makeSpanLoc(base->loc, fieldToken.loc);
 
 	auto access = std::make_unique<FieldAccess>(std::move(base), std::move(field));
 	access->setLoc(loc);
+
+	if (hadStar) {
+		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(access));
+		unary->setLoc(makeSpanLoc(starLoc, access->loc));
+		return unary;
+	}
+
 	return access;
 }
 
 Box<Expr> Parser::parsePostfixExpr() {
-	auto left = parseUnaryExpr();
+	// Support leading `*ident` as base (binds only to the identifier, not the whole postfix chain).
+	Box<Expr> left;
+	if (m_Current->matches(TokenType::Operator, u8"*") && peek().matches(TokenType::Identifier)) {
+		const auto &starTok = consume(TokenType::Operator, u8"*");
+		// parsePrimaryExpr will consume the identifier and produce a VarRef (or StructInit)
+		left = parsePrimaryExpr();
+		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(left));
+		unary->setLoc(makeSpanLoc(starTok.loc, unary->operand->loc));
+		left = std::move(unary);
+	} else {
+		left = parsePrimaryExpr();
+	}
 
 	while (m_Current->matches(TokenType::Separator)) {
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
@@ -733,13 +768,12 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		auto ident = identTok.lexeme;
 
 		if (m_Current->matches(TokenType::Separator, u8"{")) {
+			auto *structType = static_cast<StructType *>(TypeFactory::getStruct(ident));
 			auto args = parseBraceExprList();
-			auto callee = std::make_unique<VarRef>(std::move(ident));
-			callee->setLoc(identTok.loc);
-
-			auto call = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
-			call->setLoc(identTok.loc);
-			return call;
+			auto init = std::make_unique<StructInit>(structType, std::move(args));
+			const auto endLoc = init->args.empty() ? identTok.loc : init->args.back()->loc;
+			init->setLoc(makeSpanLoc(identTok.loc, endLoc));
+			return init;
 		}
 
 		auto varRef = std::make_unique<VarRef>(ident);
@@ -791,8 +825,15 @@ Box<Expr> Parser::parsePrimaryExpr() {
 
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
 			consume(TokenType::Separator, u8"(");
-			expr = parseExpr();
-			consume(TokenType::Separator, u8")");
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				// Empty parens -> default initialization
+				consume(TokenType::Separator, u8")");
+				expr = std::make_unique<DefaultInit>();
+				expr->setLoc(newTok.loc);
+			} else {
+				expr = parseExpr();
+				consume(TokenType::Separator, u8")");
+			}
 		} else if (m_Current->matches(TokenType::Separator, u8"{")) {
 			if (!type->isTypeKind(TypeKind::Struct)) {
 				throw ParsingError(u8"Brace initialization is only supported for struct types.");
@@ -800,13 +841,13 @@ Box<Expr> Parser::parsePrimaryExpr() {
 
 			auto *structType = static_cast<StructType *>(type);
 			auto args = parseBraceExprList();
-			auto callee = std::make_unique<VarRef>(structType->name);
-			callee->setLoc(newTok.loc);
-			expr = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
 			const auto endLoc = args.empty() ? newTok.loc : args.back()->loc;
+			expr = std::make_unique<StructInit>(structType, std::move(args));
 			expr->setLoc(makeSpanLoc(newTok.loc, endLoc));
 		} else {
-			throw ParsingError(u8"Expected '(' or '{' after type in heap allocation.");
+			// Bare `new Type` without parens or braces -> default initialization
+			expr = std::make_unique<DefaultInit>();
+			expr->setLoc(newTok.loc);
 		}
 
 		auto alloc = std::make_unique<HeapAlloc>(std::move(type), std::move(expr));

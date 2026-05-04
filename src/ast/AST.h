@@ -13,7 +13,9 @@ enum struct NodeKind {
 	BoolLit,
 	NullLit,
 	UnitLit,
+	DefaultInit,
 	HeapAlloc,
+	StructInit,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
@@ -91,11 +93,22 @@ struct UnitLit : Expr {
 	UnitLit();
 };
 
+struct DefaultInit : Expr {
+	DefaultInit();
+};
+
 struct HeapAlloc : Expr {
 	const Type type;
 	const Box<Expr> expr;
 
 	HeapAlloc(Type type, Box<Expr> expr);
+};
+
+struct StructInit : Expr {
+	const Type type;
+	const Vec<Box<Expr>> args;
+
+	StructInit(Type type, Vec<Box<Expr>> args);
 };
 
 struct UnaryExpr : Expr {
@@ -135,9 +148,8 @@ struct FieldAccess : Expr {
 struct FuncCall : Expr {
 	const Box<Expr> expr;
 	const Vec<Box<Expr>> args;
-	const bool isStructConstructor;
 
-	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor = false);
+	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 };
 
 struct BlockStmt : Stmt {

@@ -274,13 +274,38 @@ void CodeGen::visit(const ast::ReturnStmt &n) {
 
 void CodeGen::visit(const ast::VarDef &n) {
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
-	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.value);
+	// Handle default-initialized variables without calling lowerExpr on DefaultInit
+	llvm::Value *value = nullptr;
+	Type valueType = nullptr;
+	bool isTemp = true;
+
+	if (n.value->kind == ast::NodeKind::DefaultInit) {
+		valueType = n.type;
+		auto *const llvmType = m_Context.typeConverter.convert(valueType);
+
+		if (valueType->isTypeKind(TypeKind::Pointer)) {
+			value = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType *>(llvmType));
+		} else if (valueType->isTypeKind(TypeKind::Primitive) ||
+				   valueType->isTypeKind(TypeKind::Unit)) {
+			value = llvm::ConstantInt::get(llvmType, 0);
+		} else {
+			value = llvm::ConstantAggregateZero::get(llvmType);
+		}
+
+		isTemp = true;
+	} else {
+		const auto [v, t, tmp] = exprLowerer.lowerExpr(*n.value);
+		value = v;
+		valueType = t;
+		isTemp = tmp;
+	}
+
 	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);
 	} else {
-		m_Context.copyValue(value, type);
+		m_Context.copyValue(value, valueType);
 	}
 
 	m_Context.irBuilder.CreateStore(value, alloca);

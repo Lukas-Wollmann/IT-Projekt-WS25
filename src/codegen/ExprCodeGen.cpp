@@ -191,7 +191,31 @@ ExprResult ExprLowerer::visit(const ast::NullLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
-	const auto [value, type, isTemp] = lowerExpr(*n.expr);
+	llvm::Value *value = nullptr;
+	Type type = nullptr;
+	bool isTemp = true;
+
+	// If allocation uses default initialization, synthesize a zero/null value
+	if (n.expr->kind == ast::NodeKind::DefaultInit) {
+		type = n.type;
+		auto *const llvmType = m_Context.typeConverter.convert(type);
+
+		if (type->isTypeKind(TypeKind::Pointer)) {
+			value = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType *>(llvmType));
+		} else if (type->isTypeKind(TypeKind::Primitive) || type->isTypeKind(TypeKind::Unit)) {
+			value = llvm::ConstantInt::get(llvmType, 0);
+		} else {
+			value = llvm::ConstantAggregateZero::get(llvmType);
+		}
+
+		isTemp = true;
+	} else {
+		const auto [v, t, tmp] = lowerExpr(*n.expr);
+		value = v;
+		type = t;
+		isTemp = tmp;
+	}
+
 	const auto &ptrType = n.inferredType.value();
 
 	// If the value is a temporary, we can just move it into the heap allocation.
@@ -222,6 +246,32 @@ ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
 	addToExprCleanup(sharedPtr, ptrType);
 
 	return {.value = sharedPtr, .type = ptrType, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::StructInit &n) {
+	const auto resultType = n.inferredType.value();
+	auto *const llvmResultType =
+			static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
+	llvm::Value *aggregate = llvm::UndefValue::get(llvmResultType);
+
+	const auto *structType = static_cast<StructType *>(resultType);
+	for (u32 i = 0; i < n.args.size(); ++i) {
+		const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
+		const auto &fieldType = structType->orderedFields[i].second;
+
+		auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
+		if (!resIsTemp) {
+			valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
+		} else {
+			removeFromExprCleanup(resValue);
+		}
+
+		aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});
+	}
+
+	addToExprCleanup(aggregate, resultType);
+
+	return {.value = aggregate, .type = resultType, .isTemp = true};
 }
 
 ExprResult ExprLowerer::visit(const ast::VarRef &n) {
@@ -470,32 +520,6 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
-	if (n.isStructConstructor) {
-		const auto resultType = n.inferredType.value();
-		auto *const llvmResultType =
-				static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
-		llvm::Value *aggregate = llvm::UndefValue::get(llvmResultType);
-
-		for (u32 i = 0; i < n.args.size(); ++i) {
-			const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
-			const auto *structType = static_cast<StructType *>(resultType);
-			const auto &fieldType = structType->orderedFields[i].second;
-
-			auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
-			if (!resIsTemp) {
-				valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
-			} else {
-				removeFromExprCleanup(resValue);
-			}
-
-			aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});
-		}
-
-		addToExprCleanup(aggregate, resultType);
-
-		return {.value = aggregate, .type = resultType, .isTemp = true};
-	}
-
 	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
 	VERIFY(type->isTypeKind(TypeKind::Function));
 	const auto funcType = static_cast<FunctionType *>(type);

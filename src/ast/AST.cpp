@@ -40,10 +40,18 @@ NullLit::NullLit()
 UnitLit::UnitLit()
 	: Expr(NodeKind::UnitLit) {}
 
+DefaultInit::DefaultInit()
+	: Expr(NodeKind::DefaultInit) {}
+
 HeapAlloc::HeapAlloc(Type type, Box<Expr> expr)
 	: Expr(NodeKind::HeapAlloc)
 	, type(type)
 	, expr(std::move(expr)) {}
+
+StructInit::StructInit(Type type, Vec<Box<Expr>> args)
+	: Expr(NodeKind::StructInit)
+	, type(type)
+	, args(std::move(args)) {}
 
 UnaryExpr::UnaryExpr(const UnaryOpKind op, Box<Expr> operand)
 	: Expr(NodeKind::UnaryExpr)
@@ -71,11 +79,10 @@ FieldAccess::FieldAccess(Box<Expr> base, U8String field)
 	, base(std::move(base))
 	, field(std::move(field)) {}
 
-FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor)
+FuncCall::FuncCall(Box<Expr> expr, Vec<Box<Expr>> args)
 	: Expr(NodeKind::FuncCall)
 	, expr(std::move(expr))
-	, args(std::move(args))
-	, isStructConstructor(isStructConstructor) {}
+	, args(std::move(args)) {}
 
 BlockStmt::BlockStmt(Vec<Box<Stmt>> stmts)
 	: Stmt(NodeKind::BlockStmt)
