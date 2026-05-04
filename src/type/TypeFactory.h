@@ -21,7 +21,6 @@ public:
 	static FunctionType *getFunction(TypeList paramTypes, Type returnType);
 	static StructType *getStruct(U8String name);
 	static ArrayType *getArray(Type elementType);
-	static ArrayType *getArray(Type elementType, i32 size);
 
 	static void reset();
 	static Vec<Type> allTypes();

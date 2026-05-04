@@ -13,8 +13,8 @@ const U8String s_Operators[] = {u8"+",	u8"-",	u8"*",	u8"/",	u8"=",	u8"!",	u8"<",
 
 constexpr char32_t s_Separators[] = {U';', U',', U'(', U')', U'{', U'}', U'[', U']', U':', U'.'};
 
-const U8String s_Keywords[] = {u8"if",	 u8"else", u8"while",  u8"return",
-							   u8"func", u8"new",  u8"struct", u8"null"};
+const U8String s_Keywords[] = {u8"if",	u8"else",	u8"while", u8"return", u8"func",
+							   u8"new", u8"struct", u8"null",  u8"len"};
 
 Vec<Token> Lexer::tokenize(const U8String &source, ErrorHandler &err) {
 	Vec<Token> tokens;

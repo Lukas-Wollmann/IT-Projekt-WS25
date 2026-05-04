@@ -102,21 +102,12 @@ struct StructType : public TypeBase {
 
 struct ArrayType : public TypeBase {
 	const Type elementType;
-	const Opt<i32> size; // None = dynamic ([]T), Some(N) = fixed ([N]T)
 
-	ArrayType(Type elementType, Opt<i32> size);
+	explicit ArrayType(Type elementType);
 
 	U8String str() const override;
 	bool equals(const TypeBase *other) const override;
 	Box<TypeBase> clone() const override;
-
-	bool isDynamic() const {
-		return !size.has_value();
-	}
-
-	bool isFixed() const {
-		return size.has_value();
-	}
 };
 
 template <typename T>

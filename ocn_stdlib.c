@@ -157,3 +157,52 @@ void __sp_drop(void *ptr) {
 		free(cbptr);
 	}
 }
+
+typedef struct {
+	size_t refCount;
+	size_t arraySize;
+	size_t elementSize;
+	void (*dtor)(void *);
+} ArrayControlBlock;
+
+void *__arr_create(size_t elementSize, size_t arraySize, void (*dtor)(void *)) {
+	void *ptr = calloc(1, sizeof(ArrayControlBlock) + (elementSize * arraySize));
+	if (!ptr)
+		return NULL;
+
+	ArrayControlBlock *cbptr = (ArrayControlBlock *) ptr;
+	cbptr->refCount = 1;
+	cbptr->arraySize = arraySize;
+	cbptr->elementSize = elementSize;
+	cbptr->dtor = dtor;
+
+	return cbptr + 1;
+}
+
+void *__arr_copy(void *ptr) {
+	if (!ptr)
+		return NULL;
+
+	ArrayControlBlock *cbptr = (ArrayControlBlock *) ptr - 1;
+	cbptr->refCount++;
+	return ptr;
+}
+
+void __arr_drop(void *ptr) {
+	if (!ptr)
+		return;
+
+	ArrayControlBlock *cbptr = (ArrayControlBlock *) ptr - 1;
+	cbptr->refCount--;
+
+	if (cbptr->refCount == 0) {
+		if (cbptr->dtor) {
+			char *element_ptr = (char *) ptr;
+			for (size_t i = 0; i < cbptr->arraySize; i++) {
+				cbptr->dtor(element_ptr + (i * cbptr->elementSize));
+			}
+		}
+
+		free(cbptr);
+	}
+}

@@ -74,57 +74,35 @@ void CodeGen::visit(const ast::Module &n) {
 									   dtorName.asAscii(), m_Context.llvmModule);
 			}
 		}
+	}
 
-		// Emit struct destructors
-		for (const auto &decl : n.structs) {
-			auto dtorName = getStructDtorName(decl->ident);
-			auto *fn = m_Context.llvmModule.getFunction(dtorName.asAscii());
-			VERIFY(fn);
+	// Emit struct destructors
+	for (const auto &decl : n.structs) {
+		auto dtorName = getStructDtorName(decl->ident);
+		auto *fn = m_Context.llvmModule.getFunction(dtorName.asAscii());
+		VERIFY(fn && fn->empty());
 
-			if (!fn->empty()) {
-				continue;
+		auto *entry = llvm::BasicBlock::Create(m_Context.llvmContext, "entry", fn);
+		m_Context.irBuilder.SetInsertPoint(entry);
+
+		auto *payload = fn->arg_begin();
+		auto *llvmStructType =
+				llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
+
+		for (u32 i = 0; i < decl->fields.size(); ++i) {
+			const auto &[_, fieldType] = decl->fields[i];
+			auto dtor = m_Context.getDestructor(fieldType);
+
+			if (dtor.has_value()) {
+				auto *fieldPtr = m_Context.irBuilder.CreateStructGEP(llvmStructType, payload, i);
+				auto *voidPtr =
+						m_Context.irBuilder.CreateBitCast(fieldPtr, m_Context.irBuilder.getPtrTy());
+				m_Context.irBuilder.CreateCall(m_Context.getDestructorType(), dtor.value(),
+											   {voidPtr});
 			}
-
-			auto *entry = llvm::BasicBlock::Create(m_Context.llvmContext, "entry", fn);
-			m_Context.irBuilder.SetInsertPoint(entry);
-
-			auto *payload = fn->arg_begin();
-			payload->setName("payload");
-
-			auto *llvmStructType =
-					llvm::StructType::getTypeByName(m_Context.llvmContext, decl->ident.asAscii());
-			VERIFY(llvmStructType);
-			auto *llvmStructPtrType = llvm::PointerType::getUnqual(llvmStructType);
-			auto *structPtr = m_Context.irBuilder.CreateBitCast(payload, llvmStructPtrType);
-
-			for (u32 i = 0; i < decl->fields.size(); ++i) {
-				const auto &[_, fieldType] = decl->fields[i];
-				auto *fieldPtr = m_Context.irBuilder.CreateStructGEP(llvmStructType, structPtr, i);
-
-				if (fieldType->isTypeKind(TypeKind::Pointer)) {
-					auto *llvmFieldType = m_Context.typeConverter.convert(fieldType);
-					auto *fieldValue = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldPtr);
-					auto *drop = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrDrop);
-					VERIFY(drop);
-					m_Context.irBuilder.CreateCall(drop, {fieldValue});
-					continue;
-				}
-
-				if (fieldType->isTypeKind(TypeKind::Struct)) {
-					auto *structFieldType = static_cast<StructType *>(fieldType);
-					auto nestedDtorName = getStructDtorName(structFieldType->name);
-					auto *nestedDtor = m_Context.llvmModule.getFunction(nestedDtorName.asAscii());
-					VERIFY(nestedDtor);
-
-					auto *fieldAsVoidPtr =
-							m_Context.irBuilder.CreateBitCast(fieldPtr,
-															  m_Context.irBuilder.getPtrTy());
-					m_Context.irBuilder.CreateCall(nestedDtor, {fieldAsVoidPtr});
-				}
-			}
-
-			m_Context.irBuilder.CreateRetVoid();
 		}
+
+		m_Context.irBuilder.CreateRetVoid();
 	}
 
 	// Forward declare user defined functions decls

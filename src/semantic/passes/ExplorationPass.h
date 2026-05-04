@@ -16,6 +16,7 @@ private:
 	TypeCheckerContext &m_Context;
 	std::unordered_set<StructType *> m_ValidatedStructs;
 	StructType *m_CurrentRootBeingValidated = nullptr;
+	SourceLoc m_CurrentRootBeingValidatedLoc;
 
 public:
 	explicit ExplorationPass(TypeCheckerContext &ctx);
@@ -25,7 +26,9 @@ private:
 	void visit(const ast::StructDecl &n) override;
 	void visit(const ast::FuncDecl &n) override;
 
-	void validateNoCycles(StructType *root);
-	bool checkRecursive(StructType *current, Vec<StructType *> &path, const U8String &rootField);
+	bool validateDeclaredTypes(Type type, const SourceLoc &loc);
+	void validateNoCycles(StructType *root, const SourceLoc &loc);
+	bool checkRecursive(StructType *current, Vec<StructType *> &path, const U8String &rootField,
+						const SourceLoc &loc);
 };
 }

@@ -149,17 +149,12 @@ Box<TypeBase> StructType::clone() const {
 	return std::make_unique<StructType>(name);
 }
 
-ArrayType::ArrayType(Type elementType, Opt<i32> size)
+ArrayType::ArrayType(Type elementType)
 	: TypeBase(TypeKind::Array)
-	, elementType(elementType)
-	, size(size) {}
+	, elementType(elementType) {}
 
 U8String ArrayType::str() const {
-	if (size.has_value()) {
-		return std::format("[{}]{}", size.value(), elementType);
-	} else {
-		return std::format("[]{}", elementType);
-	}
+	return std::format("[]{}", elementType);
 }
 
 bool ArrayType::equals(const TypeBase *other) const {
@@ -168,23 +163,9 @@ bool ArrayType::equals(const TypeBase *other) const {
 	}
 
 	auto *otherArray = static_cast<const ArrayType *>(other);
-
-	if (elementType != otherArray->elementType) {
-		return false;
-	}
-
-	// Both must have same size (either both dynamic or both same fixed size)
-	if (size.has_value() != otherArray->size.has_value()) {
-		return false;
-	}
-
-	if (size.has_value() && size.value() != otherArray->size.value()) {
-		return false;
-	}
-
-	return true;
+	return elementType == otherArray->elementType;
 }
 
 Box<TypeBase> ArrayType::clone() const {
-	return std::make_unique<ArrayType>(elementType, size);
+	return std::make_unique<ArrayType>(elementType);
 }

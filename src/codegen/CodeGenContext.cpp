@@ -28,10 +28,18 @@ void CodeGenContext::registerRuntimeFunctions() {
 	llvm::FunctionType *spCreateTy = llvm::FunctionType::get(ptrTy, {sizeTy, ptrTy}, false);
 	llvm::FunctionType *spCopyTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
 	llvm::FunctionType *spDropTy = llvm::FunctionType::get(voidTy, {ptrTy}, false);
+	llvm::FunctionType *arrayCreateTy =
+			llvm::FunctionType::get(ptrTy, {sizeTy, sizeTy, ptrTy}, false);
+	llvm::FunctionType *arrayCopyTy = spCopyTy;
+	llvm::FunctionType *arrayDropTy = llvm::FunctionType::get(voidTy, {ptrTy}, false);
 
 	llvmModule.getOrInsertFunction(sharedPtrCreate, spCreateTy);
 	llvmModule.getOrInsertFunction(sharedPtrCopy, spCopyTy);
 	llvmModule.getOrInsertFunction(sharedPtrDrop, spDropTy);
+
+	llvmModule.getOrInsertFunction(arrayCreate, arrayCreateTy);
+	llvmModule.getOrInsertFunction(arrayCopy, arrayCopyTy);
+	llvmModule.getOrInsertFunction(arrayDrop, arrayDropTy);
 }
 
 llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
@@ -62,8 +70,10 @@ llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
 		auto *dataPtr = irBuilder.CreateExtractValue(value, 0U);
 		auto *sizeVal = irBuilder.CreateExtractValue(value, 1U);
 
-		auto *elemPtrType = TypeFactory::getPointer(arrayType->elementType);
-		auto *copiedDataPtr = copyValue(dataPtr, elemPtrType);
+		// FIX: Call the dedicated array copy function directly
+		auto *copyArrFunc = llvmModule.getFunction(arrayCopy);
+		VERIFY(copyArrFunc);
+		auto *copiedDataPtr = irBuilder.CreateCall(copyArrFunc, {dataPtr});
 
 		auto *llvmArrayType = typeConverter.convert(type);
 		llvm::Value *result = llvm::UndefValue::get(llvmArrayType);
@@ -100,11 +110,11 @@ void CodeGenContext::dropValue(llvm::Value *value, Type type) {
 	}
 
 	if (type->isTypeKind(TypeKind::Array)) {
-		// Fat pointer: extract the embedded smart pointer (field 0) and drop it
-		auto *arrayType = static_cast<ArrayType *>(type);
+		// Extract the raw data pointer from the fat pointer (struct { T* data, size_t len })
 		auto *dataPtr = irBuilder.CreateExtractValue(value, 0U);
-		auto *elemPtrType = TypeFactory::getPointer(arrayType->elementType);
-		dropValue(dataPtr, elemPtrType);
+		auto *dropArrFunc = llvmModule.getFunction(arrayDrop);
+		VERIFY(dropArrFunc);
+		irBuilder.CreateCall(dropArrFunc, {dataPtr});
 		return;
 	}
 
@@ -141,6 +151,44 @@ Opt<llvm::Value *> CodeGenContext::getDestructor(Type type) {
 		auto dtorName = getStructDtorName(structType->name);
 		auto *dtor = llvmModule.getFunction(dtorName.asAscii());
 		VERIFY(dtor);
+		return dtor;
+	}
+
+	if (type->isTypeKind(TypeKind::Array)) {
+		constexpr auto arrayDtorName = "__dtor_array";
+		auto *dtor = llvmModule.getFunction(arrayDtorName);
+
+		if (!dtor) {
+			auto oldIP = irBuilder.saveIP();
+			auto *fnType = getDestructorType(); // void(void*)
+			dtor = llvm::Function::Create(fnType, llvm::Function::ExternalLinkage, arrayDtorName,
+										  llvmModule);
+
+			auto *entry = llvm::BasicBlock::Create(llvmContext, "entry", dtor);
+			irBuilder.SetInsertPoint(entry);
+
+			// 'payload' is a pointer to the fat pointer: [T* data, size_t len]*
+			auto *payload = dtor->arg_begin();
+
+			// 1. Cast payload to the actual LLVM array struct type pointer
+			auto *llvmArrayType = typeConverter.convert(type);
+			auto *arrayStructPtr =
+					irBuilder.CreateBitCast(payload, llvm::PointerType::getUnqual(llvmArrayType));
+
+			// 2. Extract the data pointer (field 0 of the fat pointer)
+			// We GEP to the first field and load it.
+			auto *dataPtrAddress = irBuilder.CreateStructGEP(llvmArrayType, arrayStructPtr, 0U);
+			auto *sharedPtrToData = irBuilder.CreateLoad(irBuilder.getPtrTy(), dataPtrAddress);
+
+			// 3. Call the array-aware drop function
+			auto *dropArr = llvmModule.getFunction(arrayDrop);
+			VERIFY(dropArr);
+			irBuilder.CreateCall(dropArr, {sharedPtrToData});
+
+			irBuilder.CreateRetVoid();
+			irBuilder.restoreIP(oldIP);
+		}
+
 		return dtor;
 	}
 

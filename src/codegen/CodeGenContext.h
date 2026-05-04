@@ -18,6 +18,9 @@ public:
 	constexpr static auto sharedPtrCreate = "__sp_create";
 	constexpr static auto sharedPtrCopy = "__sp_copy";
 	constexpr static auto sharedPtrDrop = "__sp_drop";
+	constexpr static auto arrayCreate = "__arr_create";
+	constexpr static auto arrayCopy = "__arr_copy";
+	constexpr static auto arrayDrop = "__arr_drop";
 
 	llvm::LLVMContext llvmContext;
 	llvm::IRBuilder<> irBuilder;

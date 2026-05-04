@@ -41,6 +41,10 @@ void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 
 	ctx.irBuilder.SetInsertPoint(contBB);
 }
+
+llvm::Value *extractArrayDataPtr(gen::CodeGenContext &ctx, llvm::Value *arrayVal) {
+	return ctx.irBuilder.CreateExtractValue(arrayVal, 0U);
+}
 }
 
 ExprLowerer::ExprLowerer(CodeGenContext &ctx, AllocManager &allocManager)
@@ -305,49 +309,26 @@ ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
 
 ExprResult ExprLowerer::visit(const ast::ArrayHeapAlloc &n) {
 	const auto &arrayType = n.inferredType.value();
-	auto *elemType = n.elementType;
+	const auto [countValue, _, countIsTemp] = lowerExpr(*n.size);
+	if (countIsTemp)
+		removeFromExprCleanup(countValue);
 
-	// Determine array size
-	auto *sizeValue = [&]() -> llvm::Value * {
-		if (n.size->kind == ast::NodeKind::IntLit) {
-			auto *intLit = static_cast<ast::IntLit *>(n.size.get());
-			return llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()),
-										  intLit->value);
-		}
+	auto *countI64 =
+			m_Context.irBuilder.CreateSExtOrTrunc(countValue, m_Context.irBuilder.getInt64Ty());
+	auto *elementSize = m_Context.sizeOf(n.elementType);
+	auto *elemDtor = m_Context.getDestructor(n.elementType).value_or(m_Context.getNullDestructor());
 
-		const auto [value, type, isTemp] = lowerExpr(*n.size);
-		VERIFY(type->isTypeKind(TypeKind::Primitive));
-		if (isTemp) {
-			removeFromExprCleanup(value);
-		}
+	auto *createArrFunc = m_Context.llvmModule.getFunction(CodeGenContext::arrayCreate);
+	auto *dataPtr =
+			m_Context.irBuilder.CreateCall(createArrFunc, {elementSize, countI64, elemDtor});
 
-		return m_Context.irBuilder.CreateSExtOrTrunc(value,
-													 llvm::Type::getInt64Ty(
-															 m_Context.irBuilder.getContext()));
-	}();
-
-	// Allocate array_size * element_size bytes
-	auto *allocationSize = m_Context.sizeOf(elemType);
-	auto *totalSize = m_Context.irBuilder.CreateMul(allocationSize, sizeValue);
-
-	// Create shared pointer for the array
-	auto *const func = m_Context.llvmModule.getFunction(CodeGenContext::sharedPtrCreate);
-	VERIFY(func);
-	const auto nullDtor = m_Context.getNullDestructor();
-	auto *const dtor = m_Context.getDestructor(elemType).value_or(nullDtor);
-	auto *const dataPtr = m_Context.irBuilder.CreateCall(func, {totalSize, dtor});
-
-	// Create fat pointer struct { T* data, i64 size }
 	auto *fatPtrType = m_Context.typeConverter.convert(arrayType);
 	llvm::Value *fatPtr = llvm::UndefValue::get(fatPtrType);
 	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, dataPtr, 0U);
-	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, sizeValue, 1U);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, countI64, 1U);
 
-	// Track the embedded smart pointer for cleanup (with pointer type so system knows how to drop
-	// it)
-	addToExprCleanup(dataPtr, TypeFactory::getPointer(elemType));
+	addToExprCleanup(fatPtr, arrayType);
 
-	// Fat pointer itself is not a temporary that needs cleanup; only the embedded pointer does
 	return {.value = fatPtr, .type = arrayType, .isTemp = true};
 }
 
@@ -562,6 +543,26 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 
+			if (leftType->isTypeKind(TypeKind::Array) && rightType->isTypeKind(TypeKind::Null)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, left);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpEQ(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Array)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, right);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpEQ(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
 			if ((leftType->isTypeKind(TypeKind::Pointer) &&
 				 rightType->isTypeKind(TypeKind::Null)) ||
 				(leftType->isTypeKind(TypeKind::Null) &&
@@ -587,6 +588,26 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 			if (leftType == TypeFactory::getI32() || leftType == TypeFactory::getChar() ||
 				leftType == TypeFactory::getBool()) {
 				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if (leftType->isTypeKind(TypeKind::Array) && rightType->isTypeKind(TypeKind::Null)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, left);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpNE(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Array)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, right);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpNE(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 

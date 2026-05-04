@@ -64,20 +64,15 @@ bool TypeCheckingPass::visit(HeapAlloc &n) {
 
 bool TypeCheckingPass::visit(ArrayHeapAlloc &n) {
 	VERIFY(!n.isInferred());
-	Type arrayType;
 
-	if (n.size->kind == ast::NodeKind::IntLit) {
-		auto *intLit = static_cast<ast::IntLit *>(n.size.get());
-		arrayType = TypeFactory::getArray(n.elementType, intLit->value);
-	} else {
-		const auto sizeType = checkExpression(*n.size);
-		if (!typesMatch(sizeType, TypeFactory::getI32())) {
-			const auto msg = ErrorMessage<TypeMissmatch>::str(TypeFactory::getI32(), sizeType);
-			m_Context.submitError(msg, n.size->loc);
-		}
-		arrayType = TypeFactory::getArray(n.elementType);
+	const auto sizeType = checkExpression(*n.size);
+
+	if (!typesMatch(sizeType, TypeFactory::getI32())) {
+		const auto msg = ErrorMessage<TypeMissmatch>::str(TypeFactory::getI32(), sizeType);
+		m_Context.submitError(msg, n.size->loc);
 	}
 
+	const auto arrayType = TypeFactory::getArray(n.elementType);
 	n.infer(arrayType, ValueCategory::RValue);
 	return false;
 }
@@ -429,7 +424,7 @@ bool TypeCheckingPass::visit(ReturnStmt &n) {
 
 	// If the type is <error-type> or if the return type matches
 	// the function declaration, it's okay and a valid return.
-	if (type->isTypeKind(TypeKind::Error) || typesMatch(type, currentFuncRetType))
+	if (type->isTypeKind(TypeKind::Error) || typesMatch(currentFuncRetType, type))
 		return true;
 
 	// The return type is not matching the function declaration
@@ -543,17 +538,6 @@ bool TypeCheckingPass::typesMatch(Type left, Type right) {
 
 	if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
 		return true;
-
-	// Array type compatibility: fixed-size [N]T can be assigned to dynamic []T
-	if (left->isTypeKind(TypeKind::Array) && right->isTypeKind(TypeKind::Array)) {
-		auto *leftArray = static_cast<ArrayType *>(left);
-		auto *rightArray = static_cast<ArrayType *>(right);
-		// Left is dynamic, right is fixed, and same element type
-		if (leftArray->isDynamic() && rightArray->isFixed() &&
-			typesMatch(leftArray->elementType, rightArray->elementType)) {
-			return true;
-		}
-	}
 
 	return left == right;
 }

@@ -196,23 +196,10 @@ Type Parser::parseType() {
 		consume(TokenType::Separator, u8"[");
 		Opt<i32> size;
 
-		if (!m_Current->matches(TokenType::Separator, u8"]")) {
-			if (!m_Current->matches(TokenType::IntLiteral)) {
-				throw ParsingError(u8"Expected array size or empty brackets.");
-			}
-			const auto &sizeTok = consume(TokenType::IntLiteral);
-			const i32 arraySize = std::stoi(sizeTok.lexeme.asAscii());
-			size = Opt<i32>(arraySize);
-		}
-
 		consume(TokenType::Separator, u8"]");
 		auto elementType = parseType();
 
-		if (size.has_value()) {
-			return TypeFactory::getArray(elementType, size.value());
-		} else {
-			return TypeFactory::getArray(elementType);
-		}
+		return TypeFactory::getArray(elementType);
 	}
 
 	if (m_Current->matches(TokenType::Identifier)) {
@@ -657,6 +644,18 @@ Box<Expr> Parser::parsePostfixExpr() {
 			continue;
 		}
 
+		if (m_Current->matches(TokenType::Separator, u8"[")) {
+			const auto leftLoc = left->loc;
+			consume(TokenType::Separator, u8"[");
+			auto index = parseExpr();
+			const auto &rbrack = consume(TokenType::Separator, u8"]");
+
+			auto indexExpr = std::make_unique<IndexExpr>(std::move(left), std::move(index));
+			indexExpr->setLoc(makeSpanLoc(leftLoc, rbrack.loc));
+			left = std::move(indexExpr);
+			continue;
+		}
+
 		break;
 	}
 
@@ -665,7 +664,7 @@ Box<Expr> Parser::parsePostfixExpr() {
 
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
-		return parseIndexExpr();
+		return parsePrimaryExpr();
 
 	Opt<UnaryOpKind> kind = {};
 	const auto &opToken = consume(TokenType::Operator);
@@ -693,23 +692,6 @@ Box<Expr> Parser::parseUnaryExpr() {
 	auto unary = std::make_unique<UnaryExpr>(kind.value(), std::move(expr));
 	unary->setLoc(loc);
 	return unary;
-}
-
-Box<Expr> Parser::parseIndexExpr() {
-	auto left = parsePrimaryExpr();
-
-	while (m_Current->matches(TokenType::Separator, u8"[")) {
-		const auto leftLoc = left->loc;
-		consume(TokenType::Separator, u8"[");
-		auto index = parseExpr();
-		const auto &rbrack = consume(TokenType::Separator, u8"]");
-
-		auto indexExpr = std::make_unique<IndexExpr>(std::move(left), std::move(index));
-		indexExpr->setLoc(makeSpanLoc(leftLoc, rbrack.loc));
-		left = std::move(indexExpr);
-	}
-
-	return left;
 }
 
 Vec<Box<ast::Expr>> Parser::parseExprList() {
@@ -795,6 +777,18 @@ Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 }
 
 Box<Expr> Parser::parsePrimaryExpr() {
+	if (m_Current->matches(TokenType::Keyword, u8"len")) {
+		const auto &lenTok = consume(TokenType::Keyword, u8"len");
+
+		consume(TokenType::Separator, u8"(");
+		auto base = parseExpr();
+		const auto &rparen = consume(TokenType::Separator, u8")");
+
+		auto lenExpr = std::make_unique<LenExpr>(std::move(base));
+		lenExpr->setLoc(makeSpanLoc(lenTok.loc, rparen.loc));
+		return lenExpr;
+	}
+
 	if (m_Current->matches(TokenType::Identifier)) {
 		const auto &identTok = consume(TokenType::Identifier);
 		auto ident = identTok.lexeme;
