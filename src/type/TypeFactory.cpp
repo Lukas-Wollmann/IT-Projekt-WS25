@@ -69,6 +69,11 @@ StructType *TypeFactory::getStruct(U8String name) {
 	return static_cast<StructType *>(type);
 }
 
+ArrayType *TypeFactory::getArray(Type elementType) {
+	auto type = intern(ArrayType(elementType));
+	return static_cast<ArrayType *>(type);
+}
+
 Vec<Type> TypeFactory::allTypes() {
 	Vec<Type> result;
 

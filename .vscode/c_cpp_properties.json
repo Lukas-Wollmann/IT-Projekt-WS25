@@ -12,8 +12,7 @@
             "defines": [],
             "cStandard": "c17",
             "cppStandard": "c++20",
-            "intelliSenseMode": "linux-clang-x64",
-            "compileCommands": "${workspaceFolder}/cmake-build-debug/compile_commands.json"
+            "intelliSenseMode": "linux-clang-x64"
         }
     ],
     "version": 4

@@ -21,6 +21,7 @@ llvm::Type *TypeConverter::convert(Type type) {
 		case TypeKind::Function: return convertFunction(static_cast<const FunctionType &>(*type));
 		case TypeKind::Unit:	 return convertUnit(static_cast<const UnitType &>(*type));
 		case TypeKind::Struct:	 return convertStruct(static_cast<const StructType &>(*type));
+		case TypeKind::Array:	 return convertArray(static_cast<const ArrayType &>(*type));
 		case TypeKind::Error:	 UNREACHABLE();
 	}
 
@@ -61,5 +62,17 @@ llvm::Type *TypeConverter::convertStruct(const StructType &t) {
 	auto *structType = llvm::StructType::getTypeByName(m_Context, t.name.asAscii());
 	VERIFY(structType != nullptr);
 	return structType;
+}
+
+llvm::Type *TypeConverter::convertArray(const ArrayType &t) {
+	// Arrays are represented as fat pointers (pointer + size)
+	// This allows both dynamic and fixed-size arrays to have runtime length info
+	// Fat pointer: { T*, i64 size }
+	auto *elemType = convert(t.elementType);
+	auto *elemPtr = llvm::PointerType::getUnqual(elemType);
+	auto *i64 = llvm::Type::getInt64Ty(m_Context);
+
+	Vec<llvm::Type *> fields = {elemPtr, i64};
+	return llvm::StructType::get(m_Context, fields, false);
 }
 }

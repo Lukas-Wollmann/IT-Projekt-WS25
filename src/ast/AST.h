@@ -13,12 +13,17 @@ enum struct NodeKind {
 	BoolLit,
 	NullLit,
 	UnitLit,
+	DefaultInit,
 	HeapAlloc,
+	ArrayHeapAlloc,
+	StructInit,
 	UnaryExpr,
 	BinaryExpr,
 	Assignment,
 	VarRef,
 	FieldAccess,
+	IndexExpr,
+	LenExpr,
 	FuncCall,
 	BlockStmt,
 	IfStmt,
@@ -91,11 +96,29 @@ struct UnitLit : Expr {
 	UnitLit();
 };
 
+struct DefaultInit : Expr {
+	DefaultInit();
+};
+
 struct HeapAlloc : Expr {
 	const Type type;
 	const Box<Expr> expr;
 
 	HeapAlloc(Type type, Box<Expr> expr);
+};
+
+struct ArrayHeapAlloc : Expr {
+	const Type elementType;
+	const Box<Expr> size; // None (DefaultInit) for dynamic []T, IntLit(N) for fixed [N]T
+
+	ArrayHeapAlloc(Type elementType, Box<Expr> size);
+};
+
+struct StructInit : Expr {
+	const Type type;
+	const Vec<Box<Expr>> args;
+
+	StructInit(Type type, Vec<Box<Expr>> args);
 };
 
 struct UnaryExpr : Expr {
@@ -132,12 +155,24 @@ struct FieldAccess : Expr {
 	FieldAccess(Box<Expr> base, U8String field);
 };
 
+struct IndexExpr : Expr {
+	const Box<Expr> base;
+	const Box<Expr> index;
+
+	IndexExpr(Box<Expr> base, Box<Expr> index);
+};
+
+struct LenExpr : Expr {
+	const Box<Expr> base;
+
+	explicit LenExpr(Box<Expr> base);
+};
+
 struct FuncCall : Expr {
 	const Box<Expr> expr;
 	const Vec<Box<Expr>> args;
-	const bool isStructConstructor;
 
-	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args, bool isStructConstructor = false);
+	FuncCall(Box<Expr> expr, Vec<Box<Expr>> args);
 };
 
 struct BlockStmt : Stmt {

@@ -191,6 +191,17 @@ Vec<Param> Parser::parseParamList() {
 }
 
 Type Parser::parseType() {
+	// Check for array types: [N]T or []T
+	if (m_Current->matches(TokenType::Separator, u8"[")) {
+		consume(TokenType::Separator, u8"[");
+		Opt<i32> size;
+
+		consume(TokenType::Separator, u8"]");
+		auto elementType = parseType();
+
+		return TypeFactory::getArray(elementType);
+	}
+
 	if (m_Current->matches(TokenType::Identifier)) {
 		auto typename_ = consume(TokenType::Identifier).lexeme;
 
@@ -357,9 +368,16 @@ Box<VarDef> Parser::parseVarDef() {
 	auto ident = identToken.lexeme;
 	consume(TokenType::Separator, u8":");
 	auto type = parseType();
-
-	consume(TokenType::Operator, u8"=");
-	auto value = parseExpr();
+	Box<Expr> value;
+	// Allow variable definition without an initializer: `a: Foo;`
+	if (m_Current->matches(TokenType::Operator, u8"=")) {
+		consume(TokenType::Operator, u8"=");
+		value = parseExpr();
+	} else {
+		// Default initialization
+		value = std::make_unique<DefaultInit>();
+		value->setLoc(identToken.loc);
+	}
 
 	auto varDef = std::make_unique<VarDef>(std::move(ident), std::move(type), std::move(value));
 	varDef->setLoc(identToken.loc);
@@ -605,6 +623,45 @@ Box<Expr> Parser::parseMultiplicativeExpr() {
 	return left;
 }
 
+Box<Expr> Parser::parsePostfixExpr() {
+	auto left = parseUnaryExpr();
+
+	while (m_Current->matches(TokenType::Separator)) {
+		if (m_Current->matches(TokenType::Separator, u8"(")) {
+			const auto leftLoc = left->loc;
+			auto args = parseExprList();
+			const auto endLoc = args.empty() ? leftLoc : args.back()->loc;
+
+			auto call = std::make_unique<FuncCall>(std::move(left), std::move(args));
+			call->setLoc(makeSpanLoc(leftLoc, endLoc));
+			left = std::move(call);
+
+			continue;
+		}
+
+		if (m_Current->matches(TokenType::Separator, u8".")) {
+			left = parseFieldAccess(std::move(left));
+			continue;
+		}
+
+		if (m_Current->matches(TokenType::Separator, u8"[")) {
+			const auto leftLoc = left->loc;
+			consume(TokenType::Separator, u8"[");
+			auto index = parseExpr();
+			const auto &rbrack = consume(TokenType::Separator, u8"]");
+
+			auto indexExpr = std::make_unique<IndexExpr>(std::move(left), std::move(index));
+			indexExpr->setLoc(makeSpanLoc(leftLoc, rbrack.loc));
+			left = std::move(indexExpr);
+			continue;
+		}
+
+		break;
+	}
+
+	return left;
+}
+
 Box<Expr> Parser::parseUnaryExpr() {
 	if (!m_Current->matches(TokenType::Operator))
 		return parsePrimaryExpr();
@@ -691,55 +748,73 @@ Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
 
 Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	consume(TokenType::Separator, u8".");
+
+	// Allow multiple '*' prefixes before the field identifier: . *ident, . **ident, etc.
+	Vec<SourceLoc> starLocs;
+	while (m_Current->matches(TokenType::Operator, u8"*")) {
+		const auto &starTok = consume(TokenType::Operator, u8"*");
+		starLocs.push_back(starTok.loc);
+	}
+
 	const auto &fieldToken = consume(TokenType::Identifier);
 	auto field = fieldToken.lexeme;
 	const auto loc = makeSpanLoc(base->loc, fieldToken.loc);
 
 	auto access = std::make_unique<FieldAccess>(std::move(base), std::move(field));
 	access->setLoc(loc);
-	return access;
-}
 
-Box<Expr> Parser::parsePostfixExpr() {
-	auto left = parseUnaryExpr();
-
-	while (m_Current->matches(TokenType::Separator)) {
-		if (m_Current->matches(TokenType::Separator, u8"(")) {
-			const auto leftLoc = left->loc;
-			auto args = parseExprList();
-			const auto endLoc = args.empty() ? leftLoc : args.back()->loc;
-
-			auto call = std::make_unique<FuncCall>(std::move(left), std::move(args));
-			call->setLoc(makeSpanLoc(leftLoc, endLoc));
-			left = std::move(call);
-
-			continue;
-		}
-
-		if (m_Current->matches(TokenType::Separator, u8".")) {
-			left = parseFieldAccess(std::move(left));
-			continue;
-		}
-
-		break;
+	// Wrap with dereferences in reverse order (innermost first)
+	Box<Expr> result = std::move(access);
+	for (int i = starLocs.size() - 1; i >= 0; --i) {
+		const auto dereffedLoc = i == 0 ? makeSpanLoc(starLocs[0], result->loc)
+										: makeSpanLoc(starLocs[i], result->loc);
+		auto unary = std::make_unique<UnaryExpr>(UnaryOpKind::Dereference, std::move(result));
+		unary->setLoc(dereffedLoc);
+		result = std::move(unary);
 	}
 
-	return left;
+	return result;
 }
 
 Box<Expr> Parser::parsePrimaryExpr() {
+	if (m_Current->matches(TokenType::Keyword, u8"len")) {
+		const auto &lenTok = consume(TokenType::Keyword, u8"len");
+
+		consume(TokenType::Separator, u8"(");
+		auto base = parseExpr();
+		const auto &rparen = consume(TokenType::Separator, u8")");
+
+		auto lenExpr = std::make_unique<LenExpr>(std::move(base));
+		lenExpr->setLoc(makeSpanLoc(lenTok.loc, rparen.loc));
+		return lenExpr;
+	}
+
 	if (m_Current->matches(TokenType::Identifier)) {
 		const auto &identTok = consume(TokenType::Identifier);
 		auto ident = identTok.lexeme;
 
-		if (m_Current->matches(TokenType::Separator, u8"{")) {
-			auto args = parseBraceExprList();
-			auto callee = std::make_unique<VarRef>(std::move(ident));
-			callee->setLoc(identTok.loc);
+		if (ident == u8"array" && m_Current->matches(TokenType::Separator, u8"[")) {
+			consume(TokenType::Separator, u8"[");
+			if (m_Current->matches(TokenType::Separator, u8"]")) {
+				throw ParsingError(u8"Unsized array allocation is not allowed.");
+			}
 
-			auto call = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
-			call->setLoc(identTok.loc);
-			return call;
+			auto sizeExpr = parseExpr();
+			consume(TokenType::Separator, u8"]");
+			auto elementType = parseType();
+
+			auto alloc = std::make_unique<ArrayHeapAlloc>(elementType, std::move(sizeExpr));
+			alloc->setLoc(makeSpanLoc(identTok.loc, alloc->size->loc));
+			return alloc;
+		}
+
+		if (m_Current->matches(TokenType::Separator, u8"{")) {
+			auto *structType = static_cast<StructType *>(TypeFactory::getStruct(ident));
+			auto args = parseBraceExprList();
+			auto init = std::make_unique<StructInit>(structType, std::move(args));
+			const auto endLoc = init->args.empty() ? identTok.loc : init->args.back()->loc;
+			init->setLoc(makeSpanLoc(identTok.loc, endLoc));
+			return init;
 		}
 
 		auto varRef = std::make_unique<VarRef>(ident);
@@ -787,12 +862,21 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		const auto &newTok = consume(TokenType::Keyword, u8"new");
 
 		auto type = parseType();
+
+		// Non-array types can use initialization
 		Box<Expr> expr;
 
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
 			consume(TokenType::Separator, u8"(");
-			expr = parseExpr();
-			consume(TokenType::Separator, u8")");
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				// Empty parens -> default initialization
+				consume(TokenType::Separator, u8")");
+				expr = std::make_unique<DefaultInit>();
+				expr->setLoc(newTok.loc);
+			} else {
+				expr = parseExpr();
+				consume(TokenType::Separator, u8")");
+			}
 		} else if (m_Current->matches(TokenType::Separator, u8"{")) {
 			if (!type->isTypeKind(TypeKind::Struct)) {
 				throw ParsingError(u8"Brace initialization is only supported for struct types.");
@@ -800,13 +884,13 @@ Box<Expr> Parser::parsePrimaryExpr() {
 
 			auto *structType = static_cast<StructType *>(type);
 			auto args = parseBraceExprList();
-			auto callee = std::make_unique<VarRef>(structType->name);
-			callee->setLoc(newTok.loc);
-			expr = std::make_unique<FuncCall>(std::move(callee), std::move(args), true);
 			const auto endLoc = args.empty() ? newTok.loc : args.back()->loc;
+			expr = std::make_unique<StructInit>(structType, std::move(args));
 			expr->setLoc(makeSpanLoc(newTok.loc, endLoc));
 		} else {
-			throw ParsingError(u8"Expected '(' or '{' after type in heap allocation.");
+			// Bare `new Type` without parens or braces -> default initialization
+			expr = std::make_unique<DefaultInit>();
+			expr->setLoc(newTok.loc);
 		}
 
 		auto alloc = std::make_unique<HeapAlloc>(std::move(type), std::move(expr));

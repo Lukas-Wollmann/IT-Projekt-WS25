@@ -76,11 +76,13 @@ Opt<const FunctionType *> OperatorTable::getBinaryOperator(BinaryOpKind op, Type
 	if (op == BinaryOpKind::Equality || op == BinaryOpKind::Inequality) {
 		const bool leftPtr = t1->isTypeKind(TypeKind::Pointer);
 		const bool rightPtr = t2->isTypeKind(TypeKind::Pointer);
+		const bool leftArray = t1->isTypeKind(TypeKind::Array);
+		const bool rightArray = t2->isTypeKind(TypeKind::Array);
 		const bool leftNull = t1->isTypeKind(TypeKind::Null);
 		const bool rightNull = t2->isTypeKind(TypeKind::Null);
 
 		if ((leftPtr && rightPtr && t1->equals(t2)) || (leftPtr && rightNull) ||
-			(leftNull && rightPtr)) {
+			(leftNull && rightPtr) || (leftArray && rightNull) || (leftNull && rightArray)) {
 			return TypeFactory::getFunction(TypeList{t1, t2}, TypeFactory::getBool());
 		}
 	}

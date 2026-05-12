@@ -6,7 +6,7 @@
 #include "core/Typedef.h"
 #include "core/U8String.h"
 
-enum struct TypeKind : u8 { Primitive, Unit, Error, Null, Pointer, Function, Struct };
+enum struct TypeKind : u8 { Primitive, Unit, Error, Null, Pointer, Function, Struct, Array };
 
 enum struct PrimitiveKind : u8 { I32, Char, Bool };
 
@@ -94,6 +94,16 @@ struct StructType : public TypeBase {
 	bool isDeclared;
 
 	StructType(U8String name);
+
+	U8String str() const override;
+	bool equals(const TypeBase *other) const override;
+	Box<TypeBase> clone() const override;
+};
+
+struct ArrayType : public TypeBase {
+	const Type elementType;
+
+	explicit ArrayType(Type elementType);
 
 	U8String str() const override;
 	bool equals(const TypeBase *other) const override;

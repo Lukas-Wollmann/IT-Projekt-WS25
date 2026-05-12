@@ -6,20 +6,6 @@
 
 namespace gen {
 namespace {
-llvm::Value *coerceNullToPointer(gen::CodeGenContext &ctx, llvm::Value *value, Type sourceType,
-								 Type targetType) {
-	if (!sourceType->isTypeKind(TypeKind::Null) || !targetType->isTypeKind(TypeKind::Pointer)) {
-		return value;
-	}
-
-	auto *targetLlvmType = ctx.typeConverter.convert(targetType);
-	if (value->getType() == targetLlvmType) {
-		return value;
-	}
-
-	return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
-}
-
 void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 	auto *ptrTy = llvm::dyn_cast<llvm::PointerType>(ptr->getType());
 	VERIFY(ptrTy);
@@ -40,6 +26,10 @@ void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 	ctx.irBuilder.CreateUnreachable();
 
 	ctx.irBuilder.SetInsertPoint(contBB);
+}
+
+llvm::Value *extractArrayDataPtr(gen::CodeGenContext &ctx, llvm::Value *arrayVal) {
+	return ctx.irBuilder.CreateExtractValue(arrayVal, 0U);
 }
 }
 
@@ -145,7 +135,61 @@ ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
 
 			return {.value = fieldPtr, .type = fieldType, .isTemp = false};
 		}
+		case ast::NodeKind::IndexExpr: {
+			const auto &indexExpr = static_cast<const ast::IndexExpr &>(n);
+			const auto [arrayVal, arrayType, _] = lowerExpr(*indexExpr.base);
+			const auto [indexVal, indexType, __] = lowerExpr(*indexExpr.index);
 
+			VERIFY(arrayType->isTypeKind(TypeKind::Array));
+			auto *arrType = static_cast<ArrayType *>(arrayType);
+
+			// Fat pointer: { T* data, i64 size }
+			// Extract data pointer (field 0)
+			auto *dataPtrPtr = m_Context.irBuilder.CreateExtractValue(arrayVal, 0U);
+
+			// Extract size (field 1)
+			auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+			// Convert index to i64
+			auto *indexI64 =
+					m_Context.irBuilder.CreateSExt(indexVal,
+												   llvm::Type::getInt64Ty(
+														   m_Context.irBuilder.getContext()));
+
+			// Bounds check
+			auto *isNegative = m_Context.irBuilder.CreateICmpSLT(
+					indexI64,
+					llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()),
+										   0));
+			auto *isOutOfBounds = m_Context.irBuilder.CreateICmpSGE(indexI64, sizeVal);
+			auto *shouldTrap = m_Context.irBuilder.CreateOr(isNegative, isOutOfBounds);
+
+			// Emit bounds check trap
+			auto *trapFunc = m_Context.irBuilder.GetInsertBlock()->getParent();
+			VERIFY(trapFunc);
+
+			auto *trapBB =
+					llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.trap", trapFunc);
+			auto *contBB =
+					llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.cont", trapFunc);
+
+			m_Context.irBuilder.CreateCondBr(shouldTrap, trapBB, contBB);
+
+			m_Context.irBuilder.SetInsertPoint(trapBB);
+			auto *panicType = llvm::FunctionType::get(m_Context.irBuilder.getVoidTy(), false);
+			auto panic =
+					m_Context.llvmModule.getOrInsertFunction("__panic_out_of_bounds", panicType);
+			m_Context.irBuilder.CreateCall(panic, {});
+			m_Context.irBuilder.CreateUnreachable();
+
+			m_Context.irBuilder.SetInsertPoint(contBB);
+
+			// Compute GEP
+			auto *elemType = m_Context.typeConverter.convert(arrType->elementType);
+			auto *elemPtr = m_Context.irBuilder.CreateInBoundsGEP(elemType, dataPtrPtr, {indexI64});
+
+			return {.value = elemPtr, .type = arrType->elementType, .isTemp = false};
+		}
 		default: UNREACHABLE();
 	}
 }
@@ -191,8 +235,33 @@ ExprResult ExprLowerer::visit(const ast::NullLit &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
-	const auto [value, type, isTemp] = lowerExpr(*n.expr);
 	const auto &ptrType = n.inferredType.value();
+
+	// Original non-array heap allocation logic
+	llvm::Value *value = nullptr;
+	Type type = nullptr;
+	bool isTemp = true;
+
+	// If allocation uses default initialization, synthesize a zero/null value
+	if (n.expr->kind == ast::NodeKind::DefaultInit) {
+		type = n.type;
+		auto *const llvmType = m_Context.typeConverter.convert(type);
+
+		if (type->isTypeKind(TypeKind::Pointer)) {
+			value = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType *>(llvmType));
+		} else if (type->isTypeKind(TypeKind::Primitive) || type->isTypeKind(TypeKind::Unit)) {
+			value = llvm::ConstantInt::get(llvmType, 0);
+		} else {
+			value = llvm::ConstantAggregateZero::get(llvmType);
+		}
+
+		isTemp = true;
+	} else {
+		const auto [v, t, tmp] = lowerExpr(*n.expr);
+		value = v;
+		type = t;
+		isTemp = tmp;
+	}
 
 	// If the value is a temporary, we can just move it into the heap allocation.
 	// If it's not a temporary, we need to copy it first so that the heap allocation
@@ -224,6 +293,57 @@ ExprResult ExprLowerer::visit(const ast::HeapAlloc &n) {
 	return {.value = sharedPtr, .type = ptrType, .isTemp = true};
 }
 
+ExprResult ExprLowerer::visit(const ast::ArrayHeapAlloc &n) {
+	const auto &arrayType = n.inferredType.value();
+	const auto [countValue, _, countIsTemp] = lowerExpr(*n.size);
+	if (countIsTemp)
+		removeFromExprCleanup(countValue);
+
+	auto *countI64 =
+			m_Context.irBuilder.CreateSExtOrTrunc(countValue, m_Context.irBuilder.getInt64Ty());
+	auto *elementSize = m_Context.sizeOf(n.elementType);
+	auto *elemDtor = m_Context.getDestructor(n.elementType).value_or(m_Context.getNullDestructor());
+
+	auto *createArrFunc = m_Context.llvmModule.getFunction(CodeGenContext::arrayCreate);
+	auto *dataPtr =
+			m_Context.irBuilder.CreateCall(createArrFunc, {elementSize, countI64, elemDtor});
+
+	auto *fatPtrType = m_Context.typeConverter.convert(arrayType);
+	llvm::Value *fatPtr = llvm::UndefValue::get(fatPtrType);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, dataPtr, 0U);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, countI64, 1U);
+
+	addToExprCleanup(fatPtr, arrayType);
+
+	return {.value = fatPtr, .type = arrayType, .isTemp = true};
+}
+
+ExprResult ExprLowerer::visit(const ast::StructInit &n) {
+	const auto resultType = n.inferredType.value();
+	auto *const llvmResultType =
+			static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
+	llvm::Value *aggregate = llvm::UndefValue::get(llvmResultType);
+
+	const auto *structType = static_cast<StructType *>(resultType);
+	for (u32 i = 0; i < n.args.size(); ++i) {
+		const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
+		const auto &fieldType = structType->orderedFields[i].second;
+
+		auto *valueToInsert = coerceNullToTarget(m_Context, resValue, resType, fieldType);
+		if (!resIsTemp) {
+			valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
+		} else {
+			removeFromExprCleanup(resValue);
+		}
+
+		aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});
+	}
+
+	addToExprCleanup(aggregate, resultType);
+
+	return {.value = aggregate, .type = resultType, .isTemp = true};
+}
+
 ExprResult ExprLowerer::visit(const ast::VarRef &n) {
 	const auto &type = n.inferredType.value();
 	auto *const llvmType = m_Context.typeConverter.convert(type);
@@ -250,6 +370,76 @@ ExprResult ExprLowerer::visit(const ast::FieldAccess &n) {
 	auto *const value = m_Context.irBuilder.CreateLoad(llvmFieldType, fieldAddr);
 
 	return {.value = value, .type = fieldType, .isTemp = false};
+}
+
+ExprResult ExprLowerer::visit(const ast::IndexExpr &n) {
+	const auto [arrayVal, arrayType, _] = lowerExpr(*n.base);
+	const auto [indexVal, indexType, __] = lowerExpr(*n.index);
+
+	VERIFY(arrayType->isTypeKind(TypeKind::Array));
+	auto *arrType = static_cast<ArrayType *>(arrayType);
+
+	// Fat pointer structure: { T* data, i64 size }
+	// Extract data pointer (field 0)
+	auto *dataPtrPtr = m_Context.irBuilder.CreateExtractValue(arrayVal, 0U);
+
+	// Extract size (field 1)
+	auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+	// Convert index to i64 for comparison
+	auto *indexI64 =
+			m_Context.irBuilder.CreateSExt(indexVal, llvm::Type::getInt64Ty(
+															 m_Context.irBuilder.getContext()));
+
+	// Bounds check: if (index < 0 || index >= size) trap
+	auto *isNegative = m_Context.irBuilder.CreateICmpSLT(
+			indexI64,
+			llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_Context.irBuilder.getContext()), 0));
+	auto *isOutOfBounds = m_Context.irBuilder.CreateICmpSGE(indexI64, sizeVal);
+	auto *shouldTrap = m_Context.irBuilder.CreateOr(isNegative, isOutOfBounds);
+
+	// Emit trap if bounds check fails
+	auto *func = m_Context.irBuilder.GetInsertBlock()->getParent();
+	VERIFY(func);
+
+	auto *trapBB = llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.trap", func);
+	auto *contBB = llvm::BasicBlock::Create(m_Context.llvmContext, "bounds.check.cont", func);
+
+	m_Context.irBuilder.CreateCondBr(shouldTrap, trapBB, contBB);
+
+	m_Context.irBuilder.SetInsertPoint(trapBB);
+	auto *panicType = llvm::FunctionType::get(m_Context.irBuilder.getVoidTy(), false);
+	auto panic = m_Context.llvmModule.getOrInsertFunction("__panic_out_of_bounds", panicType);
+	m_Context.irBuilder.CreateCall(panic, {});
+	m_Context.irBuilder.CreateUnreachable();
+
+	m_Context.irBuilder.SetInsertPoint(contBB);
+
+	// Compute GEP: data[index]
+	auto *elemType = m_Context.typeConverter.convert(arrType->elementType);
+	auto *elemPtr = m_Context.irBuilder.CreateInBoundsGEP(elemType, dataPtrPtr, {indexI64});
+
+	// Load element
+	auto *value = m_Context.irBuilder.CreateLoad(elemType, elemPtr);
+
+	return {.value = value, .type = arrType->elementType, .isTemp = false};
+}
+
+ExprResult ExprLowerer::visit(const ast::LenExpr &n) {
+	const auto [arrayVal, arrayType, _] = lowerExpr(*n.base);
+
+	VERIFY(arrayType->isTypeKind(TypeKind::Array));
+
+	// Fat pointer structure: { T* data, i64 size }
+	// Extract size (field 1)
+	auto *sizeVal = m_Context.irBuilder.CreateExtractValue(arrayVal, 1U);
+
+	// Convert i64 to i32 for return
+	auto *sizeI32 =
+			m_Context.irBuilder.CreateTrunc(sizeVal, llvm::Type::getInt32Ty(
+															 m_Context.irBuilder.getContext()));
+
+	return {.value = sizeI32, .type = TypeFactory::getI32(), .isTemp = true};
 }
 
 ExprResult ExprLowerer::visit(const ast::UnaryExpr &n) {
@@ -339,6 +529,26 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 
+			if (leftType->isTypeKind(TypeKind::Array) && rightType->isTypeKind(TypeKind::Null)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, left);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpEQ(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Array)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, right);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpEQ(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
 			if ((leftType->isTypeKind(TypeKind::Pointer) &&
 				 rightType->isTypeKind(TypeKind::Null)) ||
 				(leftType->isTypeKind(TypeKind::Null) &&
@@ -347,12 +557,12 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				 rightType->isTypeKind(TypeKind::Pointer))) {
 				if (leftType->isTypeKind(TypeKind::Null) &&
 					rightType->isTypeKind(TypeKind::Pointer)) {
-					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+					left = coerceNullToTarget(m_Context, left, leftType, rightType);
 				}
 
 				if (rightType->isTypeKind(TypeKind::Null) &&
 					leftType->isTypeKind(TypeKind::Pointer)) {
-					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+					right = coerceNullToTarget(m_Context, right, rightType, leftType);
 				}
 
 				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
@@ -367,6 +577,26 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
 			}
 
+			if (leftType->isTypeKind(TypeKind::Array) && rightType->isTypeKind(TypeKind::Null)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, left);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpNE(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
+			if (leftType->isTypeKind(TypeKind::Null) && rightType->isTypeKind(TypeKind::Array)) {
+				auto *dataPtr = extractArrayDataPtr(m_Context, right);
+				auto *const val =
+						m_Context.irBuilder.CreateICmpNE(dataPtr,
+														 llvm::ConstantPointerNull::get(
+																 llvm::cast<llvm::PointerType>(
+																		 dataPtr->getType())));
+				return {.value = val, .type = TypeFactory::getBool(), .isTemp = true};
+			}
+
 			if ((leftType->isTypeKind(TypeKind::Pointer) &&
 				 rightType->isTypeKind(TypeKind::Null)) ||
 				(leftType->isTypeKind(TypeKind::Null) &&
@@ -375,12 +605,12 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				 rightType->isTypeKind(TypeKind::Pointer))) {
 				if (leftType->isTypeKind(TypeKind::Null) &&
 					rightType->isTypeKind(TypeKind::Pointer)) {
-					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+					left = coerceNullToTarget(m_Context, left, leftType, rightType);
 				}
 
 				if (rightType->isTypeKind(TypeKind::Null) &&
 					leftType->isTypeKind(TypeKind::Pointer)) {
-					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+					right = coerceNullToTarget(m_Context, right, rightType, leftType);
 				}
 
 				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
@@ -470,32 +700,6 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 }
 
 ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
-	if (n.isStructConstructor) {
-		const auto resultType = n.inferredType.value();
-		auto *const llvmResultType =
-				static_cast<llvm::StructType *>(m_Context.typeConverter.convert(resultType));
-		llvm::Value *aggregate = llvm::UndefValue::get(llvmResultType);
-
-		for (u32 i = 0; i < n.args.size(); ++i) {
-			const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
-			const auto *structType = static_cast<StructType *>(resultType);
-			const auto &fieldType = structType->orderedFields[i].second;
-
-			auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
-			if (!resIsTemp) {
-				valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
-			} else {
-				removeFromExprCleanup(resValue);
-			}
-
-			aggregate = m_Context.irBuilder.CreateInsertValue(aggregate, valueToInsert, {i});
-		}
-
-		addToExprCleanup(aggregate, resultType);
-
-		return {.value = aggregate, .type = resultType, .isTemp = true};
-	}
-
 	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
 	VERIFY(type->isTypeKind(TypeKind::Function));
 	const auto funcType = static_cast<FunctionType *>(type);
@@ -506,7 +710,7 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	for (u32 i = 0; i < n.args.size(); ++i) {
 		const auto &arg = n.args[i];
 		const auto &[resValue, resType, resIsTemp] = lowerExpr(*arg);
-		auto *argValue = coerceNullToPointer(m_Context, resValue, resType, funcType->paramTypes[i]);
+		auto *argValue = coerceNullToTarget(m_Context, resValue, resType, funcType->paramTypes[i]);
 
 		if (resIsTemp) {
 			removeFromExprCleanup(resValue);
@@ -533,7 +737,7 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	const auto &[leftLValue, leftType, isLeftTemp] = lowerLValue(*n.left);
 	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
-	auto *adjustedRight = coerceNullToPointer(m_Context, right, rightType, leftType);
+	auto *adjustedRight = coerceNullToTarget(m_Context, right, rightType, leftType);
 	const auto &llvmLeftType = m_Context.typeConverter.convert(n.left->inferredType.value());
 	const auto &left = m_Context.irBuilder.CreateLoad(llvmLeftType, leftLValue);
 

@@ -1,3 +1,48 @@
+func assert(c: bool) {
+    if (!c) {
+        print_char('⚠');
+        print_newline();
+    }
+}
+
+struct Foo {
+    a: i32
+}
+
 func main() -> i32 {
+
+    // Variable declaration
+    // -- Value Types --
+    // These types are bound to the local lifetime, they 
+    // don't need any cleanup or smart pointer logic.
+    a: i32;
+    b: i32 = 0;
+    c: Foo;
+    d: Foo = Foo { 0 };
+
+    assert(a == b);
+    assert(c.a == d.a);
+
+    // -- Reference Types --
+    // These types are managed via the spart pointer concept.
+    // -- Pointers --
+    e: *i32;
+    f: *i32 = null;
+    g: *i32 = new i32(0);
+    h: *i32 = new i32;
+
+    assert(e == f);
+    assert(*g == *h);
+
+    // -- Arrays --
+    i: []i32;
+    j: []i32 = null;
+    k: []i32 = array[10] i32;
+
+    x: []i32;
+
+    assert(i == null && j == null);
+    assert(len(k) == 10);
+
     return 0;
 }

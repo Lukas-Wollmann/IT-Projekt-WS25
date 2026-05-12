@@ -2,7 +2,8 @@
     "files.associations": {
         "*.h": "cpp",
         "*.hpp": "cpp",
-        "*.cpp": "cpp"
+        "*.cpp": "cpp",
+        "*.ocn": "ocn"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang++-18",
     "C_Cpp.clang_format_path": "/usr/bin/clang-format",
@@ -16,5 +17,59 @@
     "C_Cpp.clang_format_fallbackStyle": "LLVM",
     "C_Cpp.intelliSenseEngine": "default",
     "C_Cpp.codeAnalysis.enabled": true,
-    "C_Cpp.codeAnalysis.runAutomatically": true
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "keyword.control.ocn, keyword.declaration.ocn, keyword.other.ocn",
+                "settings": {
+                    "foreground": "#E05584",
+                    "fontStyle": "bold"
+                }
+            },
+            {
+                "scope": "storage.type.ocn, entity.name.type.ocn",
+                "settings": {
+                    "foreground": "#BFA5F6"
+                }
+            },
+            {
+                "scope": "entity.name.function.ocn",
+                "settings": {
+                    "foreground": "#8FAEDC"
+                }
+            },
+            {
+                "scope": "variable.other.definition.ocn, variable.other.ocn",
+                "settings": {
+                    "foreground": "#BFA6B9"
+                }
+            },
+            {
+                "scope": "constant.numeric.integer.ocn, constant.language.boolean.ocn",
+                "settings": {
+                    "foreground": "#EFA9B0"
+                }
+            },
+            {
+                "scope": "string.quoted.single.ocn, string.quoted.double.ocn",
+                "settings": {
+                    "foreground": "#57B58E"
+                }
+            },
+            {
+                "scope": "comment.line.double-slash.ocn, comment.block.ocn",
+                "settings": {
+                    "foreground": "#60666c",
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": "keyword.operator.ocn, punctuation.separator.ocn",
+                "settings": {
+                    "foreground": "#E8C6D9"
+                }
+            }
+        ]
+    }
 }

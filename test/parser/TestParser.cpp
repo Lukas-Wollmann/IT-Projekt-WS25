@@ -273,6 +273,24 @@ TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation") {
 	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
 }
 
+TEST_CASE("Parser: parsePrimaryExpr() - Array allocation with array syntax") {
+	// Arrange
+	U8String source = u8"array[4] i32";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::ArrayHeapAlloc);
+	auto arrayAlloc = dynamic_cast<ast::ArrayHeapAlloc *>(expr.get());
+	REQUIRE(arrayAlloc != nullptr);
+	CHECK(arrayAlloc->size->kind == ast::NodeKind::IntLit);
+	CHECK(arrayAlloc->elementType->kind == TypeKind::Primitive);
+}
+
 TEST_CASE("Parser: parsePrimaryExpr() - Struct constructor with braces") {
 	// Arrange
 	U8String source = u8"Foo { 10 }";
@@ -284,15 +302,12 @@ TEST_CASE("Parser: parsePrimaryExpr() - Struct constructor with braces") {
 	auto expr = parser.parsePrimaryExpr();
 
 	// Assert
-	CHECK(expr->kind == ast::NodeKind::FuncCall);
-	auto call = dynamic_cast<ast::FuncCall *>(expr.get());
-	REQUIRE(call != nullptr);
-	CHECK(call->args.size() == 1);
-	CHECK(call->args[0]->kind == ast::NodeKind::IntLit);
-
-	auto callee = dynamic_cast<ast::VarRef *>(call->expr.get());
-	REQUIRE(callee != nullptr);
-	CHECK(callee->ident == u8"Foo");
+	CHECK(expr->kind == ast::NodeKind::StructInit);
+	auto init = dynamic_cast<ast::StructInit *>(expr.get());
+	REQUIRE(init != nullptr);
+	CHECK(init->args.size() == 1);
+	CHECK(init->args[0]->kind == ast::NodeKind::IntLit);
+	CHECK(init->type->isTypeKind(TypeKind::Struct));
 }
 
 TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation with struct braces") {
@@ -309,7 +324,7 @@ TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation with struct braces") {
 	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
 	auto heap = dynamic_cast<ast::HeapAlloc *>(expr.get());
 	REQUIRE(heap != nullptr);
-	CHECK(heap->expr->kind == ast::NodeKind::FuncCall);
+	CHECK(heap->expr->kind == ast::NodeKind::StructInit);
 }
 
 TEST_CASE("Parser: parseUnaryExpr() - Negative number") {
@@ -357,6 +372,27 @@ TEST_CASE("Parser: parseUnaryExpr() - Dereference") {
 	// Assert
 	CHECK(expr->kind == ast::NodeKind::UnaryExpr);
 	auto unary = dynamic_cast<ast::UnaryExpr *>(expr.get());
+	CHECK(unary->op == UnaryOpKind::Dereference);
+}
+
+TEST_CASE("Parser: parseUnaryExpr() - Dereference binds tighter than multiplication") {
+	// Arrange
+	U8String source = u8"*ptr * 2";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parseExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::BinaryExpr);
+	auto binary = dynamic_cast<ast::BinaryExpr *>(expr.get());
+	REQUIRE(binary != nullptr);
+	CHECK(binary->op == BinaryOpKind::Multiplication);
+	CHECK(binary->left->kind == ast::NodeKind::UnaryExpr);
+	auto unary = dynamic_cast<ast::UnaryExpr *>(binary->left.get());
+	REQUIRE(unary != nullptr);
 	CHECK(unary->op == UnaryOpKind::Dereference);
 }
 

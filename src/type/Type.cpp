@@ -148,3 +148,24 @@ bool StructType::equals(const TypeBase *other) const {
 Box<TypeBase> StructType::clone() const {
 	return std::make_unique<StructType>(name);
 }
+
+ArrayType::ArrayType(Type elementType)
+	: TypeBase(TypeKind::Array)
+	, elementType(elementType) {}
+
+U8String ArrayType::str() const {
+	return std::format("[]{}", elementType);
+}
+
+bool ArrayType::equals(const TypeBase *other) const {
+	if (!other || other->kind != TypeKind::Array) {
+		return false;
+	}
+
+	auto *otherArray = static_cast<const ArrayType *>(other);
+	return elementType == otherArray->elementType;
+}
+
+Box<TypeBase> ArrayType::clone() const {
+	return std::make_unique<ArrayType>(elementType);
+}

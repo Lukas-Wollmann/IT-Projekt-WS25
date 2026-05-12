@@ -57,6 +57,7 @@ struct Parser {
 	Box<ast::Expr> parseAdditiveExpr();
 	Box<ast::Expr> parseMultiplicativeExpr();
 	Box<ast::Expr> parseUnaryExpr();
+	Box<ast::Expr> parseIndexExpr();
 	Box<ast::Expr> parsePostfixExpr();
 	Box<ast::Expr> parsePrimaryExpr();
 	Box<ast::Expr> parseFieldAccess(Box<ast::Expr> base);

@@ -22,6 +22,6 @@ private:
 	llvm::Type *convertFunction(const FunctionType &t);
 	llvm::Type *convertUnit(const UnitType &t);
 	llvm::Type *convertStruct(const StructType &t);
+	llvm::Type *convertArray(const ArrayType &t);
 };
-
 }
