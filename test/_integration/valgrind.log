@@ -1,32 +1,32 @@
 
 ========================================
 Test: ./cases/assignments.ocn
-Time: Thu Apr  9 07:57:25 UTC 2026
+Time: Tue May 12 16:12:44 UTC 2026
 ========================================
-==25942== Memcheck, a memory error detector
-==25942== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==25942== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==25942== Command: ./cases/assignments.out
-==25942== 
-2105==25942== 
-==25942== HEAP SUMMARY:
-==25942==     in use at exit: 0 bytes in 0 blocks
-==25942==   total heap usage: 5 allocs, 5 frees, 4,180 bytes allocated
-==25942== 
-==25942== All heap blocks were freed -- no leaks are possible
-==25942== 
-==25942== For lists of detected and suppressed errors, rerun with: -s
-==25942== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3299== Memcheck, a memory error detector
+==3299== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3299== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3299== Command: ./cases/assignments.out
+==3299== 
+2105==3299== 
+==3299== HEAP SUMMARY:
+==3299==     in use at exit: 0 bytes in 0 blocks
+==3299==   total heap usage: 5 allocs, 5 frees, 4,180 bytes allocated
+==3299== 
+==3299== All heap blocks were freed -- no leaks are possible
+==3299== 
+==3299== For lists of detected and suppressed errors, rerun with: -s
+==3299== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/big_boy.ocn
-Time: Thu Apr  9 07:57:26 UTC 2026
+Time: Tue May 12 16:12:45 UTC 2026
 ========================================
-==25951== Memcheck, a memory error detector
-==25951== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==25951== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==25951== Command: ./cases/big_boy.out
-==25951== 
+==3309== Memcheck, a memory error detector
+==3309== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3309== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3309== Command: ./cases/big_boy.out
+==3309== 
 0
 0
 0
@@ -139,101 +139,121 @@ Time: Thu Apr  9 07:57:26 UTC 2026
 40
 133
 65450
-==25951== 
-==25951== HEAP SUMMARY:
-==25951==     in use at exit: 0 bytes in 0 blocks
-==25951==   total heap usage: 125 allocs, 125 frees, 6,688 bytes allocated
-==25951== 
-==25951== All heap blocks were freed -- no leaks are possible
-==25951== 
-==25951== For lists of detected and suppressed errors, rerun with: -s
-==25951== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3309== 
+==3309== HEAP SUMMARY:
+==3309==     in use at exit: 0 bytes in 0 blocks
+==3309==   total heap usage: 125 allocs, 125 frees, 6,688 bytes allocated
+==3309== 
+==3309== All heap blocks were freed -- no leaks are possible
+==3309== 
+==3309== For lists of detected and suppressed errors, rerun with: -s
+==3309== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/expression_cleanup.ocn
-Time: Thu Apr  9 07:57:26 UTC 2026
+Time: Tue May 12 16:12:45 UTC 2026
 ========================================
-==25975== Memcheck, a memory error detector
-==25975== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==25975== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==25975== Command: ./cases/expression_cleanup.out
-==25975== 
-==25975== 
-==25975== HEAP SUMMARY:
-==25975==     in use at exit: 0 bytes in 0 blocks
-==25975==   total heap usage: 2 allocs, 2 frees, 44 bytes allocated
-==25975== 
-==25975== All heap blocks were freed -- no leaks are possible
-==25975== 
-==25975== For lists of detected and suppressed errors, rerun with: -s
-==25975== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3328== Memcheck, a memory error detector
+==3328== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3328== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3328== Command: ./cases/expression_cleanup.out
+==3328== 
+==3328== 
+==3328== HEAP SUMMARY:
+==3328==     in use at exit: 0 bytes in 0 blocks
+==3328==   total heap usage: 2 allocs, 2 frees, 44 bytes allocated
+==3328== 
+==3328== All heap blocks were freed -- no leaks are possible
+==3328== 
+==3328== For lists of detected and suppressed errors, rerun with: -s
+==3328== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/function_call_args.ocn
-Time: Thu Apr  9 07:57:27 UTC 2026
+Time: Tue May 12 16:12:46 UTC 2026
 ========================================
-==25984== Memcheck, a memory error detector
-==25984== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==25984== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==25984== Command: ./cases/function_call_args.out
-==25984== 
-1212==25984== 
-==25984== HEAP SUMMARY:
-==25984==     in use at exit: 0 bytes in 0 blocks
-==25984==   total heap usage: 2 allocs, 2 frees, 4,116 bytes allocated
-==25984== 
-==25984== All heap blocks were freed -- no leaks are possible
-==25984== 
-==25984== For lists of detected and suppressed errors, rerun with: -s
-==25984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3338== Memcheck, a memory error detector
+==3338== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3338== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3338== Command: ./cases/function_call_args.out
+==3338== 
+1212==3338== 
+==3338== HEAP SUMMARY:
+==3338==     in use at exit: 0 bytes in 0 blocks
+==3338==   total heap usage: 2 allocs, 2 frees, 4,116 bytes allocated
+==3338== 
+==3338== All heap blocks were freed -- no leaks are possible
+==3338== 
+==3338== For lists of detected and suppressed errors, rerun with: -s
+==3338== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/function_return.ocn
-Time: Thu Apr  9 07:57:27 UTC 2026
+Time: Tue May 12 16:12:46 UTC 2026
 ========================================
-==26000== Memcheck, a memory error detector
-==26000== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==26000== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==26000== Command: ./cases/function_return.out
-==26000== 
-==26000== 
-==26000== HEAP SUMMARY:
-==26000==     in use at exit: 0 bytes in 0 blocks
-==26000==   total heap usage: 4 allocs, 4 frees, 80 bytes allocated
-==26000== 
-==26000== All heap blocks were freed -- no leaks are possible
-==26000== 
-==26000== For lists of detected and suppressed errors, rerun with: -s
-==26000== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3355== Memcheck, a memory error detector
+==3355== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3355== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3355== Command: ./cases/function_return.out
+==3355== 
+==3355== 
+==3355== HEAP SUMMARY:
+==3355==     in use at exit: 0 bytes in 0 blocks
+==3355==   total heap usage: 4 allocs, 4 frees, 80 bytes allocated
+==3355== 
+==3355== All heap blocks were freed -- no leaks are possible
+==3355== 
+==3355== For lists of detected and suppressed errors, rerun with: -s
+==3355== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+========================================
+Test: ./cases/huge_stress.ocn
+Time: Tue May 12 16:12:48 UTC 2026
+========================================
+==3369== Memcheck, a memory error detector
+==3369== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3369== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3369== Command: ./cases/huge_stress.out
+==3369== 
+1885198032
+==3369== 
+==3369== HEAP SUMMARY:
+==3369==     in use at exit: 0 bytes in 0 blocks
+==3369==   total heap usage: 1 allocs, 1 frees, 4,096 bytes allocated
+==3369== 
+==3369== All heap blocks were freed -- no leaks are possible
+==3369== 
+==3369== For lists of detected and suppressed errors, rerun with: -s
+==3369== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/scope_cleanup.ocn
-Time: Thu Apr  9 07:57:28 UTC 2026
+Time: Tue May 12 16:12:49 UTC 2026
 ========================================
-==26009== Memcheck, a memory error detector
-==26009== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==26009== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==26009== Command: ./cases/scope_cleanup.out
-==26009== 
-==26009== 
-==26009== HEAP SUMMARY:
-==26009==     in use at exit: 0 bytes in 0 blocks
-==26009==   total heap usage: 3 allocs, 3 frees, 60 bytes allocated
-==26009== 
-==26009== All heap blocks were freed -- no leaks are possible
-==26009== 
-==26009== For lists of detected and suppressed errors, rerun with: -s
-==26009== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3379== Memcheck, a memory error detector
+==3379== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3379== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3379== Command: ./cases/scope_cleanup.out
+==3379== 
+==3379== 
+==3379== HEAP SUMMARY:
+==3379==     in use at exit: 0 bytes in 0 blocks
+==3379==   total heap usage: 3 allocs, 3 frees, 60 bytes allocated
+==3379== 
+==3379== All heap blocks were freed -- no leaks are possible
+==3379== 
+==3379== For lists of detected and suppressed errors, rerun with: -s
+==3379== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 
 ========================================
 Test: ./cases/structs_all.ocn
-Time: Thu Apr  9 07:57:29 UTC 2026
+Time: Tue May 12 16:12:49 UTC 2026
 ========================================
-==26022== Memcheck, a memory error detector
-==26022== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==26022== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==26022== Command: ./cases/structs_all.out
-==26022== 
+==3388== Memcheck, a memory error detector
+==3388== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==3388== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==3388== Command: ./cases/structs_all.out
+==3388== 
 10
 c
 20
@@ -242,12 +262,12 @@ x
 z
 7
 q
-==26022== 
-==26022== HEAP SUMMARY:
-==26022==     in use at exit: 0 bytes in 0 blocks
-==26022==   total heap usage: 2 allocs, 2 frees, 4,120 bytes allocated
-==26022== 
-==26022== All heap blocks were freed -- no leaks are possible
-==26022== 
-==26022== For lists of detected and suppressed errors, rerun with: -s
-==26022== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==3388== 
+==3388== HEAP SUMMARY:
+==3388==     in use at exit: 0 bytes in 0 blocks
+==3388==   total heap usage: 2 allocs, 2 frees, 4,120 bytes allocated
+==3388== 
+==3388== All heap blocks were freed -- no leaks are possible
+==3388== 
+==3388== For lists of detected and suppressed errors, rerun with: -s
+==3388== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
