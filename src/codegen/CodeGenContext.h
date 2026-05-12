@@ -39,4 +39,7 @@ public:
 	[[nodiscard]] llvm::FunctionType *getDestructorType();
 	[[nodiscard]] llvm::Value *sizeOf(Type type);
 };
+
+llvm::Value *coerceNullToTarget(CodeGenContext &ctx, llvm::Value *value, Type sourceType,
+								Type targetType);
 }

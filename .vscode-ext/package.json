@@ -1,0 +1,32 @@
+{
+    "name": "ocn-syntax",
+    "displayName": "OCN Language Support",
+    "description": "Syntax highlighting for OCN language",
+    "version": "0.0.1",
+    "publisher": "ocn",
+    "engines": {
+        "vscode": "^1.50.0"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "ocn",
+                "aliases": [
+                    "OCN",
+                    "ocn"
+                ],
+                "extensions": [
+                    ".ocn"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "ocn",
+                "scopeName": "source.ocn",
+                "path": "./ocn.tmLanguage.json"
+            }
+        ]
+    }
+}

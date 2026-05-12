@@ -1,0 +1,200 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "OCN",
+    "scopeName": "source.ocn",
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#types"
+        },
+        {
+            "include": "#function_calls"
+        },
+        {
+            "include": "#declarations"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#chars"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#operators"
+        },
+        {
+            "include": "#separators"
+        },
+        {
+            "include": "#identifiers"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.ocn",
+                    "match": "//.*$"
+                },
+                {
+                    "name": "comment.block.ocn",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "\\b(array)\\s*(\\[)\\s*(\\d+)\\s*(\\])",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.other.ocn"
+                        },
+                        "2": {
+                            "name": "keyword.other.ocn"
+                        },
+                        "3": {
+                            "name": "constant.numeric.integer.ocn"
+                        },
+                        "4": {
+                            "name": "keyword.other.ocn"
+                        }
+                    }
+                },
+                {
+                    "name": "keyword.control.ocn",
+                    "match": "\\b(if|else|while|return)\\b"
+                },
+                {
+                    "name": "keyword.declaration.ocn",
+                    "match": "\\b(func|struct)\\b"
+                },
+                {
+                    "name": "keyword.other.ocn",
+                    "match": "\\b(new|null|len|array)\\b"
+                },
+                {
+                    "name": "constant.language.boolean.ocn",
+                    "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "entity.name.type.ocn",
+                    "match": "\\b(i8|i16|i32|u8|u16|f32|f64|char|bool)\\b"
+                },
+                {
+                    "name": "punctuation.separator.ocn",
+                    "match": "(\\*|\\[\\])"
+                },
+                {
+                    "match": "(?:(?<=:\\s)|(?<=->\\s))([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "entity.name.type.ocn"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?={)",
+                    "captures": {
+                        "1": {
+                            "name": "entity.name.type.ocn"
+                        }
+                    }
+                }
+            ]
+        },
+        "function_calls": {
+            "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+            "captures": {
+                "1": {
+                    "name": "entity.name.function.ocn"
+                }
+            }
+        },
+        "declarations": {
+            "patterns": [
+                {
+                    "match": "\\b(func)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.declaration.ocn"
+                        },
+                        "2": {
+                            "name": "entity.name.function.ocn"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b(struct)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.declaration.ocn"
+                        },
+                        "2": {
+                            "name": "entity.name.type.ocn"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*:(?!:)",
+                    "captures": {
+                        "1": {
+                            "name": "variable.other.definition.ocn"
+                        }
+                    }
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.ocn",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.ocn",
+                    "match": "\\\\."
+                }
+            ]
+        },
+        "chars": {
+            "name": "string.quoted.single.ocn",
+            "begin": "'",
+            "end": "'",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.ocn",
+                    "match": "\\\\."
+                }
+            ]
+        },
+        "numbers": {
+            "name": "constant.numeric.integer.ocn",
+            "match": "\\b\\d+\\b"
+        },
+        "operators": {
+            "name": "keyword.operator.ocn",
+            "match": "(\\+|-|\\*|/|%|==|!=|<=|>=|<|>|&&|\\|\\||!|&|\\||\\^|~|<<|>>|->|\\+=|-=|\\*=|/=|%=|\\^=|&=|\\|=|<<=|>>=|=)"
+        },
+        "separators": {
+            "name": "punctuation.separator.ocn",
+            "match": "[;,()\\[\\]{}:.]"
+        },
+        "identifiers": {
+            "name": "variable.other.ocn",
+            "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+        }
+    }
+}

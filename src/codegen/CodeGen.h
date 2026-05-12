@@ -10,6 +10,7 @@ struct CodeGen : ast::ConstVisitor<void> {
 private:
 	CodeGenContext &m_Context;
 	AllocManager m_AllocManager;
+	Opt<Type> m_CurrentFunctionReturnType;
 
 public:
 	explicit CodeGen(CodeGenContext &ctx);

@@ -6,20 +6,6 @@
 
 namespace gen {
 namespace {
-llvm::Value *coerceNullToPointer(gen::CodeGenContext &ctx, llvm::Value *value, Type sourceType,
-								 Type targetType) {
-	if (!sourceType->isTypeKind(TypeKind::Null) || !targetType->isTypeKind(TypeKind::Pointer)) {
-		return value;
-	}
-
-	auto *targetLlvmType = ctx.typeConverter.convert(targetType);
-	if (value->getType() == targetLlvmType) {
-		return value;
-	}
-
-	return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
-}
-
 void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 	auto *ptrTy = llvm::dyn_cast<llvm::PointerType>(ptr->getType());
 	VERIFY(ptrTy);
@@ -343,7 +329,7 @@ ExprResult ExprLowerer::visit(const ast::StructInit &n) {
 		const auto &[resValue, resType, resIsTemp] = lowerExpr(*n.args[i]);
 		const auto &fieldType = structType->orderedFields[i].second;
 
-		auto *valueToInsert = coerceNullToPointer(m_Context, resValue, resType, fieldType);
+		auto *valueToInsert = coerceNullToTarget(m_Context, resValue, resType, fieldType);
 		if (!resIsTemp) {
 			valueToInsert = m_Context.copyValue(valueToInsert, fieldType);
 		} else {
@@ -571,12 +557,12 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				 rightType->isTypeKind(TypeKind::Pointer))) {
 				if (leftType->isTypeKind(TypeKind::Null) &&
 					rightType->isTypeKind(TypeKind::Pointer)) {
-					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+					left = coerceNullToTarget(m_Context, left, leftType, rightType);
 				}
 
 				if (rightType->isTypeKind(TypeKind::Null) &&
 					leftType->isTypeKind(TypeKind::Pointer)) {
-					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+					right = coerceNullToTarget(m_Context, right, rightType, leftType);
 				}
 
 				auto *const val = m_Context.irBuilder.CreateICmpEQ(left, right);
@@ -619,12 +605,12 @@ ExprResult ExprLowerer::visit(const ast::BinaryExpr &n) {
 				 rightType->isTypeKind(TypeKind::Pointer))) {
 				if (leftType->isTypeKind(TypeKind::Null) &&
 					rightType->isTypeKind(TypeKind::Pointer)) {
-					left = coerceNullToPointer(m_Context, left, leftType, rightType);
+					left = coerceNullToTarget(m_Context, left, leftType, rightType);
 				}
 
 				if (rightType->isTypeKind(TypeKind::Null) &&
 					leftType->isTypeKind(TypeKind::Pointer)) {
-					right = coerceNullToPointer(m_Context, right, rightType, leftType);
+					right = coerceNullToTarget(m_Context, right, rightType, leftType);
 				}
 
 				auto *const val = m_Context.irBuilder.CreateICmpNE(left, right);
@@ -724,7 +710,7 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	for (u32 i = 0; i < n.args.size(); ++i) {
 		const auto &arg = n.args[i];
 		const auto &[resValue, resType, resIsTemp] = lowerExpr(*arg);
-		auto *argValue = coerceNullToPointer(m_Context, resValue, resType, funcType->paramTypes[i]);
+		auto *argValue = coerceNullToTarget(m_Context, resValue, resType, funcType->paramTypes[i]);
 
 		if (resIsTemp) {
 			removeFromExprCleanup(resValue);
@@ -751,7 +737,7 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 ExprResult ExprLowerer::visit(const ast::Assignment &n) {
 	const auto &[leftLValue, leftType, isLeftTemp] = lowerLValue(*n.left);
 	const auto &[right, rightType, isRightTemp] = lowerExpr(*n.right);
-	auto *adjustedRight = coerceNullToPointer(m_Context, right, rightType, leftType);
+	auto *adjustedRight = coerceNullToTarget(m_Context, right, rightType, leftType);
 	const auto &llvmLeftType = m_Context.typeConverter.convert(n.left->inferredType.value());
 	const auto &left = m_Context.irBuilder.CreateLoad(llvmLeftType, leftLValue);
 

@@ -14,9 +14,15 @@
         "ms-vscode.hexeditor",
         "gruntfuggly.todo-tree",
         "github.copilot-chat"
-      ]
+      ],
+      "settings": {
+        "files.associations": {
+          "*.ocn": "ocn"
+        }
+      }
     }
   },
+  "postCreateCommand": "mkdir -p /root/.vscode-server/extensions && ln -sf /workspace/.vscode-ext /root/.vscode-server/extensions/ocn-syntax-0.0.1 2>/dev/null || true",
   "runArgs": [
     "--cap-add=SYS_PTRACE",
     "--security-opt",

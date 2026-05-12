@@ -42,6 +42,40 @@ void CodeGenContext::registerRuntimeFunctions() {
 	llvmModule.getOrInsertFunction(arrayDrop, arrayDropTy);
 }
 
+llvm::Value *coerceNullToTarget(CodeGenContext &ctx, llvm::Value *value, Type sourceType,
+								Type targetType) {
+	if (!sourceType->isTypeKind(TypeKind::Null)) {
+		return value;
+	}
+
+	if (targetType->isTypeKind(TypeKind::Pointer)) {
+		auto *targetLlvmType = ctx.typeConverter.convert(targetType);
+		if (value->getType() == targetLlvmType) {
+			return value;
+		}
+
+		return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
+	}
+
+	if (targetType->isTypeKind(TypeKind::Array)) {
+		auto *arrayType = static_cast<ArrayType *>(targetType);
+		auto *arrayLlvmType = ctx.typeConverter.convert(targetType);
+		llvm::Value *result = llvm::UndefValue::get(arrayLlvmType);
+
+		auto *elemPtrTy =
+				llvm::PointerType::getUnqual(ctx.typeConverter.convert(arrayType->elementType));
+		result = ctx.irBuilder.CreateInsertValue(result, llvm::ConstantPointerNull::get(elemPtrTy),
+												 0U);
+		result = ctx.irBuilder.CreateInsertValue(result,
+												 llvm::ConstantInt::get(ctx.irBuilder.getInt64Ty(),
+																		0),
+												 1U);
+		return result;
+	}
+
+	return value;
+}
+
 llvm::Value *CodeGenContext::copyValue(llvm::Value *value, Type type) {
 	if (type->isTypeKind(TypeKind::Unit) || type->isTypeKind(TypeKind::Primitive) ||
 		type->isTypeKind(TypeKind::Null) || type->isTypeKind(TypeKind::Function)) {

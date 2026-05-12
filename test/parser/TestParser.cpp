@@ -273,6 +273,24 @@ TEST_CASE("Parser: parsePrimaryExpr() - Heap allocation") {
 	CHECK(expr->kind == ast::NodeKind::HeapAlloc);
 }
 
+TEST_CASE("Parser: parsePrimaryExpr() - Array allocation with array syntax") {
+	// Arrange
+	U8String source = u8"array[4] i32";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto expr = parser.parsePrimaryExpr();
+
+	// Assert
+	CHECK(expr->kind == ast::NodeKind::ArrayHeapAlloc);
+	auto arrayAlloc = dynamic_cast<ast::ArrayHeapAlloc *>(expr.get());
+	REQUIRE(arrayAlloc != nullptr);
+	CHECK(arrayAlloc->size->kind == ast::NodeKind::IntLit);
+	CHECK(arrayAlloc->elementType->kind == TypeKind::Primitive);
+}
+
 TEST_CASE("Parser: parsePrimaryExpr() - Struct constructor with braces") {
 	// Arrange
 	U8String source = u8"Foo { 10 }";

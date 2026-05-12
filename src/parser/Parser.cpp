@@ -793,6 +793,21 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		const auto &identTok = consume(TokenType::Identifier);
 		auto ident = identTok.lexeme;
 
+		if (ident == u8"array" && m_Current->matches(TokenType::Separator, u8"[")) {
+			consume(TokenType::Separator, u8"[");
+			if (m_Current->matches(TokenType::Separator, u8"]")) {
+				throw ParsingError(u8"Unsized array allocation is not allowed.");
+			}
+
+			auto sizeExpr = parseExpr();
+			consume(TokenType::Separator, u8"]");
+			auto elementType = parseType();
+
+			auto alloc = std::make_unique<ArrayHeapAlloc>(elementType, std::move(sizeExpr));
+			alloc->setLoc(makeSpanLoc(identTok.loc, alloc->size->loc));
+			return alloc;
+		}
+
 		if (m_Current->matches(TokenType::Separator, u8"{")) {
 			auto *structType = static_cast<StructType *>(TypeFactory::getStruct(ident));
 			auto args = parseBraceExprList();
@@ -845,21 +860,6 @@ Box<Expr> Parser::parsePrimaryExpr() {
 
 	if (m_Current->matches(TokenType::Keyword, u8"new")) {
 		const auto &newTok = consume(TokenType::Keyword, u8"new");
-
-		if (m_Current->matches(TokenType::Separator, u8"[")) {
-			consume(TokenType::Separator, u8"[");
-			if (m_Current->matches(TokenType::Separator, u8"]")) {
-				throw ParsingError(u8"Unsized array allocation is not allowed.");
-			}
-
-			auto sizeExpr = parseExpr();
-			consume(TokenType::Separator, u8"]");
-			auto elementType = parseType();
-
-			auto alloc = std::make_unique<ArrayHeapAlloc>(elementType, std::move(sizeExpr));
-			alloc->setLoc(makeSpanLoc(newTok.loc, alloc->size->loc));
-			return alloc;
-		}
 
 		auto type = parseType();
 

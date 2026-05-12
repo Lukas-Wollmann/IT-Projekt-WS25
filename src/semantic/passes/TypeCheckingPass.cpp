@@ -8,6 +8,38 @@ namespace sem {
 using namespace ast;
 using enum ErrorMessageKind;
 
+namespace {
+bool validateDeclaredTypes(Type type, TypeCheckerContext &ctx, const SourceLoc &loc) {
+	if (!type)
+		return true;
+
+	switch (type->kind) {
+		case TypeKind::Struct: {
+			auto *structType = static_cast<StructType *>(type);
+			if (!structType->isDeclared) {
+				const auto msg = ErrorMessage<UndefinedReference>::str(structType->name);
+				ctx.submitError(msg, loc);
+				return false;
+			}
+			return true;
+		}
+		case TypeKind::Array:
+			return validateDeclaredTypes(static_cast<ArrayType *>(type)->elementType, ctx, loc);
+		case TypeKind::Pointer:
+			return validateDeclaredTypes(static_cast<PointerType *>(type)->pointeeType, ctx, loc);
+		case TypeKind::Function: {
+			auto *fnType = static_cast<FunctionType *>(type);
+			bool ok = validateDeclaredTypes(fnType->returnType, ctx, loc);
+			for (const auto paramType : fnType->paramTypes) {
+				ok = validateDeclaredTypes(paramType, ctx, loc) && ok;
+			}
+			return ok;
+		}
+		default: return true;
+	}
+}
+}
+
 TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &ctx)
 	: m_Context(ctx) {}
 
@@ -43,6 +75,7 @@ bool TypeCheckingPass::visit(UnitLit &n) {
 
 bool TypeCheckingPass::visit(HeapAlloc &n) {
 	VERIFY(!n.isInferred());
+	validateDeclaredTypes(n.type, m_Context, n.loc);
 	Type actualType;
 	// If the allocation uses default initialization (no expr provided),
 	// consider the actual type equal to the expected type directly.
@@ -64,6 +97,7 @@ bool TypeCheckingPass::visit(HeapAlloc &n) {
 
 bool TypeCheckingPass::visit(ArrayHeapAlloc &n) {
 	VERIFY(!n.isInferred());
+	validateDeclaredTypes(n.elementType, m_Context, n.loc);
 
 	const auto sizeType = checkExpression(*n.size);
 
@@ -437,6 +471,7 @@ bool TypeCheckingPass::visit(ReturnStmt &n) {
 bool TypeCheckingPass::visit(VarDef &n) {
 	Type valueType;
 	auto varType = n.type;
+	validateDeclaredTypes(varType, m_Context, n.loc);
 
 	if (n.value->kind == ast::NodeKind::DefaultInit) {
 		valueType = varType;
@@ -533,10 +568,12 @@ bool TypeCheckingPass::typesMatch(Type left, Type right) {
 	if (left->isTypeKind(TypeKind::Error) || right->isTypeKind(TypeKind::Error))
 		return false;
 
-	if (left->isTypeKind(TypeKind::Null) && right->isTypeKind(TypeKind::Pointer))
+	if (left->isTypeKind(TypeKind::Null) &&
+		(right->isTypeKind(TypeKind::Pointer) || right->isTypeKind(TypeKind::Array)))
 		return true;
 
-	if (right->isTypeKind(TypeKind::Null) && left->isTypeKind(TypeKind::Pointer))
+	if (right->isTypeKind(TypeKind::Null) &&
+		(left->isTypeKind(TypeKind::Pointer) || left->isTypeKind(TypeKind::Array)))
 		return true;
 
 	return left == right;

@@ -126,6 +126,8 @@ void CodeGen::visit(const ast::Module &n) {
 }
 
 void CodeGen::visit(const ast::FuncDecl &n) {
+	m_CurrentFunctionReturnType = n.returnType;
+
 	const auto func = m_Context.llvmModule.getFunction(n.ident.asAscii());
 	VERIFY(func);
 	auto entry = llvm::BasicBlock::Create(m_Context.llvmContext, "entry", func);
@@ -154,6 +156,7 @@ void CodeGen::visit(const ast::FuncDecl &n) {
 	}
 
 	m_AllocManager.closeScope();
+	m_CurrentFunctionReturnType = std::nullopt;
 	llvm::verifyFunction(*func);
 }
 
@@ -239,15 +242,17 @@ void CodeGen::visit(const ast::WhileStmt &n) {
 void CodeGen::visit(const ast::ReturnStmt &n) {
 	ExprLowerer exprLowerer(m_Context, m_AllocManager);
 	const auto [value, type, isTemp] = exprLowerer.lowerExpr(*n.expr);
+	auto *retValue =
+			coerceNullToTarget(m_Context, value, type, m_CurrentFunctionReturnType.value());
 
 	if (isTemp) {
 		exprLowerer.removeFromExprCleanup(value);
 	} else {
-		m_Context.copyValue(value, type);
+		m_Context.copyValue(retValue, m_CurrentFunctionReturnType.value());
 	}
 
 	m_AllocManager.emitFullScopeCleanup();
-	m_Context.irBuilder.CreateRet(value);
+	m_Context.irBuilder.CreateRet(retValue);
 }
 
 void CodeGen::visit(const ast::VarDef &n) {
@@ -277,6 +282,8 @@ void CodeGen::visit(const ast::VarDef &n) {
 		valueType = t;
 		isTemp = tmp;
 	}
+
+	value = coerceNullToTarget(m_Context, value, valueType, n.type);
 
 	auto alloca = m_AllocManager.createAlloca(n.type, n.ident);
 
