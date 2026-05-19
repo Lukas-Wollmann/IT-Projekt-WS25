@@ -12,6 +12,11 @@
 #define OCN_TRUE  (OCN_BOOL) 1
 #define OCN_FALSE (OCN_BOOL) 0
 
+typedef struct {
+	OCN_CHAR *data;
+	size_t size;
+} OCN_CharArray;
+
 void print_i32(const OCN_I32 i) {
 	printf("%d", i);
 }
@@ -35,6 +40,12 @@ void print_char(const OCN_CHAR c) {
 		putchar(0x80 | ((c >> 12) & 0x3F));
 		putchar(0x80 | ((c >> 6) & 0x3F));
 		putchar(0x80 | (c & 0x3F));
+	}
+}
+
+void print_str(const OCN_CharArray s) {
+	for (size_t i = 0; i < s.size; ++i) {
+		print_char(s.data[i]);
 	}
 }
 

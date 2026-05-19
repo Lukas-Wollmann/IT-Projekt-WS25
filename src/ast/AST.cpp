@@ -53,6 +53,11 @@ ArrayHeapAlloc::ArrayHeapAlloc(Type elementType, Box<Expr> size)
 	, elementType(elementType)
 	, size(std::move(size)) {}
 
+ArrayLiteral::ArrayLiteral(Type elementType, Vec<Box<Expr>> elements)
+	: Expr(NodeKind::ArrayLiteral)
+	, elementType(elementType)
+	, elements(std::move(elements)) {}
+
 StructInit::StructInit(Type type, Vec<Box<Expr>> args)
 	: Expr(NodeKind::StructInit)
 	, type(type)

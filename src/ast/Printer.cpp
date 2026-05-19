@@ -67,6 +67,15 @@ void Printer::visit(const ArrayHeapAlloc &n) {
 	child(true).printNode(*n.size);
 }
 
+void Printer::visit(const ArrayLiteral &n) {
+	printLine(std::format("ArrayLiteral: [?]{}", n.elementType->str()));
+
+	for (size_t i = 0; i < n.elements.size(); ++i) {
+		const auto isLast = i + 1 == n.elements.size();
+		child(isLast).printNode(*n.elements[i]);
+	}
+}
+
 void Printer::visit(const StructInit &n) {
 	printLine(std::format("StructInit: {}", n.type->str()));
 

@@ -33,6 +33,7 @@ public:
 	ExprResult visit(const ast::UnitLit &n) override;
 	ExprResult visit(const ast::HeapAlloc &n) override;
 	ExprResult visit(const ast::ArrayHeapAlloc &n) override;
+	ExprResult visit(const ast::ArrayLiteral &n) override;
 	ExprResult visit(const ast::StructInit &n) override;
 	ExprResult visit(const ast::VarRef &n) override;
 	ExprResult visit(const ast::FieldAccess &n) override;
