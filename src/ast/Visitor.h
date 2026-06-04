@@ -26,24 +26,25 @@ struct Visitor {
 			case NodeKind::HeapAlloc:	return visit(static_cast<Constness<HeapAlloc> &>(node));
 			case NodeKind::ArrayHeapAlloc:
 				return visit(static_cast<Constness<ArrayHeapAlloc> &>(node));
-			case NodeKind::StructInit:	return visit(static_cast<Constness<StructInit> &>(node));
-			case NodeKind::UnaryExpr:	return visit(static_cast<Constness<UnaryExpr> &>(node));
-			case NodeKind::BinaryExpr:	return visit(static_cast<Constness<BinaryExpr> &>(node));
-			case NodeKind::Assignment:	return visit(static_cast<Constness<Assignment> &>(node));
-			case NodeKind::FuncCall:	return visit(static_cast<Constness<FuncCall> &>(node));
-			case NodeKind::VarRef:		return visit(static_cast<Constness<VarRef> &>(node));
-			case NodeKind::FieldAccess: return visit(static_cast<Constness<FieldAccess> &>(node));
-			case NodeKind::IndexExpr:	return visit(static_cast<Constness<IndexExpr> &>(node));
-			case NodeKind::LenExpr:		return visit(static_cast<Constness<LenExpr> &>(node));
-			case NodeKind::BlockStmt:	return visit(static_cast<Constness<BlockStmt> &>(node));
-			case NodeKind::IfStmt:		return visit(static_cast<Constness<IfStmt> &>(node));
-			case NodeKind::WhileStmt:	return visit(static_cast<Constness<WhileStmt> &>(node));
-			case NodeKind::ReturnStmt:	return visit(static_cast<Constness<ReturnStmt> &>(node));
-			case NodeKind::VarDef:		return visit(static_cast<Constness<VarDef> &>(node));
-			case NodeKind::FuncDecl:	return visit(static_cast<Constness<FuncDecl> &>(node));
-			case NodeKind::StructDecl:	return visit(static_cast<Constness<StructDecl> &>(node));
-			case NodeKind::Module:		return visit(static_cast<Constness<Module> &>(node));
-			default:					UNREACHABLE();
+			case NodeKind::ArrayLiteral: return visit(static_cast<Constness<ArrayLiteral> &>(node));
+			case NodeKind::StructInit:	 return visit(static_cast<Constness<StructInit> &>(node));
+			case NodeKind::UnaryExpr:	 return visit(static_cast<Constness<UnaryExpr> &>(node));
+			case NodeKind::BinaryExpr:	 return visit(static_cast<Constness<BinaryExpr> &>(node));
+			case NodeKind::Assignment:	 return visit(static_cast<Constness<Assignment> &>(node));
+			case NodeKind::FuncCall:	 return visit(static_cast<Constness<FuncCall> &>(node));
+			case NodeKind::VarRef:		 return visit(static_cast<Constness<VarRef> &>(node));
+			case NodeKind::FieldAccess:	 return visit(static_cast<Constness<FieldAccess> &>(node));
+			case NodeKind::IndexExpr:	 return visit(static_cast<Constness<IndexExpr> &>(node));
+			case NodeKind::LenExpr:		 return visit(static_cast<Constness<LenExpr> &>(node));
+			case NodeKind::BlockStmt:	 return visit(static_cast<Constness<BlockStmt> &>(node));
+			case NodeKind::IfStmt:		 return visit(static_cast<Constness<IfStmt> &>(node));
+			case NodeKind::WhileStmt:	 return visit(static_cast<Constness<WhileStmt> &>(node));
+			case NodeKind::ReturnStmt:	 return visit(static_cast<Constness<ReturnStmt> &>(node));
+			case NodeKind::VarDef:		 return visit(static_cast<Constness<VarDef> &>(node));
+			case NodeKind::FuncDecl:	 return visit(static_cast<Constness<FuncDecl> &>(node));
+			case NodeKind::StructDecl:	 return visit(static_cast<Constness<StructDecl> &>(node));
+			case NodeKind::Module:		 return visit(static_cast<Constness<Module> &>(node));
+			default:					 UNREACHABLE();
 		}
 	}
 
@@ -76,6 +77,10 @@ struct Visitor {
 	}
 
 	virtual T visit(Constness<ArrayHeapAlloc> &) {
+		UNREACHABLE();
+	}
+
+	virtual T visit(Constness<ArrayLiteral> &) {
 		UNREACHABLE();
 	}
 

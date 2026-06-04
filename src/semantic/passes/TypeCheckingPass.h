@@ -30,6 +30,7 @@ private:
 	bool visit(ast::UnitLit &n) override;
 	bool visit(ast::HeapAlloc &n) override;
 	bool visit(ast::ArrayHeapAlloc &n) override;
+	bool visit(ast::ArrayLiteral &n) override;
 	bool visit(ast::StructInit &n) override;
 	bool visit(ast::UnaryExpr &n) override;
 	bool visit(ast::BinaryExpr &n) override;

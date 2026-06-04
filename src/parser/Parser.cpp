@@ -789,6 +789,23 @@ Box<Expr> Parser::parsePrimaryExpr() {
 		return lenExpr;
 	}
 
+	if (m_Current->matches(TokenType::StringLiteral)) {
+		const auto &tok = consume(TokenType::StringLiteral);
+		auto *charType = TypeFactory::getChar();
+		Vec<Box<Expr>> elements;
+		elements.reserve(tok.lexeme.length());
+
+		for (size_t i = 0; i < tok.lexeme.length(); ++i) {
+			auto charLit = std::make_unique<CharLit>(tok.lexeme[i]);
+			charLit->setLoc(tok.loc);
+			elements.push_back(std::move(charLit));
+		}
+
+		auto arrayLit = std::make_unique<ArrayLiteral>(charType, std::move(elements));
+		arrayLit->setLoc(tok.loc);
+		return arrayLit;
+	}
+
 	if (m_Current->matches(TokenType::Identifier)) {
 		const auto &identTok = consume(TokenType::Identifier);
 		auto ident = identTok.lexeme;
