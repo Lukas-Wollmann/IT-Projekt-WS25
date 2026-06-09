@@ -2,6 +2,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -9,11 +10,13 @@
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
 #include "core/ErrorHandler.h"
+#include "core/ModuleLoader.h"
 #include "core/PrintUtil.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
 #include "semantic/passes/ExplorationPass.h"
 #include "semantic/passes/TypeCheckingPass.h"
+#include "type/TypeFactory.h"
 
 using namespace lex;
 using namespace prs;
@@ -33,24 +36,25 @@ int main(const int argc, const char *argv[]) {
 
 	std::string filename = argv[1];
 	std::string outputFilename = "out";
-	bool debug = false, keepIntermediate = false;
+	bool debug = false;
+	bool keepIntermediate = false;
 
 	for (int i = 2; i < argc; ++i) {
 		std::string opt = argv[i];
 
-		if (opt == "-d" || opt == "--debug") {
-			debug = true;
-		} else if (opt == "-o" || opt == "--output") {
+		if (opt == "-o" || opt == "--output") {
 			if (i > argc - 2) {
 				util::print("Expected filename after option '{}'.\n", opt);
 				return 1;
 			}
 
 			outputFilename = argv[++i];
+		} else if (opt == "-d" || opt == "--debug") {
+			debug = true;
 		} else if (opt == "-i" || opt == "--keep-intermediate") {
 			keepIntermediate = true;
 		} else {
-			util::print("Unknown option: '{}'.", opt);
+			util::print("Unknown option: '{}'.\n", opt);
 			return 1;
 		}
 	}
@@ -67,25 +71,32 @@ int main(const int argc, const char *argv[]) {
 	U8String source(buffer.str());
 	file.close();
 
-	ErrorHandler err(filename, source);
+	ErrorHandler err(U8String(filename), source);
+	err.registerSource(U8String(filename), source);
 
-	auto tokens = Lexer::tokenize(source, err);
+	core::ModuleLoader loader(err, debug);
+	const auto entryPath = std::filesystem::path(filename).lexically_normal();
+	auto module = loader.load(entryPath);
 
-	if (debug) {
-		for (auto tok : tokens)
-			util::print("{:?}\n", tok);
-	}
-
-	if (err.hasError()) {
-		err.printErrors();
-		return 1;
-	}
-
-	auto module = Parser::parse(tokens, err, filename);
-
-	if (err.hasError()) {
+	if (!module) {
 		err.printErrors();
 		return 2;
+	}
+
+	if (err.hasError()) {
+		err.printErrors();
+		return 3;
+	}
+
+	// Validate the full import graph once; each module is checked a single time.
+	if (!loader.validateImportGraph(entryPath)) {
+		err.printErrors();
+		return 2;
+	}
+
+	if (err.hasError()) {
+		err.printErrors();
+		return 3;
 	}
 
 	if (debug)

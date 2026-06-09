@@ -3,6 +3,7 @@
 
 struct SourceLoc {
 	size_t line, column, index, length;
+	U8String filename;
 
 	bool operator==(const SourceLoc &other) const {
 		return line == other.line && column == other.column && index == other.index &&
@@ -21,7 +22,12 @@ struct std::formatter<SourceLoc> {
 	}
 
 	auto format(const SourceLoc &loc, format_context &ctx) const {
-		return std::format_to(ctx.out(), "{{{}:{}, {}, {}}}", loc.line, loc.column, loc.index,
-							  loc.length);
+		if (loc.filename.empty()) {
+			return std::format_to(ctx.out(), "{{{}:{}, {}, {}}}", loc.line, loc.column, loc.index,
+								  loc.length);
+		}
+
+		return std::format_to(ctx.out(), "{{{}:{}, {}, {}, {}}}", loc.filename, loc.line,
+							  loc.column, loc.index, loc.length);
 	}
 };

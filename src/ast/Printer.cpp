@@ -194,6 +194,14 @@ void Printer::visit(const StructDecl &n) {
 void Printer::visit(const Module &n) {
 	printLine(u8"Module(\"" + n.name + u8"\")");
 
+	auto imports = child();
+	imports.printLine(u8"Imports");
+
+	for (size_t i = 0; i < n.imports.size(); ++i) {
+		const auto isLast = i + 1 == n.imports.size();
+		imports.child(isLast).printLine(std::format("\"{}\"", n.imports[i]));
+	}
+
 	auto funcs = child();
 	funcs.printLine(u8"Funcs");
 

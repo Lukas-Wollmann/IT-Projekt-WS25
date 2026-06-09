@@ -77,23 +77,54 @@ void Parser::reportError(ParsingError &e) const {
 
 Box<Module> Parser::parseModule() {
 	const auto moduleLoc = m_Current->loc;
+	Vec<U8String> imports;
 	Vec<Box<FuncDecl>> funcs;
 	Vec<Box<StructDecl>> structs;
+	bool seenDeclaration = false;
 
 	while (!m_Current->matches(TokenType::EndOfFile)) {
 		try {
-			if (m_Current->matches(TokenType::Keyword, u8"struct")) {
+			if (m_Current->matches(TokenType::Keyword, u8"import")) {
+				const auto &importToken = consume(TokenType::Keyword, u8"import");
+
+				if (seenDeclaration) {
+					m_ErrorHandler.addError(u8"Import statements must precede any declarations.",
+											importToken.loc, ErrorLevel::WARNING);
+				}
+
+				imports.push_back(consume(TokenType::Identifier).lexeme);
+
+				if (m_Current->matches(TokenType::Separator, u8".")) {
+					U8String modulePath = imports.back();
+
+					while (m_Current->matches(TokenType::Separator, u8".")) {
+						consume(TokenType::Separator, u8".");
+						modulePath += u8"/";
+						modulePath += consume(TokenType::Identifier).lexeme;
+					}
+
+					imports.back() = std::move(modulePath);
+				}
+			} else if (m_Current->matches(TokenType::Keyword, u8"struct")) {
 				structs.push_back(parseStructDecl());
+				seenDeclaration = true;
 			} else if (m_Current->matches(TokenType::Keyword, u8"func")) {
 				funcs.push_back(parseFuncDecl());
+				seenDeclaration = true;
 			} else {
-				constexpr auto msg = "Expected 'func' or 'struct' declaration, found {} instead.";
+				constexpr auto msg =
+						"Expected 'import', 'func' or 'struct' declaration, found {} instead.";
 				throw ParsingError(std::format(msg, *m_Current));
 			}
 		} catch (ParsingError &e) {
 			reportError(e);
 
+			if (!m_Current->matches(TokenType::EndOfFile)) {
+				advance();
+			}
+
 			while (!m_Current->matches(TokenType::EndOfFile) &&
+				   !m_Current->matches(TokenType::Keyword, u8"import") &&
 				   !m_Current->matches(TokenType::Keyword, u8"func") &&
 				   !m_Current->matches(TokenType::Keyword, u8"struct")) {
 				advance();
@@ -101,7 +132,8 @@ Box<Module> Parser::parseModule() {
 		}
 	}
 
-	auto module = std::make_unique<Module>(m_ModuleName, std::move(funcs), std::move(structs));
+	auto module = std::make_unique<Module>(m_ModuleName, std::move(imports), std::move(funcs),
+										   std::move(structs));
 	module->setLoc(makeSpanLoc(moduleLoc, m_Current->loc));
 	return module;
 }

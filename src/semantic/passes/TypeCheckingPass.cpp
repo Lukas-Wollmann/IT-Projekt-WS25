@@ -40,8 +40,9 @@ bool validateDeclaredTypes(Type type, TypeCheckerContext &ctx, const SourceLoc &
 }
 }
 
-TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &ctx)
-	: m_Context(ctx) {}
+TypeCheckingPass::TypeCheckingPass(TypeCheckerContext &ctx, bool skipEntryPointCheck)
+	: m_Context(ctx)
+	, m_SkipEntryPointCheck(skipEntryPointCheck) {}
 
 bool TypeCheckingPass::visit(IntLit &n) {
 	VERIFY(!n.isInferred());
@@ -528,6 +529,10 @@ bool TypeCheckingPass::visit(FuncDecl &n) {
 bool TypeCheckingPass::visit(Module &n) {
 	for (auto &d : n.funcs)
 		dispatch(*d);
+
+	if (m_SkipEntryPointCheck) {
+		return false;
+	}
 
 	const auto mainType = m_Context.getGlobalNamespace().getFunction(u8"main");
 

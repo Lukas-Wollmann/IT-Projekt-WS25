@@ -14,11 +14,11 @@ const U8String s_Operators[] = {u8"+",	u8"-",	u8"*",	u8"/",	u8"=",	u8"!",	u8"<",
 constexpr char32_t s_Separators[] = {U';', U',', U'(', U')', U'{', U'}', U'[', U']', U':', U'.'};
 
 const U8String s_Keywords[] = {u8"if",	u8"else",	u8"while", u8"return", u8"func",
-							   u8"new", u8"struct", u8"null",  u8"len"};
+							   u8"new", u8"struct", u8"null",  u8"len",	   u8"import"};
 
-Vec<Token> Lexer::tokenize(const U8String &source, ErrorHandler &err) {
+Vec<Token> Lexer::tokenize(const U8String &source, ErrorHandler &err, const U8String &filename) {
 	Vec<Token> tokens;
-	Lexer lexer(source, err);
+	Lexer lexer(source, err, filename);
 
 	while (true) {
 		const auto token = lexer.nextToken();
@@ -33,12 +33,14 @@ Vec<Token> Lexer::tokenize(const U8String &source, ErrorHandler &err) {
 	return tokens;
 }
 
-Lexer::Lexer(const U8String &source, ErrorHandler &err)
+Lexer::Lexer(const U8String &source, ErrorHandler &err, const U8String &filename)
 	: m_Source(source)
 	, m_Iter(m_Source.begin())
 	, m_Current(m_Source.empty() ? '\0' : *m_Iter)
 	, m_CurrentLoc(1, 1, 0, 0)
-	, m_ErrorHandler(err) {}
+	, m_ErrorHandler(err) {
+	m_CurrentLoc.filename = filename;
+}
 
 Token Lexer::nextToken() {
 	skipWhitespace();

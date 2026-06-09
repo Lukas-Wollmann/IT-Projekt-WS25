@@ -10,6 +10,9 @@
             "include": "#keywords"
         },
         {
+            "include": "#imports"
+        },
+        {
             "include": "#types"
         },
         {
@@ -79,12 +82,31 @@
                     "match": "\\b(func|struct)\\b"
                 },
                 {
+                    "name": "keyword.declaration.ocn",
+                    "match": "\\b(import)\\b"
+                },
+                {
                     "name": "keyword.other.ocn",
                     "match": "\\b(new|null|len|array)\\b"
                 },
                 {
                     "name": "constant.language.boolean.ocn",
                     "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
+        "imports": {
+            "patterns": [
+                {
+                    "match": "\\b(import)\\b\\s+([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.declaration.ocn"
+                        },
+                        "2": {
+                            "name": "entity.name.namespace.ocn"
+                        }
+                    }
                 }
             ]
         },
@@ -145,6 +167,17 @@
                         },
                         "2": {
                             "name": "entity.name.type.ocn"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b(import)\\b\\s+([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.declaration.ocn"
+                        },
+                        "2": {
+                            "name": "entity.name.namespace.ocn"
                         }
                     }
                 },

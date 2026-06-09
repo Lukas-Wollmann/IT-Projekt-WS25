@@ -135,9 +135,11 @@ StructDecl::StructDecl(U8String ident, Vec<StructField> fields)
 	, ident(std::move(ident))
 	, fields(std::move(fields)) {}
 
-Module::Module(U8String name, Vec<Box<FuncDecl>> funcs, Vec<Box<StructDecl>> structs)
+Module::Module(U8String name, Vec<U8String> imports, Vec<Box<FuncDecl>> funcs,
+			   Vec<Box<StructDecl>> structs)
 	: Node(NodeKind::Module)
 	, name(std::move(name))
+	, imports(std::move(imports))
 	, funcs(std::move(funcs))
 	, structs(std::move(structs)) {}
 }

@@ -14,7 +14,13 @@
 ErrorHandler::ErrorHandler(U8String filename, const U8String &sourceCode)
 	: sourceCode(sourceCode)
 	, filename(std::move(filename))
-	, hasErrors(false) {}
+	, hasErrors(false) {
+	sourceFiles.insert_or_assign(this->filename, sourceCode);
+}
+
+void ErrorHandler::registerSource(U8String sourceFilename, const U8String &sourceCode) {
+	sourceFiles.insert_or_assign(std::move(sourceFilename), sourceCode);
+}
 
 void ErrorHandler::addError(U8String message, SourceLoc loc, ErrorLevel level) {
 	if (level == ErrorLevel::ERROR)
@@ -23,16 +29,16 @@ void ErrorHandler::addError(U8String message, SourceLoc loc, ErrorLevel level) {
 	errors.push_back({level, std::move(message), loc, loc.length});
 }
 
-U8String ErrorHandler::getLineFromSource(size_t lineNumber) const {
+U8String ErrorHandler::getLineFromSource(const U8String &source, size_t lineNumber) const {
 	size_t currentLine = 1;
 	size_t lineStart = 0;
 
-	for (size_t i = 0; i < sourceCode.data().size(); ++i) {
-		if (sourceCode.data()[i] == u8'\n') {
+	for (size_t i = 0; i < source.data().size(); ++i) {
+		if (source.data()[i] == u8'\n') {
 			if (currentLine == lineNumber) {
 				// Extract substring from lineStart to i
-				return U8String(std::u8string(sourceCode.data().begin() + lineStart,
-											  sourceCode.data().begin() + i));
+				return U8String(std::u8string(source.data().begin() + lineStart,
+											  source.data().begin() + i));
 			}
 			lineStart = i + 1;
 			++currentLine;
@@ -40,9 +46,8 @@ U8String ErrorHandler::getLineFromSource(size_t lineNumber) const {
 	}
 
 	// Last line without \n
-	if (currentLine == lineNumber && lineStart < sourceCode.data().size()) {
-		return U8String(
-				std::u8string(sourceCode.data().begin() + lineStart, sourceCode.data().end()));
+	if (currentLine == lineNumber && lineStart < source.data().size()) {
+		return U8String(std::u8string(source.data().begin() + lineStart, source.data().end()));
 	}
 
 	// Line not found
@@ -75,6 +80,10 @@ size_t ErrorHandler::getLineNumberWidth() const {
 
 void ErrorHandler::printError(const ErrorMessage &error) const {
 	size_t lineWidth = getLineNumberWidth();
+	const U8String effectiveFilename =
+			error.location.filename.empty() ? filename : error.location.filename;
+	auto sourceIt = sourceFiles.find(effectiveFilename);
+	const U8String &effectiveSource = sourceIt == sourceFiles.end() ? sourceCode : sourceIt->second;
 
 	std::string colorCode;
 	std::string levelStr;
@@ -98,14 +107,14 @@ void ErrorHandler::printError(const ErrorMessage &error) const {
 	std::cerr << colorCode << BOLD << levelStr << RESET << ": " << error.message << RESET << "\n";
 
 	// Source location: "--> file.cpp:2:11" (1-based)
-	std::cerr << BOLD << BLUE << " --> " << RESET << filename << ":" << error.location.line << ":"
-			  << error.location.column << "\n";
+	std::cerr << BOLD << BLUE << " --> " << RESET << effectiveFilename << ":" << error.location.line
+			  << ":" << error.location.column << "\n";
 
 	// Empty line with line number column for alignment
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << "" << " |" << RESET << "\n";
 
 	// Source line
-	U8String snippet = getLineFromSource(error.location.line);
+	U8String snippet = getLineFromSource(effectiveSource, error.location.line);
 	std::cerr << BOLD << BLUE << std::setw(lineWidth) << error.location.line << " | " << RESET
 			  << snippet << "\n";
 

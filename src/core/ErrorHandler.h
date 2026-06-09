@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "core/U8String.h"
@@ -18,16 +19,18 @@ struct ErrorMessage {
 class ErrorHandler {
 private:
 	std::vector<ErrorMessage> errors;
+	std::unordered_map<U8String, U8String> sourceFiles;
 	U8String sourceCode;
 	U8String filename;
 	bool hasErrors;
 
-	U8String getLineFromSource(size_t lineNumber) const;
+	U8String getLineFromSource(const U8String &source, size_t lineNumber) const;
 	void printError(const ErrorMessage &error) const;
 	size_t getLineNumberWidth() const;
 
 public:
 	ErrorHandler(U8String filename, const U8String &sourceCode);
+	void registerSource(U8String filename, const U8String &sourceCode);
 
 	void addError(U8String message, SourceLoc loc, ErrorLevel level = ErrorLevel::ERROR);
 	void printErrors() const;

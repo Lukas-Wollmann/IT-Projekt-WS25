@@ -18,8 +18,8 @@ TEST_CASE("ExplorationPass: Visit Module visits all FuncDecls") {
 	funcDecls.push_back(std::make_unique<FuncDecl>(u8"bar", Vec<Param>{}, TypeFactory::getUnit(),
 												   std::make_unique<BlockStmt>(Vec<Box<Stmt>>{})));
 
-	auto module =
-			std::make_unique<Module>(u8"moduleName", std::move(funcDecls), Vec<Box<StructDecl>>{});
+	auto module = std::make_unique<Module>(u8"moduleName", Vec<U8String>{}, std::move(funcDecls),
+										   Vec<Box<StructDecl>>{});
 
 	// Act
 	ep.dispatch(*module);

@@ -1,0 +1,98 @@
+import string
+
+func abs_i32(x: i32) -> i32 {
+    if (x < 0) {
+        return -x;
+    }
+
+    return x;
+}
+
+func max_i32(a: i32, b: i32) -> i32 {
+    if (a > b) {
+        return a;
+    }
+
+    return b;
+}
+
+func min_i32(a: i32, b: i32) -> i32 {
+    if (a < b) {
+        return a;
+    }
+
+    return b;
+}
+
+func clamp_i32(x: i32, lo: i32, hi: i32) -> i32 {
+    if (x < lo) {
+        return lo;
+    }
+
+    if (x > hi) {
+        return hi;
+    }
+    
+    return x;
+}
+
+func i32_to_str(n: i32) -> str {
+    // Handle zero explicitly
+    if (n == 0) {
+        data0: []char = array[1] char;
+        data0[0] = '0';
+        return str { data0 };
+    }
+
+    neg: bool = false;
+    x: i32 = n;
+    if (x < 0) {
+        neg = true;
+        x = -x;
+    }
+
+    // temporary buffer for digits (max 11 digits + sign fits in 12)
+    temp: []char = array[12] char;
+    idx: i32 = 0;
+
+    // digit lookup to avoid mixing char and i32 arithmetic
+    digits: []char = array[10] char;
+    digits[0] = '0';
+    digits[1] = '1';
+    digits[2] = '2';
+    digits[3] = '3';
+    digits[4] = '4';
+    digits[5] = '5';
+    digits[6] = '6';
+    digits[7] = '7';
+    digits[8] = '8';
+    digits[9] = '9';
+
+    while (x > 0) {
+        digit: i32 = x % 10;
+        temp[idx] = digits[digit];
+        idx += 1;
+        x = x / 10;
+    }
+
+    total: i32 = idx;
+    if (neg) {
+        total = total + 1;
+    }
+    data: []char = array[total] char;
+
+    pos: i32 = 0;
+    if (neg) {
+        data[0] = '-';
+        pos = 1;
+    }
+
+    // reverse digits into final buffer
+    i: i32 = 0;
+    while (i < idx) {
+        data[pos + i] = temp[idx - 1 - i];
+        i += 1;
+    }
+
+    return str { data };
+}

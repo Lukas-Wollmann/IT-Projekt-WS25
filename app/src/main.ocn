@@ -1,0 +1,22 @@
+import std.string
+import std.math
+
+func give_me_a_str() -> str {
+    d: []char = array[10] char;
+    d[0] = 'H';
+    d[1] = 'i';
+    
+    return str { d };
+}
+
+func main() -> i32 {
+    a: str = give_me_a_str();
+    b: str = give_me_a_str();
+    
+    str_print(str_concat(a, b));
+    str_print(i32_to_str(187));
+
+    print_newline();
+
+    return 1;
+}

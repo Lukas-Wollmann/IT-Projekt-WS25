@@ -10,7 +10,8 @@ namespace lex {
 /// for testing purposes, do only use the static tokenize(...) as an interface for this class.
 ///
 struct Lexer {
-	static Vec<Token> tokenize(const U8String &source, ErrorHandler &err);
+	static Vec<Token> tokenize(const U8String &source, ErrorHandler &err,
+							   const U8String &filename = u8"");
 
 	const U8String &m_Source;
 	U8String::ConstIterator m_Iter;
@@ -18,7 +19,7 @@ struct Lexer {
 	SourceLoc m_CurrentLoc;
 	ErrorHandler &m_ErrorHandler;
 
-	Lexer(const U8String &source, ErrorHandler &err);
+	Lexer(const U8String &source, ErrorHandler &err, const U8String &filename = u8"");
 
 	Token nextToken();
 

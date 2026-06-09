@@ -1,0 +1,13 @@
+import main
+
+struct Bar {
+    a: Foo
+}
+
+func main_test_func() {}
+
+func test_func() -> Bar {
+    main_test_func();
+
+    return Bar { Foo { new Bar { Foo { null } } } };
+}

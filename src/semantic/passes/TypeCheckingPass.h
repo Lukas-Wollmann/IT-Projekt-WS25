@@ -19,7 +19,10 @@ private:
 	Opt<Type> m_CurrentFunctionReturnType;
 
 public:
-	explicit TypeCheckingPass(TypeCheckerContext &ctx);
+	explicit TypeCheckingPass(TypeCheckerContext &ctx, bool skipEntryPointCheck = false);
+
+private:
+    bool m_SkipEntryPointCheck = false;
 
 private:
 	bool visit(ast::Module &n) override;

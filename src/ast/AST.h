@@ -230,10 +230,12 @@ struct StructDecl : Node {
 };
 
 struct Module : Node {
-	const U8String name;
-	const Vec<Box<FuncDecl>> funcs;
-	const Vec<Box<StructDecl>> structs;
+	U8String name;
+	Vec<U8String> imports;
+	Vec<Box<FuncDecl>> funcs;
+	Vec<Box<StructDecl>> structs;
 
-	Module(U8String name, Vec<Box<FuncDecl>> decls, Vec<Box<StructDecl>> structs);
+	Module(U8String name, Vec<U8String> imports, Vec<Box<FuncDecl>> decls,
+		   Vec<Box<StructDecl>> structs);
 };
 }

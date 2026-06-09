@@ -895,6 +895,42 @@ TEST_CASE("Parser: parseFuncDecl() - Function with params and return type") {
 	CHECK(func->returnType->kind == TypeKind::Primitive);
 }
 
+TEST_CASE("Parser: parseModule() - Module with imports") {
+	// Arrange
+	U8String source = u8"import test\nimport foo.bar\nfunc main() { return; }";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto module = parser.parseModule();
+
+	// Assert
+	CHECK(module->kind == ast::NodeKind::Module);
+	CHECK(module->imports.size() == 2);
+	CHECK(module->imports[0] == u8"test");
+	CHECK(module->imports[1] == u8"foo/bar");
+	CHECK(module->funcs.size() == 1);
+}
+
+TEST_CASE("Parser: parseModule() - Module accepts imports after functions") {
+	// Arrange
+	U8String source = u8"func main() { return; }\nimport test";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto module = parser.parseModule();
+
+	// Assert
+	CHECK(module->kind == ast::NodeKind::Module);
+	CHECK(module->funcs.size() == 1);
+	CHECK(module->imports.size() == 1);
+	CHECK(module->imports[0] == u8"test");
+	CHECK(err.warningCount() == 1);
+}
+
 TEST_CASE("Parser: parseModule() - Empty module") {
 	// Arrange
 	U8String source = u8"";
@@ -907,6 +943,7 @@ TEST_CASE("Parser: parseModule() - Empty module") {
 
 	// Assert
 	CHECK(module->kind == ast::NodeKind::Module);
+	CHECK(module->imports.size() == 0);
 	CHECK(module->funcs.size() == 0);
 }
 

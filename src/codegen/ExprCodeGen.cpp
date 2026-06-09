@@ -108,7 +108,28 @@ ExprResult ExprLowerer::lowerLValue(const ast::Expr &n) {
 
 		case ast::NodeKind::FieldAccess: {
 			const auto &fieldAccess = static_cast<const ast::FieldAccess &>(n);
-			const auto [baseAddr, baseType, _] = lowerLValue(*fieldAccess.base);
+			llvm::Value *baseAddr = nullptr;
+			Type baseType = nullptr;
+
+			if (fieldAccess.base->isInferred() &&
+				fieldAccess.base->valueCategory.value() == ast::ValueCategory::LValue) {
+				const auto [addr, type, _] = lowerLValue(*fieldAccess.base);
+				baseAddr = addr;
+				baseType = type;
+			} else {
+				const auto [value, type, isTemp] = lowerExpr(*fieldAccess.base);
+				VERIFY(type->isTypeKind(TypeKind::Struct));
+
+				if (isTemp) {
+					removeFromExprCleanup(value);
+				}
+
+				auto *spill = m_AllocManager.createAlloca(type, u8"field.access.tmp");
+				m_Context.irBuilder.CreateStore(value, spill);
+				baseAddr = spill;
+				baseType = type;
+			}
+
 			VERIFY(baseType->isTypeKind(TypeKind::Struct));
 
 			auto *structType = static_cast<StructType *>(baseType);
