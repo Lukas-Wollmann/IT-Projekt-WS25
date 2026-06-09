@@ -16,6 +16,7 @@ enum struct NodeKind {
 	DefaultInit,
 	HeapAlloc,
 	ArrayHeapAlloc,
+	ArrayLiteral,
 	StructInit,
 	UnaryExpr,
 	BinaryExpr,
@@ -112,6 +113,13 @@ struct ArrayHeapAlloc : Expr {
 	const Box<Expr> size; // None (DefaultInit) for dynamic []T, IntLit(N) for fixed [N]T
 
 	ArrayHeapAlloc(Type elementType, Box<Expr> size);
+};
+
+struct ArrayLiteral : Expr {
+	const Type elementType;
+	const Vec<Box<Expr>> elements;
+
+	ArrayLiteral(Type elementType, Vec<Box<Expr>> elements);
 };
 
 struct StructInit : Expr {

@@ -34,6 +34,7 @@ private:
 	void visit(const DefaultInit &n) override;
 	void visit(const HeapAlloc &n) override;
 	void visit(const ArrayHeapAlloc &n) override;
+	void visit(const ArrayLiteral &n) override;
 	void visit(const StructInit &n) override;
 	void visit(const UnaryExpr &n) override;
 	void visit(const BinaryExpr &n) override;

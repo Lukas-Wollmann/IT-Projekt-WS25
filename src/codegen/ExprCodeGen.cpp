@@ -339,6 +339,50 @@ ExprResult ExprLowerer::visit(const ast::ArrayHeapAlloc &n) {
 	return {.value = fatPtr, .type = arrayType, .isTemp = true};
 }
 
+ExprResult ExprLowerer::visit(const ast::ArrayLiteral &n) {
+	const auto &arrayType = n.inferredType.value();
+	auto *elementSize = m_Context.sizeOf(n.elementType);
+	auto *elemDtor = m_Context.getDestructor(n.elementType).value_or(m_Context.getNullDestructor());
+
+	const auto &dataLayout = m_Context.llvmModule.getDataLayout();
+	auto *sizeTy = m_Context.irBuilder.getIntPtrTy(dataLayout);
+	auto *countSize = llvm::ConstantInt::get(sizeTy, n.elements.size());
+	auto *countI64 = llvm::ConstantInt::get(m_Context.irBuilder.getInt64Ty(), n.elements.size());
+
+	auto *createArrFunc = m_Context.llvmModule.getFunction(CodeGenContext::arrayCreate);
+	VERIFY(createArrFunc);
+	auto *dataPtr =
+			m_Context.irBuilder.CreateCall(createArrFunc, {elementSize, countSize, elemDtor});
+
+	auto *elemLlvmType = m_Context.typeConverter.convert(n.elementType);
+	auto *elemPtrType = llvm::PointerType::getUnqual(elemLlvmType);
+	auto *typedDataPtr = m_Context.irBuilder.CreateBitCast(dataPtr, elemPtrType);
+
+	for (size_t i = 0; i < n.elements.size(); ++i) {
+		const auto &[value, valueType, isTemp] = lowerExpr(*n.elements[i]);
+		auto *valueToStore = coerceNullToTarget(m_Context, value, valueType, n.elementType);
+
+		if (!isTemp) {
+			valueToStore = m_Context.copyValue(valueToStore, n.elementType);
+		} else {
+			removeFromExprCleanup(value);
+		}
+
+		auto *index = llvm::ConstantInt::get(m_Context.irBuilder.getInt64Ty(), i);
+		auto *elemPtr = m_Context.irBuilder.CreateInBoundsGEP(elemLlvmType, typedDataPtr, {index});
+		m_Context.irBuilder.CreateStore(valueToStore, elemPtr);
+	}
+
+	auto *fatPtrType = m_Context.typeConverter.convert(arrayType);
+	llvm::Value *fatPtr = llvm::UndefValue::get(fatPtrType);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, dataPtr, 0U);
+	fatPtr = m_Context.irBuilder.CreateInsertValue(fatPtr, countI64, 1U);
+
+	addToExprCleanup(fatPtr, arrayType);
+
+	return {.value = fatPtr, .type = arrayType, .isTemp = true};
+}
+
 ExprResult ExprLowerer::visit(const ast::StructInit &n) {
 	const auto resultType = n.inferredType.value();
 	auto *const llvmResultType =

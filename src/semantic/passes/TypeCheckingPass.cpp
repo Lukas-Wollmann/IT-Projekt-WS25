@@ -112,6 +112,24 @@ bool TypeCheckingPass::visit(ArrayHeapAlloc &n) {
 	return false;
 }
 
+bool TypeCheckingPass::visit(ArrayLiteral &n) {
+	VERIFY(!n.isInferred());
+	validateDeclaredTypes(n.elementType, m_Context, n.loc);
+
+	for (const auto &elem : n.elements) {
+		auto elemType = checkExpression(*elem);
+
+		if (!elemType->isTypeKind(TypeKind::Error) && !typesMatch(elemType, n.elementType)) {
+			const auto msg = ErrorMessage<TypeMissmatch>::str(n.elementType, elemType);
+			m_Context.submitError(msg, elem->loc);
+		}
+	}
+
+	const auto arrayType = TypeFactory::getArray(n.elementType);
+	n.infer(arrayType, ValueCategory::RValue);
+	return false;
+}
+
 bool TypeCheckingPass::visit(StructInit &n) {
 	VERIFY(!n.isInferred());
 	if (!n.type->isTypeKind(TypeKind::Struct)) {
