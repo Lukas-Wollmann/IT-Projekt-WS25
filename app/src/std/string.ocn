@@ -1,7 +1,9 @@
-import math
-
 struct str {
     data: []char
+}
+
+func str(s: []char) -> str {
+    return str { s };
 }
 
 func str_print(s: str) {
@@ -30,7 +32,7 @@ func str_concat(a: str, b: str) -> str {
     }
 
     while (j < str_len(b)) {
-        data[i + j] = a.data[j];
+        data[i + j] = b.data[j];
         j += 1;
     }
 

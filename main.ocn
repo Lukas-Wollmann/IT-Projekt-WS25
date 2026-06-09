@@ -1,7 +1,5 @@
 import test
 
-func main_test_func() {}
-
 func main() -> i32 {
 
     print_bool(test_func().a.a == null);

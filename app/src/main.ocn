@@ -1,21 +1,15 @@
 import std.string
 import std.math
 
-func give_me_a_str() -> str {
-    d: []char = array[10] char;
-    d[0] = 'H';
-    d[1] = 'i';
-    
-    return str { d };
+func get_current_version() -> str {
+    return str("0.1.0");
 }
 
 func main() -> i32 {
-    a: str = give_me_a_str();
-    b: str = give_me_a_str();
-    
-    str_print(str_concat(a, b));
-    str_print(i32_to_str(187));
+    a: str = str("Version: ");
+    b: str = get_current_version();
 
+    str_print(str_concat(a, b));
     print_newline();
 
     return 1;

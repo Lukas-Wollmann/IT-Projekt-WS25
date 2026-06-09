@@ -4,10 +4,10 @@ struct Bar {
     a: Foo
 }
 
-func main_test_func() {}
+func main_test_func() -> []char { return "Hallo"; }
 
 func test_func() -> Bar {
-    main_test_func();
+    print_i32(len(main_test_func()));
 
     return Bar { Foo { new Bar { Foo { null } } } };
 }
