@@ -1,8 +1,12 @@
-import std.string
 import std.math
 
 func get_current_version() -> str {
     return str("0.1.0");
+}
+
+struct Test {
+    a: i32,
+    b: char
 }
 
 func main() -> i32 {
@@ -11,6 +15,9 @@ func main() -> i32 {
 
     str_print(str_concat(a, b));
     print_newline();
+
+    c: Test = Test { 1, 'a' };
+    d: Test = c;
 
     return 1;
 }

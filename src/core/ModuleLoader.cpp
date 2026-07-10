@@ -108,14 +108,35 @@ Box<Module> ModuleLoader::load(const std::filesystem::path &entryPath) {
 	}
 
 	Vec<Box<Module>> imports;
+	std::unordered_set<std::string> visited;
+	std::function<void(const std::filesystem::path &)> collect =
+			[&](const std::filesystem::path &path) {
+				const auto norm = path.lexically_normal();
+				const auto key = norm.string();
+				if (visited.contains(key))
+					return;
+
+				visited.insert(key);
+
+				auto module = parseModule(norm);
+				if (!module)
+					return;
+
+				imports.push_back(std::move(module));
+
+				for (const auto &importPath : imports.back()->imports) {
+					auto resolved = resolveImport(norm, importPath);
+					debugLog(m_Debug, std::string("resolve import ") + importPath.asAscii() +
+												" -> " + resolved.string());
+					collect(resolved);
+				}
+			};
+
 	for (const auto &importPath : root->imports) {
 		auto resolved = resolveImport(entryPath, importPath);
 		debugLog(m_Debug, std::string("resolve import ") + importPath.asAscii() + " -> " +
 								  resolved.string());
-		auto imported = parseModule(resolved);
-		if (imported) {
-			imports.push_back(std::move(imported));
-		}
+		collect(resolved);
 	}
 
 	return flatten(std::move(root), std::move(imports));
@@ -166,15 +187,36 @@ bool ModuleLoader::validateStandalone(const std::filesystem::path &modulePath) {
 		localStructs.insert(s->ident);
 
 	std::unordered_set<U8String> importStructs;
+	std::unordered_set<std::string> visited;
+	std::function<void(const std::filesystem::path &)> collect =
+			[&](const std::filesystem::path &path) {
+				const auto norm = path.lexically_normal();
+				const auto key = norm.string();
+				if (visited.contains(key))
+					return;
+
+				visited.insert(key);
+
+				auto imported = getParsedModule(norm);
+				if (!imported)
+					return;
+
+				for (auto &s : imported->structs)
+					importStructs.insert(s->ident);
+
+				for (const auto &imp : imported->imports) {
+					auto resolved = resolveImport(norm, imp);
+					debugLog(m_Debug, std::string("standalone import ") + imp.asAscii() +
+												" -> " + resolved.string());
+					collect(resolved);
+				}
+			};
+
 	for (const auto &imp : module->imports) {
 		auto resolved = resolveImport(modulePath, imp);
 		debugLog(m_Debug,
 				 std::string("standalone import ") + imp.asAscii() + " -> " + resolved.string());
-		auto imported = getParsedModule(resolved);
-		if (!imported)
-			continue;
-		for (auto &s : imported->structs)
-			importStructs.insert(s->ident);
+		collect(resolved);
 	}
 
 	// Validate struct field types and function signatures
@@ -233,13 +275,32 @@ bool ModuleLoader::validateImportGraph(const std::filesystem::path &entryPath) {
 					localStructs.insert(s->ident);
 
 				std::unordered_set<U8String> importStructs;
+				std::unordered_set<std::string> visitedImports;
+				std::function<void(const std::filesystem::path &)> collectImports =
+						[&](const std::filesystem::path &path) {
+							const auto importNorm = path.lexically_normal();
+							const auto importKey = importNorm.string();
+							if (visitedImports.contains(importKey))
+								return;
+
+							visitedImports.insert(importKey);
+
+							auto imported = getParsedModule(importNorm);
+							if (!imported)
+								return;
+
+							for (auto &s : imported->structs)
+								importStructs.insert(s->ident);
+
+							for (const auto &imp : imported->imports) {
+								auto resolved = resolveImport(importNorm, imp);
+								collectImports(resolved);
+							}
+						};
+
 				for (const auto &imp : module->imports) {
 					auto resolved = resolveImport(norm, imp);
-					auto imported = getParsedModule(resolved);
-					if (!imported)
-						continue;
-					for (auto &s : imported->structs)
-						importStructs.insert(s->ident);
+					collectImports(resolved);
 				}
 
 				for (auto &s : module->structs) {
