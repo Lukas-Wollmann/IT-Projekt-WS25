@@ -12,6 +12,8 @@
 #define OCN_TRUE  (OCN_BOOL) 1
 #define OCN_FALSE (OCN_BOOL) 0
 
+void __arr_drop(void *ptr);
+
 typedef struct {
 	OCN_CHAR *data;
 	size_t size;
@@ -47,6 +49,10 @@ void print_str(const OCN_CharArray s) {
 	for (size_t i = 0; i < s.size; ++i) {
 		print_char(s.data[i]);
 	}
+
+	// AHHHHHHHHHHHHHH
+	// Our language expects this ptr to be cleaned up, we need to do it manually here ._.
+	__arr_drop(s.data);
 }
 
 void print_newline() {
