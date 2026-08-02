@@ -1,7 +1,22 @@
-func main() -> i32 {
- 
-    a: [](i32, i32) -> i32 = ();
+// Function types example
 
+func apply(fn: []char -> (), arr: [][]char) {
+    i: i32 = 0;
+    
+    while (i < len(arr)) {
+        fn(arr[i]);
+        i += 1;
+    }
+}
+
+func main() -> i32 {
+    arr: [][]char = array[3] []char;
+    arr[0] = "Foo"; 
+    arr[1] = "Bar";
+    arr[2] = "Grr";
+
+    // Works with builtins
+    apply(print_str, arr);
 
     return 0;
 }
