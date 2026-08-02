@@ -28,6 +28,28 @@ void emitNullDerefTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
 	ctx.irBuilder.SetInsertPoint(contBB);
 }
 
+void emitNullCallTrap(gen::CodeGenContext &ctx, llvm::Value *ptr) {
+	auto *ptrTy = llvm::dyn_cast<llvm::PointerType>(ptr->getType());
+	VERIFY(ptrTy);
+
+	auto *func = ctx.irBuilder.GetInsertBlock()->getParent();
+	VERIFY(func);
+
+	auto *isNull = ctx.irBuilder.CreateICmpEQ(ptr, llvm::ConstantPointerNull::get(ptrTy));
+	auto *trapBB = llvm::BasicBlock::Create(ctx.llvmContext, "call.null.panic", func);
+	auto *contBB = llvm::BasicBlock::Create(ctx.llvmContext, "call.null.cont", func);
+
+	ctx.irBuilder.CreateCondBr(isNull, trapBB, contBB);
+
+	ctx.irBuilder.SetInsertPoint(trapBB);
+	auto *panicType = llvm::FunctionType::get(ctx.irBuilder.getVoidTy(), false);
+	auto panic = ctx.llvmModule.getOrInsertFunction("__panic_null_call", panicType);
+	ctx.irBuilder.CreateCall(panic, {});
+	ctx.irBuilder.CreateUnreachable();
+
+	ctx.irBuilder.SetInsertPoint(contBB);
+}
+
 llvm::Value *extractArrayDataPtr(gen::CodeGenContext &ctx, llvm::Value *arrayVal) {
 	return ctx.irBuilder.CreateExtractValue(arrayVal, 0U);
 }
@@ -768,6 +790,16 @@ ExprResult ExprLowerer::visit(const ast::FuncCall &n) {
 	const auto &[callee, type, isTemp] = lowerExpr(*n.expr);
 	VERIFY(type->isTypeKind(TypeKind::Function));
 	const auto funcType = static_cast<FunctionType *>(type);
+
+	bool needsNullCheck = true;
+	if (n.expr->kind == ast::NodeKind::VarRef) {
+		const auto &varRef = static_cast<const ast::VarRef &>(*n.expr);
+		needsNullCheck = m_AllocManager.getAlloca(varRef.ident).has_value();
+	}
+
+	if (needsNullCheck) {
+		emitNullCallTrap(m_Context, callee);
+	}
 
 	Vec<llvm::Value *> args;
 	args.reserve(n.args.size());

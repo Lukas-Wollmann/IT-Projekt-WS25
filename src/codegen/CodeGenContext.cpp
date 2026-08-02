@@ -57,6 +57,15 @@ llvm::Value *coerceNullToTarget(CodeGenContext &ctx, llvm::Value *value, Type so
 		return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
 	}
 
+	if (targetType->isTypeKind(TypeKind::Function)) {
+		auto *targetLlvmType = ctx.typeConverter.convert(targetType);
+		if (value->getType() == targetLlvmType) {
+			return value;
+		}
+
+		return ctx.irBuilder.CreateBitCast(value, targetLlvmType);
+	}
+
 	if (targetType->isTypeKind(TypeKind::Array)) {
 		auto *arrayType = static_cast<ArrayType *>(targetType);
 		auto *arrayLlvmType = ctx.typeConverter.convert(targetType);

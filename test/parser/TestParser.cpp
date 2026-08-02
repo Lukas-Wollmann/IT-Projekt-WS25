@@ -131,10 +131,10 @@ TEST_CASE("Parser: parseType() - Unit type") {
 	Parser parser(tokens, err, u8"test-module");
 
 	// Act
-	auto type = parser.parseType();
+	auto parsedType = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == TypeKind::Unit);
+	CHECK(parsedType->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parseType() - Pointer type") {
@@ -145,10 +145,107 @@ TEST_CASE("Parser: parseType() - Pointer type") {
 	Parser parser(tokens, err, u8"test-module");
 
 	// Act
-	auto type = parser.parseType();
+	auto parsedType = parser.parseType();
 
 	// Assert
-	CHECK(type->kind == TypeKind::Pointer);
+	CHECK(parsedType->kind == TypeKind::Pointer);
+}
+
+TEST_CASE("Parser: parseType() - Unit function type") {
+	// Arrange
+	U8String source = u8"() -> ()";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto parsedType = parser.parseAllType();
+
+	// Assert
+	CHECK(parsedType->kind == TypeKind::Function);
+	auto functionType = dynamic_cast<FunctionType *>(parsedType);
+	REQUIRE(functionType != nullptr);
+	CHECK(functionType->paramTypes.empty());
+	CHECK(functionType->returnType->kind == TypeKind::Unit);
+}
+
+TEST_CASE("Parser: parseType() - Unary function type") {
+	// Arrange
+	U8String source = u8"i32 -> i32";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto parsedType = parser.parseAllType();
+
+	// Assert
+	CHECK(parsedType->kind == TypeKind::Function);
+	auto functionType = dynamic_cast<FunctionType *>(parsedType);
+	REQUIRE(functionType != nullptr);
+	REQUIRE(functionType->paramTypes.size() == 1);
+	CHECK(functionType->paramTypes[0]->kind == TypeKind::Primitive);
+	CHECK(functionType->returnType->kind == TypeKind::Primitive);
+}
+
+TEST_CASE("Parser: parseType() - Array function type without parentheses") {
+	// Arrange
+	U8String source = u8"[]i32 -> i32";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto parsedType = parser.parseType();
+
+	// Assert
+	CHECK(parsedType->kind == TypeKind::Function);
+	auto functionType = dynamic_cast<FunctionType *>(parsedType);
+	REQUIRE(functionType != nullptr);
+	REQUIRE(functionType->paramTypes.size() == 1);
+	CHECK(functionType->paramTypes[0]->kind == TypeKind::Array);
+	CHECK(functionType->returnType->kind == TypeKind::Primitive);
+}
+
+TEST_CASE("Parser: parseType() - Parenthesized array parameter function type") {
+	// Arrange
+	U8String source = u8"([]i32) -> i32";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto parsedType = parser.parseAllType();
+
+	// Assert
+	CHECK(parsedType->kind == TypeKind::Function);
+	auto functionType = dynamic_cast<FunctionType *>(parsedType);
+	REQUIRE(functionType != nullptr);
+	REQUIRE(functionType->paramTypes.size() == 1);
+	CHECK(functionType->paramTypes[0]->kind == TypeKind::Array);
+	CHECK(functionType->returnType->kind == TypeKind::Primitive);
+}
+
+TEST_CASE("Parser: parseType() - Nested function type") {
+	// Arrange
+	U8String source = u8"(() -> ()) -> ()";
+	ErrorHandler err(u8"", source);
+	auto tokens = Lexer::tokenize(source, err);
+	Parser parser(tokens, err, u8"test-module");
+
+	// Act
+	auto parsedType = parser.parseAllType();
+
+	// Assert
+	CHECK(parsedType->kind == TypeKind::Function);
+	auto outerFunction = dynamic_cast<FunctionType *>(parsedType);
+	REQUIRE(outerFunction != nullptr);
+	REQUIRE(outerFunction->paramTypes.size() == 1);
+	CHECK(outerFunction->returnType->kind == TypeKind::Unit);
+	auto innerFunction = dynamic_cast<FunctionType *>(outerFunction->paramTypes[0]);
+	REQUIRE(innerFunction != nullptr);
+	CHECK(innerFunction->paramTypes.empty());
+	CHECK(innerFunction->returnType->kind == TypeKind::Unit);
 }
 
 TEST_CASE("Parser: parsePrimaryExpr() - Integer literal") {

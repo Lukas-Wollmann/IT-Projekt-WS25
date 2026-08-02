@@ -141,6 +141,11 @@ struct std::formatter<TypeList> {
 
 	auto format(const TypeList &list, std::format_context &ctx) const {
 		auto out = ctx.out();
+		const auto size = list.size();
+
+		if (size > 1)
+			out = std::format_to(out, "(");
+
 		for (size_t i = 0; i < list.size(); ++i) {
 			if (i > 0) {
 				out = std::format_to(out, ", ");
@@ -148,6 +153,10 @@ struct std::formatter<TypeList> {
 
 			out = std::format_to(out, "{}", list[i]);
 		}
+
+		if (size > 1)
+			out = std::format_to(out, ")");
+
 		return out;
 	}
 };

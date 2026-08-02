@@ -1,8 +1,32 @@
 import std.math
 
-func main() -> i32 {
+struct A{ a: i32, b: bool }
 
-    print_str("Hallo Welt 🫩");
+func f() -> []char {
+    return "Hallo";
+}
+
+func main() -> i32 {
+    a: []char = "Hiii";
+    
+    print_str(a);
+    print_newline();
 
     return 0;
 }
+
+/* 
+Default Heap Initalization - sets all members to defaults
+new A;
+new A();
+
+Copy Heap Init
+new i32(3)
+new T()
+
+// Aggregate Heap Alloc
+new A{}
+
+// Array Heap Alloc
+array[10] A;
+*/

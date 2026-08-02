@@ -98,6 +98,7 @@ Box<Module> ModuleLoader::load(const std::filesystem::path &entryPath) {
 
 	Vec<Box<Module>> imports;
 	std::unordered_set<std::string> visited;
+	visited.insert(entryPath.lexically_normal().string());
 	std::function<void(const std::filesystem::path &)> collect =
 			[&](const std::filesystem::path &path) {
 				const auto norm = path.lexically_normal();

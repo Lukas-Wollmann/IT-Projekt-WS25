@@ -1,5 +1,14 @@
 #include "Type.h"
 
+namespace {
+U8String format_nested(const Type &type) {
+	if (type->kind == TypeKind::Function) {
+		return std::format("({})", type);
+	}
+	return std::format("{}", type);
+}
+}
+
 PrimitiveType::PrimitiveType(PrimitiveKind primitiveKind)
 	: TypeBase(TypeKind::Primitive)
 	, primitiveKind(primitiveKind) {}
@@ -74,7 +83,7 @@ PointerType::PointerType(Type pointeeType)
 	, pointeeType(pointeeType) {}
 
 U8String PointerType::str() const {
-	return std::format("*{}", pointeeType);
+	return std::format("*{}", format_nested(pointeeType));
 }
 
 bool PointerType::equals(const TypeBase *other) const {
@@ -95,7 +104,7 @@ FunctionType::FunctionType(TypeList paramTypes, Type returnType)
 	, returnType(returnType) {}
 
 U8String FunctionType::str() const {
-	return std::format("({}) -> {}", paramTypes, returnType);
+	return std::format("{} -> {}", paramTypes, returnType);
 }
 
 bool FunctionType::equals(const TypeBase *other) const {
@@ -154,7 +163,7 @@ ArrayType::ArrayType(Type elementType)
 	, elementType(elementType) {}
 
 U8String ArrayType::str() const {
-	return std::format("[]{}", elementType);
+	return std::format("[]{}", format_nested(elementType));
 }
 
 bool ArrayType::equals(const TypeBase *other) const {

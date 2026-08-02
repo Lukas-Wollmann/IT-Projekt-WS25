@@ -18,6 +18,113 @@ SourceLoc makeSpanLoc(const SourceLoc &start, const SourceLoc &end) {
 }
 }
 
+// Implements: Type = ArrayType | PointerType | typename | "(" ")" | "(" AllType ")"
+Type Parser::parseTypeImpl() {
+	if (m_Current->matches(TokenType::Separator, u8"[")) {
+		consume(TokenType::Separator, u8"[");
+		consume(TokenType::Separator, u8"]");
+		return TypeFactory::getArray(parseTypeImpl());
+	}
+
+	if (m_Current->matches(TokenType::Operator, u8"*")) {
+		consume(TokenType::Operator, u8"*");
+		return TypeFactory::getPointer(parseTypeImpl());
+	}
+
+	if (m_Current->matches(TokenType::Identifier)) {
+		auto typename_ = consume(TokenType::Identifier).lexeme;
+
+		if (typename_ == u8"i32") {
+			return TypeFactory::getI32();
+		}
+		if (typename_ == u8"char") {
+			return TypeFactory::getChar();
+		}
+		if (typename_ == u8"bool") {
+			return TypeFactory::getBool();
+		}
+
+		return TypeFactory::getStruct(typename_);
+	}
+
+	if (m_Current->matches(TokenType::Separator, u8"(")) {
+		consume(TokenType::Separator, u8"(");
+
+		if (m_Current->matches(TokenType::Separator, u8")")) {
+			consume(TokenType::Separator, u8")");
+			return TypeFactory::getUnit();
+		}
+
+		auto type = parseAllTypeImpl();
+		consume(TokenType::Separator, u8")");
+		return type;
+	}
+
+	throw ParsingError(u8"Expected a type.");
+}
+
+// Implements: AllType = Type | FunctionType
+// where FunctionType = ( Type | "(" AllType {"," AllType } ")" ) "->" Type
+Type Parser::parseAllTypeImpl() {
+	if (m_Current->matches(TokenType::Separator, u8"(")) {
+		consume(TokenType::Separator, u8"(");
+
+		if (m_Current->matches(TokenType::Separator, u8")")) {
+			consume(TokenType::Separator, u8")");
+
+			if (m_Current->matches(TokenType::Operator, u8"->")) {
+				consume(TokenType::Operator, u8"->");
+				return TypeFactory::getFunction({}, parseTypeImpl());
+			}
+
+			return TypeFactory::getUnit();
+		}
+
+		TypeList paramTypes;
+		paramTypes.push_back(parseAllTypeImpl());
+		bool isMultiParam = false;
+
+		while (m_Current->matches(TokenType::Separator, u8",")) {
+			consume(TokenType::Separator, u8",");
+			if (m_Current->matches(TokenType::Separator, u8")")) {
+				throw ParsingError(u8"Expected another type.");
+			}
+
+			paramTypes.push_back(parseAllTypeImpl());
+			isMultiParam = true;
+		}
+
+		consume(TokenType::Separator, u8")");
+
+		if (m_Current->matches(TokenType::Operator, u8"->")) {
+			consume(TokenType::Operator, u8"->");
+			return TypeFactory::getFunction(std::move(paramTypes), parseTypeImpl());
+		}
+
+		if (isMultiParam) {
+			throw ParsingError(u8"Expected '->' after function parameter list.");
+		}
+
+		return paramTypes[0];
+	}
+
+	auto type = parseTypeImpl();
+
+	if (m_Current->matches(TokenType::Operator, u8"->")) {
+		consume(TokenType::Operator, u8"->");
+		auto returnType = parseTypeImpl();
+
+		TypeList paramTypes;
+		if (!type->isTypeKind(TypeKind::Unit)) {
+			paramTypes.push_back(type);
+		}
+
+		return TypeFactory::getFunction(std::move(paramTypes), returnType);
+	}
+
+	return type;
+}
+
 ParsingError::ParsingError(U8String msg)
 	: msg(std::move(msg)) {}
 
@@ -223,48 +330,7 @@ Vec<Param> Parser::parseParamList() {
 }
 
 Type Parser::parseType() {
-	// Check for array types: [N]T or []T
-	if (m_Current->matches(TokenType::Separator, u8"[")) {
-		consume(TokenType::Separator, u8"[");
-		Opt<i32> size;
-
-		consume(TokenType::Separator, u8"]");
-		auto elementType = parseType();
-
-		return TypeFactory::getArray(elementType);
-	}
-
-	if (m_Current->matches(TokenType::Identifier)) {
-		auto typename_ = consume(TokenType::Identifier).lexeme;
-
-		if (typename_ == u8"i32") {
-			return TypeFactory::getI32();
-		}
-		if (typename_ == u8"char") {
-			return TypeFactory::getChar();
-		}
-		if (typename_ == u8"bool") {
-			return TypeFactory::getBool();
-		}
-
-		return TypeFactory::getStruct(typename_);
-	}
-
-	if (m_Current->matches(TokenType::Separator, u8"(")) {
-		consume(TokenType::Separator, u8"(");
-		consume(TokenType::Separator, u8")");
-
-		return TypeFactory::getUnit();
-	}
-
-	if (m_Current->matches(TokenType::Operator, u8"*")) {
-		consume(TokenType::Operator, u8"*");
-		auto type = parseType();
-
-		return TypeFactory::getPointer(type);
-	}
-
-	throw ParsingError(u8"Expected a type.");
+	return parseAllTypeImpl();
 }
 
 Box<Stmt> Parser::parseStmt() {
@@ -379,11 +445,6 @@ Box<IfStmt> Parser::parseIfStmt() {
 		return stmt;
 	}
 
-	// If we get an if-else-if construct, normalize it into nested if-else-if construct:
-	// >>>  if (a) { b; } else if (c) { d; }
-	// Will then get turned into:
-	// >>>  if (a) { b; } else { if (c) { d; }}
-
 	auto elseIf = parseIfStmt();
 
 	Vec<Box<Stmt>> elseStmts;
@@ -401,12 +462,10 @@ Box<VarDef> Parser::parseVarDef() {
 	consume(TokenType::Separator, u8":");
 	auto type = parseType();
 	Box<Expr> value;
-	// Allow variable definition without an initializer: `a: Foo;`
 	if (m_Current->matches(TokenType::Operator, u8"=")) {
 		consume(TokenType::Operator, u8"=");
 		value = parseExpr();
 	} else {
-		// Default initialization
 		value = std::make_unique<DefaultInit>();
 		value->setLoc(identToken.loc);
 	}
@@ -781,7 +840,6 @@ Vec<Box<ast::Expr>> Parser::parseBraceExprList() {
 Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	consume(TokenType::Separator, u8".");
 
-	// Allow multiple '*' prefixes before the field identifier: . *ident, . **ident, etc.
 	Vec<SourceLoc> starLocs;
 	while (m_Current->matches(TokenType::Operator, u8"*")) {
 		const auto &starTok = consume(TokenType::Operator, u8"*");
@@ -795,7 +853,6 @@ Box<Expr> Parser::parseFieldAccess(Box<Expr> base) {
 	auto access = std::make_unique<FieldAccess>(std::move(base), std::move(field));
 	access->setLoc(loc);
 
-	// Wrap with dereferences in reverse order (innermost first)
 	Box<Expr> result = std::move(access);
 	for (int i = starLocs.size() - 1; i >= 0; --i) {
 		const auto dereffedLoc = i == 0 ? makeSpanLoc(starLocs[0], result->loc)
@@ -912,13 +969,11 @@ Box<Expr> Parser::parsePrimaryExpr() {
 
 		auto type = parseType();
 
-		// Non-array types can use initialization
 		Box<Expr> expr;
 
 		if (m_Current->matches(TokenType::Separator, u8"(")) {
 			consume(TokenType::Separator, u8"(");
 			if (m_Current->matches(TokenType::Separator, u8")")) {
-				// Empty parens -> default initialization
 				consume(TokenType::Separator, u8")");
 				expr = std::make_unique<DefaultInit>();
 				expr->setLoc(newTok.loc);
@@ -937,7 +992,6 @@ Box<Expr> Parser::parsePrimaryExpr() {
 			expr = std::make_unique<StructInit>(structType, std::move(args));
 			expr->setLoc(makeSpanLoc(newTok.loc, endLoc));
 		} else {
-			// Bare `new Type` without parens or braces -> default initialization
 			expr = std::make_unique<DefaultInit>();
 			expr->setLoc(newTok.loc);
 		}

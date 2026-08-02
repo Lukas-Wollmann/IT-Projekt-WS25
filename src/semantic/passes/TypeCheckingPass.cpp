@@ -592,11 +592,13 @@ bool TypeCheckingPass::typesMatch(Type left, Type right) {
 		return false;
 
 	if (left->isTypeKind(TypeKind::Null) &&
-		(right->isTypeKind(TypeKind::Pointer) || right->isTypeKind(TypeKind::Array)))
+		(right->isTypeKind(TypeKind::Pointer) || right->isTypeKind(TypeKind::Array) ||
+		 right->isTypeKind(TypeKind::Function)))
 		return true;
 
 	if (right->isTypeKind(TypeKind::Null) &&
-		(left->isTypeKind(TypeKind::Pointer) || left->isTypeKind(TypeKind::Array)))
+		(left->isTypeKind(TypeKind::Pointer) || left->isTypeKind(TypeKind::Array) ||
+		 left->isTypeKind(TypeKind::Function)))
 		return true;
 
 	return left == right;

@@ -64,6 +64,11 @@ void __panic_null_deref() {
 	abort();
 }
 
+void __panic_null_call() {
+	fputs("panic: null function call\n", stderr);
+	abort();
+}
+
 void __panic_out_of_bounds() {
 	fputs("panic: array out of bounds\n", stderr);
 	abort();

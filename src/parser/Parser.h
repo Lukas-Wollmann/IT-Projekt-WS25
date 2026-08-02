@@ -40,6 +40,7 @@ struct Parser {
 	Box<ast::StructDecl> parseStructDecl();
 	Vec<ast::Param> parseParamList();
 	Type parseType();
+	Type parseAllType();
 	Box<ast::Stmt> parseStmt();
 	Box<ast::BlockStmt> parseBlockStmt();
 	Box<ast::WhileStmt> parseWhileStmt();
@@ -64,6 +65,11 @@ struct Parser {
 	Vec<Box<ast::Expr>> parseExprList();
 	Vec<Box<ast::Expr>> parseBraceExprList();
 
+private:
+	Type parseTypeImpl();
+	Type parseAllTypeImpl();
+
+public:
 	static AssignmentKind getAssignmentKindFromString(const U8String &str);
 };
 }
