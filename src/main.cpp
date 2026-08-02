@@ -24,8 +24,18 @@ using namespace ast;
 using namespace sem;
 using namespace gen;
 
+#define MAJOR_VERSION "1"
+
+#ifndef BUILD_NUMBER
+#define BUILD_NUMBER "0"
+#endif
+#ifndef BRANCH_NAME
+#define BRANCH_NAME "unknown"
+#endif
+
 int main(const int argc, const char *argv[]) {
 	if (argc < 2) {
+		util::print("Ocean compiler v{}.{}-{}\n\n", MAJOR_VERSION, BUILD_NUMBER, BRANCH_NAME);
 		util::print("Usage: \"{}\" <input-filename> [options]\n", argv[0]);
 		util::print("Options:\n");
 		util::print("\t-o, --output <filename> Name of the generated output file\n");
@@ -125,9 +135,10 @@ int main(const int argc, const char *argv[]) {
 	pid_t pid = fork();
 
 	if (pid == 0) {
-		std::vector<const char *> clangArgs = {"clang",		   llFilename.c_str(),
-											   "-o",		   outputFilename.c_str(),
-											   "ocn_stdlib.c", nullptr};
+		std::vector<const char *> clangArgs = {"clang", llFilename.c_str(),
+											   "-o",	outputFilename.c_str(),
+											   "-O3",	"ocn_stdlib.c",
+											   nullptr};
 		execvp("clang", const_cast<char *const *>(clangArgs.data()));
 		perror("execvp failed");
 	} else if (pid > 0) {
