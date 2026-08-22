@@ -4,7 +4,13 @@
 
 If you want to write some OCN-Code for yourself, the best way to getting started is by using the
 pre-built binary. Go to `/example` and execute `./ocn`, keep in mind your system should
-have the depencencies `libllvm18` and `clang` installed. If everything worked you should
+have the depencencies `libllvm18` and `clang` installed. If you are missing them, you could install them by running:
+
+```shell
+sudo apt install libllvm18 clang
+```
+
+ If everything worked you should
 see the usage printed to the console.
 
 You can now write code in `src/main.ocn`, from there you can import other files, some
@@ -18,7 +24,7 @@ If you want to compile and test what you have written, just do:
 ./out
 ```
 
-If you have not changed anything, you will be greeted with: `Welcome to OCN 🐋`
+If you have not changed anything, you will be greeted with: `Welcome to OCN 🐋!`
 
 
 ## Build the compiler from source

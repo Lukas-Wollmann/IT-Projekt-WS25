@@ -1,6 +1,6 @@
 import string
 
-func abs_i32(x: i32) -> i32 {
+func i32_abs(x: i32) -> i32 {
     if (x < 0) {
         return -x;
     }
@@ -8,7 +8,7 @@ func abs_i32(x: i32) -> i32 {
     return x;
 }
 
-func max_i32(a: i32, b: i32) -> i32 {
+func i32_max(a: i32, b: i32) -> i32 {
     if (a > b) {
         return a;
     }
@@ -16,7 +16,7 @@ func max_i32(a: i32, b: i32) -> i32 {
     return b;
 }
 
-func min_i32(a: i32, b: i32) -> i32 {
+func i32_min(a: i32, b: i32) -> i32 {
     if (a < b) {
         return a;
     }
@@ -24,7 +24,7 @@ func min_i32(a: i32, b: i32) -> i32 {
     return b;
 }
 
-func clamp_i32(x: i32, lo: i32, hi: i32) -> i32 {
+func i32_clamp(x: i32, lo: i32, hi: i32) -> i32 {
     if (x < lo) {
         return lo;
     }
@@ -56,17 +56,7 @@ func i32_to_str(n: i32) -> str {
     idx: i32 = 0;
 
     // digit lookup to avoid mixing char and i32 arithmetic
-    digits: []char = array[10] char;
-    digits[0] = '0';
-    digits[1] = '1';
-    digits[2] = '2';
-    digits[3] = '3';
-    digits[4] = '4';
-    digits[5] = '5';
-    digits[6] = '6';
-    digits[7] = '7';
-    digits[8] = '8';
-    digits[9] = '9';
+    digits: []char = "0123456789";
 
     while (x > 0) {
         digit: i32 = x % 10;
@@ -76,9 +66,11 @@ func i32_to_str(n: i32) -> str {
     }
 
     total: i32 = idx;
+    
     if (neg) {
         total = total + 1;
     }
+
     data: []char = array[total] char;
 
     pos: i32 = 0;

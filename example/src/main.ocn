@@ -1,13 +1,16 @@
 import std.string
+import std.math
 
 func get_string() -> str {
     return str("Welcome to OCN 🐋");
 }
 
 func main() -> i32 {
-    s: str = get_string();
+	s1: str = get_string();
+    s2: str = str("!");
+    s3: str = str_concat(s1, s2);
     
-    str_print(s);
+    str_print(s3);
     print_newline();
 
     return 0;
