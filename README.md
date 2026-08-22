@@ -1,6 +1,27 @@
 # IT-Projekt-WS25
 
-## Build from source
+## Test it for yourself
+
+If you want to write some OCN-Code for yourself, the best way to getting started is by using the
+pre-built binary. Go to `/example` and execute `./ocn`, keep in mind your system should
+have the depencencies `libllvm18` and `clang` installed. If everything worked you should
+see the usage printed to the console.
+
+You can now write code in `src/main.ocn`, from there you can import other files, some
+basic functionality is provided. The default main file shows some general concepts, if 
+you want to learn more, visit the `./doc` folder for some more info.
+
+If you want to compile and test what you have written, just do:
+
+```shell
+./ocn src/main.ocn
+./out
+```
+
+If you have not changed anything, you will be greeted with: `Welcome to OCN 🐋`
+
+
+## Build the compiler from source
 
 To build this project you should use docker. You can use the provided Dockerfile to build an image:
 
@@ -41,7 +62,6 @@ Three-Address-Code (TAC) kompiliert, oder zu C transpiliert werden.
 - If/While/For
 - Struct/Klassen ähnliches Konzept
 - SmartPointer per default
-- Raw Pointer möglich (nur explizit)
 - sicherer Array Zugriff
 - In/Output
 
@@ -55,6 +75,7 @@ Three-Address-Code (TAC) kompiliert, oder zu C transpiliert werden.
 - Multithreading
 - Lambda Funktionen
 - Referenzen
+- Raw Pointer möglich (nur explizit)
 
 ## Known Errors
 - Tabs dont work in error handler

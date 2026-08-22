@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "DepsCheck.h"
 #include "ast/AST.h"
 #include "ast/Printer.h"
 #include "codegen/CodeGen.h"
@@ -34,6 +35,11 @@ using namespace gen;
 #endif
 
 int main(const int argc, const char *argv[]) {
+	if (!checkRuntimeDependencies()) {
+		util::print("Failed dependency check. Please install clang.\n");
+		return 4;
+	}
+
 	if (argc < 2) {
 		util::print("Ocean compiler v{}.{}-{}\n\n", MAJOR_VERSION, BUILD_NUMBER, BRANCH_NAME);
 		util::print("Usage: \"{}\" <input-filename> [options]\n", argv[0]);

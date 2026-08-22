@@ -1,32 +1,14 @@
-import std.math
+import std.string
 
-struct A{ a: i32, b: bool }
-
-func f() -> []char {
-    return "Hallo";
+func get_string() -> str {
+    return str("Welcome to OCN 🐋");
 }
 
 func main() -> i32 {
-    a: []char = "Hiii";
+    s: str = get_string();
     
-    print_str(a);
+    str_print(s);
     print_newline();
 
     return 0;
 }
-
-/* 
-Default Heap Initalization - sets all members to defaults
-new A;
-new A();
-
-Copy Heap Init
-new i32(3)
-new T()
-
-// Aggregate Heap Alloc
-new A{}
-
-// Array Heap Alloc
-array[10] A;
-*/

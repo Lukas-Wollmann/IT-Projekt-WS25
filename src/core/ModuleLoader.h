@@ -18,10 +18,7 @@ public:
 
 	Box<ast::Module> load(const std::filesystem::path &entryPath);
 
-	// Collect all reachable module paths starting from entryPath (including entryPath).
 	Vec<std::filesystem::path> collectAllModulePaths(const std::filesystem::path &entryPath);
-	// Validate that a module is self-contained (all referenced struct types
-	// are declared either in the module itself or anywhere in its import graph).
 	bool validateStandalone(const std::filesystem::path &modulePath);
 	bool validateImportGraph(const std::filesystem::path &entryPath);
 
